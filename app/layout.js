@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 // Providers
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { SessionProvider } from "next-auth/react";
 // Styling
 import "./globals.css";
 
@@ -18,8 +19,10 @@ export default function RootLayout({ children }) {
         <html lang="en">
             <body>
                 <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-                    {children}
-                    <Toaster />
+                    <SessionProvider>
+                        {children}
+                        <Toaster />
+                    </SessionProvider>
                 </ThemeProvider>
             </body>
         </html>

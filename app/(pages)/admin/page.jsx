@@ -3,6 +3,9 @@ import NavBar from "@/components/NavBar";
 import { connect } from "@/lib/db";
 import FormData from "@/lib/modals/form.modal";
 import AdminContent from "@/components/AdminContent";
+
+export const dynamic = "force-dynamic";
+
 export default async function AdminPage() {
     await connect();
 

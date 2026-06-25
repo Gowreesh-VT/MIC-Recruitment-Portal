@@ -2,14 +2,13 @@ import { connect } from "@/lib/db";
 import FormData from "@/lib/modals/form.modal";
 
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request) {
     try {
-        // Check authentication using headers
-    const session = await auth.api.getSession({
-        headers: await headers()
-      });
+        // Check authentication
+    const session = await auth();
       if (!session?.user) {
         return new Response(
           JSON.stringify({ error: "Authentication required" }),
