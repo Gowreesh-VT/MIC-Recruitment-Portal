@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
+import { PostHogProvider } from "@/components/posthog-provider";
 // Styling
 import "./globals.css";
 
@@ -20,8 +21,10 @@ export default function RootLayout({ children }) {
             <body>
                 <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
                     <SessionProvider>
-                        {children}
-                        <Toaster />
+                        <PostHogProvider>
+                            {children}
+                            <Toaster />
+                        </PostHogProvider>
                     </SessionProvider>
                 </ThemeProvider>
             </body>
