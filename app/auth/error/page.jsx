@@ -4,7 +4,7 @@ import React from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Home, RefreshCw } from "react-icons/lu";
+import { LuAlertCircle, LuHome, LuRefreshCw } from "react-icons/lu";
 
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
@@ -32,7 +32,7 @@ export default function AuthErrorPage() {
         <Card className="bg-[#1a1a1a] border-[#333] text-white">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-              <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+              <LuAlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
             </div>
             <CardTitle className="text-2xl font-bold text-white">
               Authentication Error
@@ -48,7 +48,7 @@ export default function AuthErrorPage() {
                 className="w-full"
                 variant="default"
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
+                <LuRefreshCw className="mr-2 h-4 w-4" />
                 Try Again
               </Button>
               
@@ -57,7 +57,7 @@ export default function AuthErrorPage() {
                 className="w-full"
                 variant="outline"
               >
-                <Home className="mr-2 h-4 w-4" />
+                <LuHome className="mr-2 h-4 w-4" />
                 Go Home
               </Button>
             </div>
