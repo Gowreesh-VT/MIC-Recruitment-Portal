@@ -17,6 +17,10 @@ if (!cached) {
 }
 
 export const connect = async () => {
+    if (!MONGO_URL) {
+        throw new Error("MONGO_URL environment variable is missing inside .env.local");
+    }
+
     if (cached.conn) return cached.conn;
 
     cached.promise =
