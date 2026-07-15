@@ -31,39 +31,10 @@ async function verifyTurnstile(token: string, ip?: string): Promise<boolean> {
   }
 }
 
-// Validate hCaptcha token
-async function verifyHCaptcha(token: string, ip?: string): Promise<boolean> {
-  const secretKey = process.env.HCAPTCHA_SECRET_KEY;
-  if (!secretKey) {
-    console.error("HCAPTCHA_SECRET_KEY is not configured.");
-    return false;
-  }
-
-  try {
-    const formData = new URLSearchParams();
-    formData.append("secret", secretKey);
-    formData.append("response", token);
-    if (ip) {
-      formData.append("remoteip", ip);
-    }
-
-    const response = await fetch("https://hcaptcha.com/siteverify", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await response.json();
-    return !!data.success;
-  } catch (error) {
-    console.error("Error verifying hCaptcha token:", error);
-    return false;
-  }
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, phone, role, githubUrl, linkedinUrl, portfolioUrl, captchaToken, captchaType } = body;
+    const { name, email, phone, role, githubUrl, linkedinUrl, portfolioUrl, captchaToken } = body;
 
     // 1. Basic validation
     if (!name || !email || !phone || !role) {
@@ -84,13 +55,7 @@ export async function POST(request: Request) {
     // Extract client IP address for CAPTCHA verification
     const ip = request.headers.get("x-forwarded-for") || undefined;
 
-    let isHuman = false;
-    if (captchaType === "hcaptcha") {
-      isHuman = await verifyHCaptcha(captchaToken, ip);
-    } else {
-      // Default to turnstile
-      isHuman = await verifyTurnstile(captchaToken, ip);
-    }
+    const isHuman = await verifyTurnstile(captchaToken, ip);
 
     if (!isHuman) {
       return NextResponse.json(

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Turnstile } from "@marsidev/react-turnstile";
-import HCaptcha from "@hcaptcha/react-hcaptcha";
+import { signIn, signOut } from "next-auth/react";
 import {
   User,
   Mail,
@@ -11,7 +10,6 @@ import {
   Github,
   Linkedin,
   Globe,
-  ShieldAlert,
   ShieldCheck,
   Cpu,
   Info,
@@ -20,19 +18,29 @@ import {
   RotateCcw,
 } from "lucide-react";
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string | HTMLElement, options: any) => string;
+      remove: (widgetId: string) => void;
+      reset: (widgetId: string) => void;
+    };
+  }
+}
+
 export default function RegistrationPage() {
   const [mounted, setMounted] = useState(false);
+  const [session, setSession] = useState<any>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    role: "Frontend Developer",
+    role: "Development",
     githubUrl: "",
     linkedinUrl: "",
     portfolioUrl: "",
   });
 
-  const [captchaType, setCaptchaType] = useState<"turnstile" | "hcaptcha">("turnstile");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [status, setStatus] = useState<{
     type: "idle" | "loading" | "success" | "error";
@@ -40,43 +48,120 @@ export default function RegistrationPage() {
   }>({ type: "idle", message: "" });
 
   const [captchaLogs, setCaptchaLogs] = useState<string[]>([]);
-  const hcaptchaRef = useRef<HCaptcha>(null);
-  const turnstileRef = useRef<any>(null);
+  const turnstileWidgetId = useRef<string | null>(null);
 
-  // Client hydration check
-  useEffect(() => {
-    setMounted(true);
-    addLog("Application mounted. Ready to load bot protection widgets.");
-  }, []);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
 
   const addLog = (message: string) => {
     const time = new Date().toLocaleTimeString();
     setCaptchaLogs((prev) => [`[${time}] ${message}`, ...prev.slice(0, 8)]);
   };
 
-  // Reset captcha when switching type
+  // Client hydration and Turnstile script initialization
   useEffect(() => {
-    setCaptchaToken(null);
-    setStatus({ type: "idle", message: "" });
-    addLog(`Switched verification type to ${captchaType === "turnstile" ? "Cloudflare Turnstile" : "hCaptcha"}`);
+    setMounted(true);
+    addLog("Application mounted. Ready to load Cloudflare Turnstile widget.");
 
-    if (captchaType === "hcaptcha" && hcaptchaRef.current) {
-      try {
-        hcaptchaRef.current.resetCaptcha();
-      } catch (err) {
-        console.error("hCaptcha reset error:", err);
+    // Fetch NextAuth session
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Object.keys(data).length > 0 && data.user) {
+          setSession(data);
+          addLog(`Session: Authenticated as ${data.user.name || data.user.email}`);
+          setFormData((prev) => ({
+            ...prev,
+            name: prev.name || data.user.name || "",
+            email: prev.email || data.user.email || "",
+          }));
+        } else {
+          addLog("Session: Not authenticated.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching session:", err);
+        addLog("Session: Failed to fetch session.");
+      });
+
+    // Safe read of query params to auto-select track
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlRole = params.get("role");
+      if (urlRole) {
+        const roleMapping: Record<string, string> = {
+          "dev": "Development",
+          "cc": "Competitive Coding",
+          "uiux": "UI/UX",
+          "aiml": "AI/ML",
+          "cyber": "Cyber Security",
+          "design": "Design",
+          "mgmt": "Management",
+          "ep": "Entrepreneurship",
+          "media": "Content & Media",
+        };
+        const selectedRole = roleMapping[urlRole.toLowerCase()] || urlRole;
+        setFormData((prev) => ({ ...prev, role: selectedRole }));
       }
     }
-  }, [captchaType]);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, name: value }));
-  };
+    // Explicit Turnstile injection & rendering
+    const scriptId = "cloudflare-turnstile-script";
+    let script = document.getElementById(scriptId) as HTMLScriptElement;
 
-  // Dedicated input-specific onChange helpers to avoid casting issues in TypeScript
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+
+    const renderWidget = () => {
+      if (window.turnstile) {
+        try {
+          const widgetId = window.turnstile.render("#turnstile-container", {
+            sitekey: turnstileSiteKey,
+            callback: (token: string) => {
+              setCaptchaToken(token);
+              addLog("Turnstile token received.");
+            },
+            "error-callback": (err: any) => {
+              setCaptchaToken(null);
+              addLog(`Turnstile error: ${JSON.stringify(err)}`);
+            },
+            "expired-callback": () => {
+              setCaptchaToken(null);
+              addLog("Turnstile token expired.");
+            },
+            theme: "dark",
+          });
+          turnstileWidgetId.current = widgetId;
+        } catch (err) {
+          console.error("Turnstile render error:", err);
+          addLog("Turnstile rendering failed.");
+        }
+      }
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      script.onload = renderWidget;
+    }
+
+    return () => {
+      // Clean up Turnstile widget on component unmount
+      if (window.turnstile && turnstileWidgetId.current) {
+        try {
+          window.turnstile.remove(turnstileWidgetId.current);
+        } catch (err) {
+          console.error("Error removing Turnstile widget:", err);
+        }
+      }
+    };
+  }, []);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, name: e.target.value }));
   };
@@ -115,7 +200,7 @@ export default function RegistrationPage() {
     }
 
     if (!captchaToken) {
-      setStatus({ type: "error", message: "Please complete the bot verification first." });
+      setStatus({ type: "error", message: "Please complete the Turnstile verification first." });
       addLog("Form submission blocked: CAPTCHA token not acquired.");
       return;
     }
@@ -130,7 +215,6 @@ export default function RegistrationPage() {
         body: JSON.stringify({
           ...formData,
           captchaToken,
-          captchaType,
         }),
       });
 
@@ -147,15 +231,15 @@ export default function RegistrationPage() {
           name: "",
           email: "",
           phone: "",
-          role: "Frontend Developer",
+          role: "Development",
           githubUrl: "",
           linkedinUrl: "",
           portfolioUrl: "",
         });
         setCaptchaToken(null);
-        // Reset Captchas
-        if (captchaType === "hcaptcha" && hcaptchaRef.current) {
-          hcaptchaRef.current.resetCaptcha();
+        // Reset Turnstile widget
+        if (window.turnstile && turnstileWidgetId.current) {
+          window.turnstile.reset(turnstileWidgetId.current);
         }
       } else {
         setStatus({
@@ -163,10 +247,9 @@ export default function RegistrationPage() {
           message: data.error || "Security verification failed. Please try again.",
         });
         addLog(`API rejected submission: ${data.error}`);
-        // Reset Captchas on failure
         setCaptchaToken(null);
-        if (captchaType === "hcaptcha" && hcaptchaRef.current) {
-          hcaptchaRef.current.resetCaptcha();
+        if (window.turnstile && turnstileWidgetId.current) {
+          window.turnstile.reset(turnstileWidgetId.current);
         }
       }
     } catch (error) {
@@ -177,36 +260,6 @@ export default function RegistrationPage() {
       });
       addLog("API call failed due to network/server issue.");
     }
-  };
-
-  const handleTurnstileSuccess = (token: string) => {
-    setCaptchaToken(token);
-    addLog("Turnstile verification passed. Token received.");
-  };
-
-  const handleTurnstileError = () => {
-    setCaptchaToken(null);
-    addLog("Turnstile verification failed.");
-  };
-
-  const handleTurnstileExpire = () => {
-    setCaptchaToken(null);
-    addLog("Turnstile token expired.");
-  };
-
-  const handleHcaptchaVerify = (token: string) => {
-    setCaptchaToken(token);
-    addLog("hCaptcha verification passed. Token received.");
-  };
-
-  const handleHcaptchaError = (err: any) => {
-    setCaptchaToken(null);
-    addLog(`hCaptcha error: ${JSON.stringify(err)}`);
-  };
-
-  const handleHcaptchaExpire = () => {
-    setCaptchaToken(null);
-    addLog("hCaptcha token expired.");
   };
 
   if (!mounted) {
@@ -220,13 +273,7 @@ export default function RegistrationPage() {
     );
   }
 
-  // Use standard test keys if not configured in env
-  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
-  const hcaptchaSiteKey = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY || "10000000-ffff-ffff-ffff-ffffffffffff";
-
-  const isUsingTestKey =
-    (captchaType === "turnstile" && turnstileSiteKey === "1x00000000000000000000AA") ||
-    (captchaType === "hcaptcha" && hcaptchaSiteKey === "10000000-ffff-ffff-ffff-ffffffffffff");
+  const isUsingTestKey = turnstileSiteKey === "1x00000000000000000000AA";
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4 md:p-8 overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
@@ -246,12 +293,12 @@ export default function RegistrationPage() {
           </div>
 
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Advanced <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">Bot Shield</span> Demonstration
+            Advanced <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">Bot Shield</span> Integration
           </h1>
 
           <p className="text-slate-400 text-base leading-relaxed">
             This recruitment portal showcases premium security defense integrations. 
-            Compare the user-friction levels of Cloudflare's invisible Turnstile versus standard interactive hCaptcha challenges, and submit applicant records straight to MongoDB.
+            Evaluate the frictionless user experience of Cloudflare's Turnstile challenge, and submit applicant records directly to MongoDB.
           </p>
 
           {/* Feature highlights */}
@@ -272,8 +319,8 @@ export default function RegistrationPage() {
               <div className="flex gap-3">
                 <div className="mt-0.5 text-teal-400 font-mono">2.</div>
                 <div>
-                  <span className="text-white font-medium">hCaptcha:</span> 
-                  Requires manual human classification of images. Effective at catching advanced bots but degrades conversion rates.
+                  <span className="text-white font-medium">Explicit Rendering:</span> 
+                  Wired using Cloudflare's direct client JS API for precise lifecycle hooks and robust unmount cleaning.
                 </div>
               </div>
               <div className="flex gap-3">
@@ -319,36 +366,82 @@ export default function RegistrationPage() {
         <section className="lg:col-span-7">
           <div className="bg-slate-900/40 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-white/5 shadow-2xl shadow-slate-950/50">
             
-            {/* Security Type Toggle Tab Selector */}
-            <div className="mb-8">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
-                Select Bot Protection Provider
-              </label>
-              <div className="grid grid-cols-2 p-1.5 bg-slate-950/80 rounded-xl border border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setCaptchaType("turnstile")}
-                  className={`py-3 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                    captchaType === "turnstile"
-                      ? "bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-400 border border-teal-500/30 shadow-md"
-                      : "text-slate-400 hover:text-slate-200 border border-transparent"
-                  }`}
-                >
-                  <ShieldCheck className="h-4.5 w-4.5" />
-                  CF Turnstile
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCaptchaType("hcaptcha")}
-                  className={`py-3 px-4 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all ${
-                    captchaType === "hcaptcha"
-                      ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 shadow-md"
-                      : "text-slate-400 hover:text-slate-200 border border-transparent"
-                  }`}
-                >
-                  <ShieldAlert className="h-4.5 w-4.5" />
-                  hCaptcha
-                </button>
+            {/* Google Authentication Status */}
+            <div className="mb-6 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {session ? (
+                  <>
+                    {session.user?.image ? (
+                      <img
+                        src={session.user.image}
+                        alt={session.user.name || "User"}
+                        className="h-9 w-9 rounded-full ring-2 ring-teal-500/30"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-teal-500/10 flex items-center justify-center text-teal-400 font-semibold border border-teal-500/20">
+                        {session.user?.name?.charAt(0) || "U"}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-semibold text-white">Signed in via Google</p>
+                      <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{session.user?.email}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-9 w-9 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                      <User className="h-4.5 w-4.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-white">Express Application</p>
+                      <p className="text-[10px] text-slate-400">Sign in to auto-fill your details</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div>
+                {session ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signOut({ redirect: false }).then(() => {
+                        setSession(null);
+                        setFormData((prev) => ({ ...prev, name: "", email: "" }));
+                        addLog("Session: Signed out.");
+                      });
+                    }}
+                    className="py-1.5 px-3 rounded-lg bg-slate-900 border border-slate-800 text-[11px] font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+                  >
+                    Sign Out
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signIn("google");
+                      addLog("Redirecting to Google OAuth...");
+                    }}
+                    className="py-1.5 px-3 rounded-lg bg-white text-slate-950 text-[11px] font-semibold hover:bg-slate-100 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  >
+                    <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+                    </svg>
+                    Sign In
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Static Bot Protection Details */}
+            <div className="mb-6 p-4 rounded-xl bg-teal-500/5 border border-teal-500/10 flex items-center justify-between gap-3 text-xs text-teal-300">
+              <div className="flex items-center gap-2.5">
+                <ShieldCheck className="h-5 w-5 text-teal-400 flex-shrink-0" />
+                <div>
+                  <span className="font-semibold text-white">Cloudflare Turnstile Active:</span> Invisible, frictionless security verification.
+                </div>
               </div>
             </div>
 
@@ -357,7 +450,7 @@ export default function RegistrationPage() {
               <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-xs flex gap-3">
                 <AlertTriangle className="h-5 w-5 text-blue-400 flex-shrink-0" />
                 <div>
-                  <span className="font-semibold text-blue-100">Running with Test Credentials:</span> No environment variables were detected for {captchaType === "turnstile" ? "Turnstile" : "hCaptcha"} in <code className="px-1 py-0.5 bg-slate-950 rounded border border-white/5 font-mono">.env.local</code>. Scaffolding is currently operating with Cloudflare/hCaptcha public test keys for developer preview.
+                  <span className="font-semibold text-blue-100">Running with Test Credentials:</span> No environment variables were detected for Turnstile in <code className="px-1 py-0.5 bg-slate-950 rounded border border-white/5 font-mono">.env.local</code>. Scaffolding is operating with Cloudflare's public test keys.
                 </div>
               </div>
             )}
@@ -438,6 +531,15 @@ export default function RegistrationPage() {
                       onChange={handleRoleChange}
                       className="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500 transition-all appearance-none cursor-pointer"
                     >
+                      <option value="Development">Development</option>
+                      <option value="Competitive Coding">Competitive Coding</option>
+                      <option value="UI/UX">UI/UX</option>
+                      <option value="AI/ML">AI/ML</option>
+                      <option value="Cyber Security">Cyber Security</option>
+                      <option value="Design">Design</option>
+                      <option value="Management">Management</option>
+                      <option value="Entrepreneurship">Entrepreneurship</option>
+                      <option value="Content & Media">Content & Media</option>
                       <option value="Frontend Developer">Frontend Developer</option>
                       <option value="Backend Developer">Backend Developer</option>
                       <option value="UI/UX Designer">UI/UX Designer</option>
@@ -491,35 +593,14 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              {/* Active Captcha Rendering */}
+              {/* Explicit Cloudflare Turnstile Container */}
               <div className="pt-4 flex flex-col items-center justify-center bg-slate-950/50 rounded-2xl p-4 border border-slate-800/50">
                 <label className="text-xs font-semibold text-slate-400 mb-3 block">
-                  Completing {captchaType === "turnstile" ? "Cloudflare Turnstile Challenge" : "hCaptcha Challenge"}
+                  Completing Cloudflare Turnstile Challenge
                 </label>
-                
-                {captchaType === "turnstile" ? (
-                  <div className="min-h-[65px] flex items-center justify-center">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={turnstileSiteKey}
-                      onSuccess={handleTurnstileSuccess}
-                      onError={handleTurnstileError}
-                      onExpire={handleTurnstileExpire}
-                      className="mx-auto"
-                    />
-                  </div>
-                ) : (
-                  <div className="min-h-[78px] flex items-center justify-center">
-                    <HCaptcha
-                      ref={hcaptchaRef}
-                      sitekey={hcaptchaSiteKey}
-                      onVerify={handleHcaptchaVerify}
-                      onError={handleHcaptchaError}
-                      onExpire={handleHcaptchaExpire}
-                      theme="dark"
-                    />
-                  </div>
-                )}
+                <div className="min-h-[65px] flex items-center justify-center">
+                  <div id="turnstile-container" className="mx-auto"></div>
+                </div>
               </div>
 
               {/* Status Banner */}
@@ -547,9 +628,7 @@ export default function RegistrationPage() {
                 className={`w-full py-4 rounded-xl font-bold tracking-wide uppercase transition-all shadow-lg text-sm flex items-center justify-center gap-2 ${
                   status.type === "loading"
                     ? "bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700"
-                    : captchaType === "turnstile"
-                    ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 hover:brightness-110 active:scale-[0.99] cursor-pointer shadow-teal-500/10 hover:shadow-teal-500/20"
-                    : "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 hover:brightness-110 active:scale-[0.99] cursor-pointer shadow-amber-500/10 hover:shadow-amber-500/20"
+                    : "bg-gradient-to-r from-teal-500 to-cyan-500 text-slate-950 hover:brightness-110 active:scale-[0.99] cursor-pointer shadow-teal-500/10 hover:shadow-teal-500/20"
                 }`}
               >
                 {status.type === "loading" ? "Processing..." : "Complete Registration"}

@@ -34,7 +34,22 @@ const RegistrationSchema: Schema<IRegistration> = new Schema(
     role: {
       type: String,
       required: [true, "Role selection is required"],
-      enum: ["Frontend Developer", "Backend Developer", "UI/UX Designer", "Mobile Developer", "DevOps Engineer"],
+      enum: [
+        "Development",
+        "Competitive Coding",
+        "UI/UX",
+        "AI/ML",
+        "Cyber Security",
+        "Design",
+        "Management",
+        "Entrepreneurship",
+        "Content & Media",
+        "Frontend Developer",
+        "Backend Developer",
+        "UI/UX Designer",
+        "Mobile Developer",
+        "DevOps Engineer",
+      ],
     },
     githubUrl: {
       type: String,

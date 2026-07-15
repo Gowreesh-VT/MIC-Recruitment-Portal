@@ -1,0 +1,638 @@
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Press_Start_2P } from "next/font/google";
+import DepartmentPopup, { DepartmentData } from "@/components/DepartmentPopup";
+
+const pressStart = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-press-start-2p",
+});
+
+interface QuestCardProps {
+  title: string;
+  desc: string;
+  role: string;
+  onSelect: () => void;
+}
+
+function QuestCard({ title, desc, role, onSelect }: QuestCardProps) {
+  return (
+    <div
+      onClick={onSelect}
+      className="w-[371px] h-[262px] flex flex-col items-start p-1 bg-[#FFB59F] rounded-[10px] border-4 border-solid border-black relative shrink-0 cursor-pointer select-none transition-all duration-150 hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98] group"
+      style={{ boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.15)" }}
+    >
+      {/* Card Header Tag */}
+      <div className="flex flex-col items-center py-2 relative self-stretch w-full bg-[#A93710] rounded-[6px] border-b-4 border-solid border-black">
+        <div className="relative flex items-center justify-center w-fit text-black font-bold text-[12px] tracking-wider uppercase leading-none whitespace-nowrap">
+          {title}
+        </div>
+      </div>
+
+      {/* Inner White Box */}
+      <div className="flex-grow w-full p-3 bg-[#FFDED6] rounded-b-[6px] flex items-center justify-center">
+        <div className="w-full h-full bg-white border-4 border-solid border-black p-3.5 flex items-center justify-center text-center">
+          <p className="text-[10px] text-black font-bold tracking-wide leading-relaxed uppercase">
+            {desc}
+          </p>
+        </div>
+      </div>
+
+      {/* Decorative Corner Pixels */}
+      <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-[#ffffff66]" />
+      <div className="absolute top-1.5 left-1.5 w-1 h-1 bg-black" />
+      <div className="absolute top-1.5 right-1.5 w-1 h-1 bg-black" />
+      <div className="absolute left-1.5 bottom-1.5 w-1 h-1 bg-black" />
+      <div className="absolute right-1.5 bottom-1.5 w-1 h-1 bg-black" />
+    </div>
+  );
+}
+
+function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
+  return (
+    <img
+      src="/green_pipe.svg"
+      alt="Pipe"
+      className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
+      style={{
+        left,
+        top,
+        height: `${height}px`,
+        transform: isTop ? "none" : "scaleY(-1)",
+        objectFit: "fill",
+      }}
+    />
+  );
+}
+
+function NormalArrow({ top, left, width = 50, height = 30 }: { top: string; left: string; width?: number; height?: number }) {
+  return (
+    <div
+      className="absolute z-20 select-none pointer-events-none flex items-center justify-center transition-transform hover:scale-105"
+      style={{ top, left, width: `${width}px`, height: `${height}px` }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 64 36"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="drop-shadow-[3px_3px_0px_rgba(0,0,0,0.35)] overflow-visible"
+      >
+        {/* Clean, sleek, normal arrow icon (non-pixelated, smooth diagonal lines and arrowhead) */}
+        <path
+          d="M3 14H44V5L62 18L44 31V22H3V14Z"
+          fill="white"
+          stroke="black"
+          strokeWidth="3.5"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+export default function RecruitmentsPage() {
+  const router = useRouter();
+  const [selectedDepartment, setSelectedDepartment] = useState<DepartmentData | null>(null);
+  const [birdScore, setBirdScore] = useState(0);
+  const [birdFlap, setBirdFlap] = useState(false);
+  const [scale, setScale] = useState(1);
+  
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const birdContainerRef = useRef<HTMLDivElement>(null);
+  const birdSpriteRef = useRef<HTMLDivElement>(null);
+  const lastScrollXRef = useRef(0);
+  const latestScrollXRef = useRef(0);
+  const latestScaleRef = useRef(1);
+  const [scrollX, setScrollX] = useState(0);
+  const [isScrollingLeft, setIsScrollingLeft] = useState(false);
+
+  const birdPhysicsRef = useRef({
+    currentX: 0,
+    currentY: 0,
+    velocityY: 0,
+    time: 0,
+  });
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const currentScrollX = e.currentTarget.scrollLeft;
+    latestScrollXRef.current = currentScrollX;
+    setScrollX(currentScrollX);
+
+    if (currentScrollX < lastScrollXRef.current - 1) {
+      setIsScrollingLeft(true);
+    } else if (currentScrollX > lastScrollXRef.current + 1) {
+      setIsScrollingLeft(false);
+    }
+    lastScrollXRef.current = currentScrollX;
+  };
+
+  // Responsive Scaling Matrix to fit viewport height perfectly
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== "undefined") {
+        const heightScale = window.innerHeight / 1024;
+        const cappedScale = Math.min(heightScale, 1.2); // Cap scale to prevent heavy pixel stretch
+        latestScaleRef.current = cappedScale;
+        setScale(cappedScale);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Ultra-Smooth GPU Physics Engine for Flappy Bird (native 60/120fps camera follow & jump arcs)
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const renderLoop = () => {
+      if (birdContainerRef.current && birdSpriteRef.current) {
+        const p = birdPhysicsRef.current;
+        p.time += 0.045;
+
+        // 1. Smooth Camera-Follow Glide along horizontal scroll (lerp)
+        const targetX = latestScrollXRef.current / (latestScaleRef.current || 1);
+        p.currentX += (targetX - p.currentX) * 0.14; // Organic 14% damping per frame
+
+        // 2. Vertical Floating Breathing Bob & Flapping Jump Physics
+        const baseFloatY = Math.sin(p.time) * 11; // Smooth 11px sine wave hover
+
+        if (p.velocityY !== 0 || Math.abs(p.currentY) > 0.05) {
+          p.currentY += p.velocityY;
+          p.velocityY += 1.15; // Smooth gravity pull
+
+          if (p.currentY >= 0 && p.velocityY > 0) {
+            p.currentY = 0;
+            p.velocityY = 0;
+          }
+        }
+
+        const totalY = baseFloatY + p.currentY;
+        const tiltAngle = Math.max(-25, Math.min(30, p.velocityY * 2));
+
+        // Apply direct GPU-accelerated transform without CSS layout thrashing or transition lag
+        birdContainerRef.current.style.transform = `translate3d(${p.currentX}px, 0px, 0px)`;
+        birdSpriteRef.current.style.transform = `translate3d(0px, ${totalY}px, 0px) rotate(${tiltAngle}deg)`;
+      }
+
+      animationFrameId = requestAnimationFrame(renderLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(renderLoop);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  // Keyboard navigation for horizontal scrolling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!scrollContainerRef.current) return;
+      if (e.key === "ArrowRight") {
+        scrollContainerRef.current.scrollBy({ left: 180, behavior: "smooth" });
+      } else if (e.key === "ArrowLeft") {
+        scrollContainerRef.current.scrollBy({ left: -180, behavior: "smooth" });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleOpenPopup = (quest: DepartmentData) => {
+    playRetroSound("open");
+    setSelectedDepartment(quest);
+  };
+
+  const handleApplyFromPopup = (role: string) => {
+    playRetroSound("select");
+    router.push(`/?role=${encodeURIComponent(role)}`);
+  };
+
+  const handleBirdClick = () => {
+    playRetroSound("jump");
+    setBirdScore((prev) => prev + 1);
+    birdPhysicsRef.current.velocityY = -15; // Smooth instant upward jump arc in GPU physics loop
+  };
+
+  const playRetroSound = (type: "select" | "jump" | "open" | "close") => {
+    if (typeof window === "undefined") return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === "jump") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } else if (type === "select") {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.setValueAtTime(900, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+      } else if (type === "open") {
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      } else if (type === "close") {
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      }
+    } catch (e) {
+      console.warn("Audio Context failed", e);
+    }
+  };
+
+  const techQuests: DepartmentData[] = [
+    {
+      title: "DEVELOPMENT",
+      desc: "CONSTRUCTING SYSTEMS/PRODUCTS THAT NEED TO STAND, SCALE, AND FUNCTION RELIABLY",
+      subtitle: "CONSTRUCTING SYSTEMS/PRODUCTS THAT NEED TO STAND, SCALE, AND FUNCTION RELIABLY.",
+      role: "Development",
+      iconType: "dev",
+      tagline: "BUILDING THE ARCHITECTURE AND CORE MOTORS THAT POWER DIGITAL PRODUCTS AND PLATFORMS",
+      description: "FROM FRONTEND WIZARDRY TO ROBUST BACKEND PIPELINES, JOIN DEVELOPMENT TO WRITE CLEAN CODE, SOLVE REAL-WORLD ENGINEERING PROBLEMS, AND SHIP PRODUCTION-READY APPS.",
+      skills: "REACT · NEXT.JS · NODE.JS · SYSTEM DESIGN",
+    },
+    {
+      title: "COMPETITIVE CODING",
+      desc: "LITERALLY ADVERSARIAL/COMPETITIVE, PUZZLE-SOLVING UNDER RULES AND TIME PRESSURE",
+      subtitle: "LITERALLY ADVERSARIAL/COMPETITIVE, PUZZLE-SOLVING UNDER RULES AND TIME PRESSURE.",
+      role: "Competitive Coding",
+      iconType: "cc",
+      tagline: "MASTERING ALGORITHMS, DATA STRUCTURES, AND SPEED TO CONQUER COMPLEX LOGICAL CHALLENGES",
+      description: "LOVE CRUSHING TIMEOUTS AND OPTIMIZING CODE TO O(1)? JOIN COMPETITIVE CODING TO TRAIN FOR HACKATHONS, ICPC, CONTESTS, AND BECOME AN ALGORITHMIC NINJA.",
+      skills: "C++ · PYTHON · DSA · DYNAMIC PROGRAMMING",
+    },
+    {
+      title: "UI/UX",
+      desc: "DESIGNING STRUCTURAL FLOWS AND SYSTEMS USERS NAVIGATE — ARCHITECTURE OF EXPERIENCE",
+      subtitle: "DESIGNING STRUCTURAL FLOWS AND SYSTEMS USERS NAVIGATE — ARCHITECTURE OF EXPERIENCE.",
+      role: "UI/UX",
+      iconType: "uiux",
+      tagline: "UI/UX IS ABOUT GUIDING USERS THROUGH A STRUCTURE/FLOW, HELPING THEM NAVIGATE WITHOUT GETTING LOST",
+      description: "PASSIONATE ABOUT HOW THINGS LOOK AND FEEL? JOIN UI/UX AND HELP DESIGN THE INTERFACES AND EXPERIENCES THAT CONNECT PEOPLE TO TECHNOLOGY — ONE THOUGHTFUL PIXEL AND FLOW AT A TIME.",
+      skills: "FIGMA · UI CRAFT · FRAMES",
+    },
+    {
+      title: "AI/ML",
+      desc: "HEAVY EXPERIMENTATION, ITERATION, TINKERING WITH MODELS/DATA UNTIL SOMETHING WORKS — CRAFT-DRIVEN",
+      subtitle: "HEAVY EXPERIMENTATION, ITERATION, TINKERING WITH MODELS/DATA UNTIL SOMETHING WORKS — CRAFT-DRIVEN.",
+      role: "AI/ML",
+      iconType: "aiml",
+      tagline: "TEACHING MACHINES TO LEARN, PREDICT, AND REASON THROUGH DATA AND NEURAL ARCHITECTURES",
+      description: "FASCINATED BY LLMS, COMPUTER VISION, AND DEEP LEARNING? JOIN AI/ML TO BUILD INTELLIGENT AGENTS, TRAIN NEURAL NETWORKS, AND PUSH THE FRONTIERS OF AI.",
+      skills: "PYTORCH · TENSORFLOW · LLMS · DATA SCIENCE",
+    },
+    {
+      title: "CYBER SECURITY",
+      desc: "ATTACKER-VS-DEFENDER MINDSET, CTF CULTURE, EXPLOITING/PATCHING CAT-AND-MOUSE",
+      subtitle: "ATTACKER-VS-DEFENDER MINDSET, CTF CULTURE, EXPLOITING/PATCHING CAT-AND-MOUSE.",
+      role: "Cyber Security",
+      iconType: "cyber",
+      tagline: "PROTECTING DIGITAL ASSETS, ETHICAL HACKING, AND MASTERING THE ART OF DEFENSE AND OFFENSE",
+      description: "READY TO CRACK CODES AND DEFEND SYSTEMS? JOIN CYBER SECURITY TO COMPETE IN CAPTURE-THE-FLAG (CTF) CONTESTS, PERFORM VULNERABILITY ASSESSMENTS, AND LEARN NETWORK SECURITY.",
+      skills: "CTF · ETHICAL HACKING · CRYPTOGRAPHY · PEN TESTING",
+    },
+  ];
+
+  const nonTechQuests: DepartmentData[] = [
+    {
+      title: "DESIGN",
+      desc: "CRAFTING THE CLUB'S VISUAL IDENTITIES, MERCHANDISE, POSTERS, AND DIGITAL ART.",
+      subtitle: "CRAFTING THE CLUB'S VISUAL IDENTITIES, MERCHANDISE, POSTERS, AND DIGITAL ART.",
+      role: "Design",
+      iconType: "design",
+      tagline: "COMMUNICATING IDEAS AND STORIES THROUGH VISUAL ART, BRANDING, AND GRAPHIC MASTERY",
+      description: "HAVE AN EYE FOR COLOR, TYPOGRAPHY, AND COMPOSITION? JOIN THE DESIGN QUEST TO CREATE STUNNING POSTERS, SOCIAL MEDIA ASSETS, AND BRANDING THAT DEFINE MIC.",
+      skills: "PHOTOSHOP · ILLUSTRATOR · GRAPHIC ART · BRANDING",
+    },
+    {
+      title: "MANAGEMENT",
+      desc: "THE BACKBONE OF CLUB OPERATIONS, EVENT LOGISTICS, AND PEOPLE LEADERSHIP.",
+      subtitle: "THE BACKBONE OF CLUB OPERATIONS, EVENT LOGISTICS, AND PEOPLE LEADERSHIP.",
+      role: "Management",
+      iconType: "mgmt",
+      tagline: "ORCHESTRATING EVENTS, LEADING TEAMS, AND TURNING BIG IDEAS INTO SEAMLESS EXECUTION",
+      description: "THRIVE ON LEADERSHIP, STRATEGY, AND ORGANIZING HACKATHONS AND WORKSHOPS? JOIN MANAGEMENT TO DIRECT MAJOR EVENTS, MANAGE LOGISTICS, AND CONNECT THE TECH ECOSYSTEM.",
+      skills: "EVENT MANAGEMENT · STRATEGY · LEADERSHIP · OPERATIONS",
+    },
+    {
+      title: "ENTREPRENEURSHIP",
+      desc: "INNOVATION MEETS BUSINESS STRATEGY, PRODUCT MARKET FIT, AND PITCH DECKS.",
+      subtitle: "INNOVATION MEETS BUSINESS STRATEGY, PRODUCT MARKET FIT, AND PITCH DECKS.",
+      role: "Entrepreneurship",
+      iconType: "ep",
+      tagline: "IDENTIFYING MARKET GAPS, PITCHING VENTURES, AND TRANSFORMING PROJECTS INTO STARTUPS",
+      description: "DREAM OF LAUNCHING YOUR OWN STARTUP? JOIN ENTREPRENEURSHIP TO LEARN PITCHING, BUSINESS MODELS, PRODUCT INCUBATION, AND BUILD THE NEXT GENERATION OF DISRUPTIVE VENTURES.",
+      skills: "PITCHING · BUSINESS STRATEGY · PRODUCT INCUBATION",
+    },
+    {
+      title: "CONTENT & MEDIA",
+      desc: "CONTENT CREATION, VIDEO PRODUCTION, SOCIAL MEDIA PRESENCE, AND PUBLIC RELATIONS.",
+      subtitle: "CONTENT CREATION, VIDEO PRODUCTION, SOCIAL MEDIA PRESENCE, AND PUBLIC RELATIONS.",
+      role: "Content & Media",
+      iconType: "media",
+      tagline: "CAPTURING STORIES, DIRECTING MEDIA, AND CRAFTING COMPELLING NARRATIVES FOR THE WORLD",
+      description: "PASSIONATE ABOUT FILMING, EDITING, COPYWRITING, AND SOCIAL MEDIA? JOIN CONTENT & MEDIA TO BROADCAST MIC'S IMPACT, DIRECT CREATIVE REELS, AND ENGAGE OUR COMMUNITY.",
+      skills: "VIDEO EDITING · COPYWRITING · SOCIAL MEDIA · PR",
+    },
+  ];
+
+  return (
+    <div
+      className={`${pressStart.variable} font-press-start w-full h-screen overflow-x-auto overflow-y-hidden retro-scrollbar select-none bg-[#DD9955] relative`}
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+    >
+      {/* Sized container to calculate correct scroll boundaries post-scaling */}
+      <div
+        style={{
+          width: `${2865 * scale}px`,
+          height: `${1024 * scale}px`,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* Pixel-Perfect Figma Canvas Sized at 2865x1024 and scaled using CSS Transform */}
+        <div
+          className="w-[2865px] h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden origin-top-left"
+          style={{
+            transform: `scale(${scale})`,
+          }}
+        >
+          {/* Floating Clouds (Figma Positions) */}
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[300px] left-[1060px] w-[280px] opacity-85 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "0s" }}
+          />
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "1s" }}
+          />
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[39px] left-[1167px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "0.5s" }}
+          />
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[333px] left-[2509px] w-[260px] opacity-75 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "1.8s" }}
+          />
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "2.3s" }}
+          />
+          <img
+            src="/pixel_cloud_small.svg"
+            alt="Cloud"
+            className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none"
+            style={{ animationDelay: "0.2s" }}
+          />
+
+          {/* Background Skyline Silhouettes (Figma Positions) */}
+          <img
+            src="/pixel_cloud_large.svg"
+            alt="Skyline Back Left"
+            className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated"
+          />
+          <img
+            src="/pixel_cloud_large.svg"
+            alt="Skyline Back Right"
+            className="absolute top-[565px] left-[1389px] w-[1510px] h-[465px] object-cover opacity-100 pointer-events-none select-none pixelated"
+          />
+
+          {/* Midground Skyline Blocks (Continuous without gaps across 2865px canvas) */}
+          {Array.from({ length: 12 }).map((_, idx) => (
+            <img
+              key={idx}
+              src="/city_skyline.svg"
+              alt="Skyline Block"
+              className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated"
+              style={{ left: `${idx * 245}px` }}
+            />
+          ))}
+          {/* Green Bushes Silhouettes (Figma Positions) */}
+          <img
+            src="/bushes_pixel.svg"
+            alt="Bushes Left"
+            className="absolute top-[739px] left-0 w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated"
+          />
+          <img
+            src="/bushes_pixel.svg"
+            alt="Bushes Right"
+            className="absolute top-[739px] left-[1409px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated"
+          />
+
+          {/* Green Mario Pipes (Exact Figma Positions & Heights) */}
+          {/* Top Pipes (pointing down) */}
+          <RetroPipe left="169px" top="-4px" height={391} isTop={true} />
+          <RetroPipe left="746px" top="199px" height={264} isTop={true} />
+          <RetroPipe left="1234px" top="-5px" height={443} isTop={true} />
+          <RetroPipe left="1723px" top="0px" height={391} isTop={true} />
+          <RetroPipe left="2214px" top="-1px" height={461} isTop={true} />
+          <RetroPipe left="2705px" top="-45px" height={461} isTop={true} />
+
+          {/* Bottom Pipes (pointing up) */}
+          <RetroPipe left="196px" top="607px" height={301} isTop={false} />
+          <RetroPipe left="909px" top="602px" height={301} isTop={false} />
+          <RetroPipe left="1396px" top="545px" height={358} isTop={false} />
+          <RetroPipe left="1885px" top="570px" height={333} isTop={false} />
+          <RetroPipe left="2375px" top="602px" height={301} isTop={false} />
+
+          {/* ================= FIXED FLOATING CONTROLS (z-30) ================= */}
+          {/* MIC Logo (Standalone without background or text, slightly reduced size) */}
+          <img
+            src="/mic_logo_pixel.svg"
+            alt="MIC Logo"
+            className="absolute z-30 pixelated select-none pointer-events-none"
+            style={{ left: "64px", top: "24px", width: "110px", height: "79px" }}
+          />
+
+          {/* FAQs Button */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-8 z-30">
+            <button
+              onClick={() => {
+                playRetroSound("open");
+                router.push("/faqs");
+              }}
+              className="bg-[#7CA922] hover:bg-[#8CB932] text-black text-[11px] font-bold py-2 px-5 border-4 border-black cursor-pointer uppercase tracking-wider font-press-start"
+              style={{ boxShadow: "4px 4px 0px 0px #000" }}
+            >
+              FAQS
+            </button>
+          </div>
+
+
+
+          {/* Score Counter (Flappy Bird Interaction) */}
+          {birdScore > 0 && (
+            <div className="absolute right-[160px] top-8 z-30 bg-black/80 border-4 border-black p-3 text-[11px] text-yellow-400 retro-shadow">
+              FLAPS: {birdScore}
+            </div>
+          )}
+
+          {/* ================= MAIN CONTENT & TITLE (z-20) ================= */}
+          <div className="absolute text-left z-20" style={{ left: "406px", top: "82px" }}>
+            <h1 className="font-normal text-black text-[64px] tracking-[0] leading-[67px] uppercase whitespace-nowrap">
+              Recruitments
+            </h1>
+            <p className="text-[12px] text-black font-bold tracking-[0] leading-[21px] mt-1.5 uppercase">
+              CHOOSE THE QUEST SUITS YOU THE MOST
+            </p>
+          </div>
+
+          {/* Interactive Flappy Bird Character (Ultra-Smooth 60/120fps GPU Physics Engine) */}
+          <div 
+            ref={birdContainerRef}
+            className="absolute z-25 cursor-pointer will-change-transform select-none"
+            style={{ top: "480px", left: "240px" }}
+            onClick={handleBirdClick}
+          >
+            <div ref={birdSpriteRef} className="will-change-transform origin-center">
+              <img
+                src="/flappy_bird.svg"
+                alt="Flappy Bird"
+                className={`w-[72px] h-[72px] pixelated drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] hover:scale-110 active:scale-95 transition-[transform,filter] duration-150 select-none pointer-events-none ${isScrollingLeft ? "scale-x-[-1]" : "scale-x-[1]"}`}
+              />
+            </div>
+            <div className="bg-black/80 text-[7px] text-white px-1.5 py-0.5 border border-black rounded-sm text-center -mt-2 animate-pulse whitespace-nowrap text-[8px] uppercase select-none pointer-events-none">
+              TAP BIRD!
+            </div>
+          </div>
+
+          {/* ================= TECH ROW ================= */}
+          {/* Tech signboard */}
+          <div 
+            className="absolute shadow-[4px_4px_0px_#00000040] z-20"
+            style={{ left: "64px", top: "313px", width: "240px", height: "80px" }}
+          >
+            <div className="absolute w-[99.17%] h-full top-0 left-0 bg-[#B87B21]" />
+            <div className="absolute w-[80.00%] h-[62.50%] top-[18.75%] left-[9.58%] font-normal text-black text-2xl text-center tracking-[0] leading-none flex items-center justify-center h-[50px] uppercase">
+              Tech
+            </div>
+          </div>
+
+          <NormalArrow top="338px" left="305px" width={44} height={28} />
+
+          {/* Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
+          {techQuests.map((q, idx) => {
+            const leftPositions = [350, 830, 1319, 1809, 2300];
+            return (
+              <div
+                key={`tech-card-${idx}`}
+                className="absolute"
+                style={{ left: `${leftPositions[idx]}px`, top: "211px", zIndex: 20 }}
+              >
+                <QuestCard
+                  title={q.title}
+                  desc={q.desc || q.subtitle}
+                  role={q.role}
+                  onSelect={() => handleOpenPopup(q)}
+                />
+              </div>
+            );
+          })}
+
+          {/* ================= NON-TECH ROW ================= */}
+          {/* Non Tech signboard (Width reduced from 422px down to 280px) */}
+          <div 
+            className="absolute shadow-[4px_4px_0px_#00000040] z-20"
+            style={{ left: "64px", top: "588px", width: "280px", height: "80px" }}
+          >
+            <div className="absolute w-[99.17%] h-full top-0 left-0 bg-[#B87B21]" />
+            <div className="absolute w-[85.00%] h-[62.50%] top-[18.75%] left-[7.50%] font-normal text-black text-2xl text-center tracking-[0] leading-none flex items-center justify-center h-[50px] uppercase">
+              Non Tech
+            </div>
+          </div>
+
+          <NormalArrow top="613px" left="365px" width={64} height={32} />
+
+          {/* Non-Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
+          {nonTechQuests.map((q, idx) => {
+            const leftPositions = [450, 993, 1481, 1970];
+            return (
+              <div
+                key={`nontech-card-${idx}`}
+                className="absolute"
+                style={{ left: `${leftPositions[idx]}px`, top: "621px", zIndex: 20 }}
+              >
+                <QuestCard
+                  title={q.title}
+                  desc={q.desc || q.subtitle}
+                  role={q.role}
+                  onSelect={() => handleOpenPopup(q)}
+                />
+              </div>
+            );
+          })}
+
+          {/* ================= SCROLLING SOIL GROUND PLATFORM (z-25) ================= */}
+          <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col select-none pointer-events-none">
+            {/* Green Grass Trim */}
+            <div className="w-full h-5 bg-[#52AE26] border-t-4 border-b-4 border-black flex flex-col justify-between shrink-0">
+              <div className="w-full h-[3px] bg-[#72F418]" />
+              <div className="w-full h-[3px] bg-[#3FA70E]" />
+            </div>
+            {/* Soil Base with Marquee Text (Extends down so scrollbar sits cleanly on dirt track without sky blue gaps) */}
+            <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-start pt-3">
+              {/* Seamless Infinite Scrolling Text */}
+              <div className="flex whitespace-nowrap animate-marquee">
+                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
+                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
+                </span>
+                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
+                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ================= RETRO DEPARTMENT POPUP OVERLAY (z-50) ================= */}
+      {selectedDepartment && (
+        <DepartmentPopup
+          department={selectedDepartment}
+          onClose={() => {
+            playRetroSound("close");
+            setSelectedDepartment(null);
+          }}
+          onApply={handleApplyFromPopup}
+        />
+      )}
+
+    </div>
+  );
+}
