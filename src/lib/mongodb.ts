@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { MongoClient } from "mongodb";
 
 const MONGO_URL = process.env.MONGO_URL || process.env.MONGODB_URI;
 
@@ -8,11 +9,7 @@ if (!MONGO_URL) {
   );
 }
 
-/**
- * Global is used here to maintain a cached connection across hot reloads
- * in development. This prevents connections growing exponentially
- * during API Route usage.
- */
+// ---------------- Mongoose setup (used for general collections) ----------------
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -21,9 +18,11 @@ interface MongooseCache {
 declare global {
   // eslint-disable-next-line no-var
   var mongoose: MongooseCache | undefined;
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-let cached = (global.mongoose || { conn: null, promise: null }) as MongooseCache;
+const cached = (global.mongoose || { conn: null, promise: null }) as MongooseCache;
 
 if (!global.mongoose) {
   global.mongoose = cached;
@@ -53,3 +52,20 @@ export async function dbConnect() {
 
   return cached.conn;
 }
+
+// ---------------- Raw MongoDB Client setup (used for NextAuth Adapter) ----------------
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+
+if (process.env.NODE_ENV === "development") {
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(MONGO_URL);
+    global._mongoClientPromise = client.connect();
+  }
+  clientPromise = global._mongoClientPromise;
+} else {
+  client = new MongoClient(MONGO_URL);
+  clientPromise = client.connect();
+}
+
+export { clientPromise };
