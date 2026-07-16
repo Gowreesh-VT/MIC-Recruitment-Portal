@@ -6,8 +6,11 @@ import {
   RefreshCw,
   TrendingUp,
   Award,
-  Layers,
+  Users,
+  Compass,
   ChevronRight,
+  TrendingDown,
+  Percent,
 } from "lucide-react";
 import {
   BarChart,
@@ -25,6 +28,13 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Stats {
   total: number;
@@ -53,6 +63,23 @@ interface Stats {
     isActive: boolean;
   }>;
   acceptedByDept: Array<{ _id: string; count: number }>;
+}
+
+interface DeptStats {
+  slug: string;
+  name: string;
+  maxCapacity: number;
+  totalStages: number;
+  firstPrefCount: number;
+  secondPrefCount: number;
+  acceptedCount: number;
+  avgScores: {
+    technical: number;
+    communication: number;
+    creativity: number;
+  };
+  stagesFunnel: Array<{ stageNum: number; count: number }>;
+  yearDistribution: Array<{ year: string; count: number }>;
 }
 
 const DEPT_NAMES: Record<string, string> = {
@@ -84,6 +111,11 @@ export default function AdvancedAnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Drawer states
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [deptStats, setDeptStats] = useState<DeptStats | null>(null);
+  const [deptLoading, setDeptLoading] = useState(false);
+
   const loadData = async () => {
     try {
       const res = await fetch("/api/admin/stats");
@@ -102,6 +134,23 @@ export default function AdvancedAnalyticsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleOpenDeptDrawer = async (slug: string) => {
+    setSelectedDept(slug);
+    setDeptLoading(true);
+    setDeptStats(null);
+    try {
+      const res = await fetch(`/api/admin/departments/${slug}/stats`);
+      const data = await res.json();
+      if (data.success) {
+        setDeptStats(data.stats);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDeptLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -322,22 +371,25 @@ export default function AdvancedAnalyticsPage() {
               Department Placement & Capacity Fill
             </CardTitle>
             <CardDescription>
-              Real-time monitoring of selected candidates relative to department capacity settings
+              Real-time monitoring. Click on any department card to view advanced metrics.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {capacityList.length === 0 ? (
               <div className="col-span-full text-center py-6 text-xs text-zinc-500 font-semibold">
-                No active department configuration configurations found.
+                No active department configurations found.
               </div>
             ) : (
               capacityList.map((dept) => (
                 <div
                   key={dept.slug}
-                  className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/40 space-y-4 hover:border-zinc-800 transition-all"
+                  onClick={() => handleOpenDeptDrawer(dept.slug)}
+                  className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/40 space-y-4 hover:border-teal-500/30 hover:bg-zinc-900/10 transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-white block truncate">{dept.name}</span>
+                    <span className="text-sm font-bold text-white block truncate group-hover:text-teal-400 transition-colors">
+                      {dept.name}
+                    </span>
                     <Badge variant={dept.isActive ? "success" : "default"}>
                       {dept.isActive ? "Active" : "Inactive"}
                     </Badge>
@@ -350,7 +402,7 @@ export default function AdvancedAnalyticsPage() {
                         {dept.acceptedCount} / {dept.maxCapacity}
                       </span>
                     </div>
-                    {/* Custom Premium progress bar */}
+                    {/* Custom progress bar */}
                     <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-zinc-900/40">
                       <div
                         style={{ width: `${dept.fillPercent}%` }}
@@ -366,10 +418,8 @@ export default function AdvancedAnalyticsPage() {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 text-[11px] font-semibold">
-                    <span className="text-zinc-500">Remaining Slots:</span>
-                    <span className="text-teal-400 font-extrabold">
-                      {Math.max(0, dept.maxCapacity - dept.acceptedCount)}
-                    </span>
+                    <span className="text-zinc-500">View Detailed Stats</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-teal-400 group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </div>
               ))
@@ -377,6 +427,141 @@ export default function AdvancedAnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Slide-over analytics drawer */}
+      <Sheet open={selectedDept !== null} onOpenChange={(open) => !open && setSelectedDept(null)}>
+        <SheetContent className="max-w-md">
+          {deptLoading ? (
+            <div className="h-full flex items-center justify-center flex-col gap-3">
+              <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
+              <p className="text-xs text-zinc-500 font-semibold">Fetching department statistics...</p>
+            </div>
+          ) : deptStats ? (
+            <div className="space-y-6">
+              <SheetHeader>
+                <SheetTitle className="text-xl font-extrabold text-white flex items-center gap-2">
+                  <Compass className="h-5 w-5 text-teal-450" />
+                  {deptStats.name}
+                </SheetTitle>
+                <SheetDescription>Advanced Performance & Pool Demographics</SheetDescription>
+              </SheetHeader>
+
+              {/* Counts section */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3.5 rounded-xl border border-zinc-900 bg-zinc-950/60 text-left">
+                  <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider block">
+                    1st Preference
+                  </span>
+                  <span className="text-2xl font-black text-white mt-1 block">
+                    {deptStats.firstPrefCount}
+                  </span>
+                </div>
+                <div className="p-3.5 rounded-xl border border-zinc-900 bg-zinc-950/60 text-left">
+                  <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider block">
+                    2nd Preference
+                  </span>
+                  <span className="text-2xl font-black text-zinc-300 mt-1 block">
+                    {deptStats.secondPrefCount}
+                  </span>
+                </div>
+              </div>
+
+              {/* Admission Capacity Fill info */}
+              <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-3.5 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">Admission Fill Status</span>
+                  <span className="text-xs font-black text-teal-400">
+                    {deptStats.acceptedCount} / {deptStats.maxCapacity} Selected
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-black rounded-full overflow-hidden border border-zinc-900">
+                  <div
+                    style={{
+                      width: `${
+                        deptStats.maxCapacity > 0
+                          ? Math.min(100, Math.round((deptStats.acceptedCount / deptStats.maxCapacity) * 100))
+                          : 0
+                      }%`,
+                    }}
+                    className="h-full bg-teal-500 rounded-full"
+                  />
+                </div>
+              </div>
+
+              {/* Rubric Score Metrics */}
+              <div className="space-y-3 text-left">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <Award className="h-4 w-4 text-teal-400" /> Average Evaluation Scores
+                </h3>
+                <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-4">
+                  {[
+                    { label: "Technical Ability", value: deptStats.avgScores.technical, color: "bg-teal-500" },
+                    { label: "Communication Skills", value: deptStats.avgScores.communication, color: "bg-violet-500" },
+                    { label: "Creativity & Devotion", value: deptStats.avgScores.creativity, color: "bg-amber-500" },
+                  ].map((metric) => (
+                    <div key={metric.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
+                        <span>{metric.label}</span>
+                        <span className="text-white font-extrabold">{metric.value} / 5</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-black rounded-full overflow-hidden">
+                        <div
+                          style={{ width: `${(metric.value / 5) * 100}%` }}
+                          className={`h-full rounded-full ${metric.color}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Funnel distribution */}
+              <div className="space-y-3 text-left">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-teal-400" /> Active Stage Distribution
+                </h3>
+                <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-3">
+                  {deptStats.stagesFunnel.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-2">No active candidates in review stages</p>
+                  ) : (
+                    deptStats.stagesFunnel.map((s) => (
+                      <div key={s.stageNum} className="flex items-center justify-between text-xs font-bold text-zinc-300 border-b border-zinc-900/60 pb-2 last:border-0 last:pb-0">
+                        <span>Stage {s.stageNum} reviewees</span>
+                        <Badge variant="warning" className="px-2.5 py-0.5">
+                          {s.count} candidates
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Year distribution */}
+              <div className="space-y-3 text-left">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <Percent className="h-4 w-4 text-teal-400" /> Pool Year Distribution
+                </h3>
+                <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-3">
+                  {deptStats.yearDistribution.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-2">No candidate pool data</p>
+                  ) : (
+                    deptStats.yearDistribution.map((y) => (
+                      <div key={y.year} className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                        <span>Year {y.year} students</span>
+                        <span className="text-white font-extrabold">{y.count} applied</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs text-zinc-500 font-semibold">
+              Error fetching metrics
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </AdminLayout>
   );
 }
