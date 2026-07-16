@@ -85,16 +85,19 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
   return (
-    <img
-      src="/green_pipe.svg"
-      alt="Pipe"
+    <div
       className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
       style={{
         left,
         top,
         height: `${height}px`,
         transform: isTop ? "none" : "scaleY(-1)",
-        objectFit: "fill",
+        borderStyle: "solid",
+        borderWidth: "0 0 24px 0",
+        borderColor: "transparent",
+        borderImageSource: "url(/green_pipe.svg)",
+        borderImageSlice: "0 0 24 0 fill",
+        borderImageRepeat: "stretch",
       }}
     />
   );
@@ -671,7 +674,7 @@ export default function RecruitmentsPage() {
           {/* Green Mario Pipes (Exact Figma Positions & Heights) */}
           {/* Top Pipes (pointing down) */}
           <RetroPipe left="169px" top="-4px" height={391} isTop={true} />
-          <RetroPipe left="746px" top="199px" height={264} isTop={true} />
+          <RetroPipe left="746px" top="-5px" height={468} isTop={true} />
           <RetroPipe left="1234px" top="-5px" height={443} isTop={true} />
           <RetroPipe left="1723px" top="0px" height={391} isTop={true} />
           <RetroPipe left="2214px" top="-1px" height={461} isTop={true} />
@@ -836,14 +839,24 @@ export default function RecruitmentsPage() {
             {/* Soil Base with Marquee Text (Extends down so scrollbar sits cleanly on dirt track without sky blue gaps) */}
             <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-start pt-3">
               {/* Seamless Infinite Scrolling Text */}
-              <div className="flex whitespace-nowrap animate-marquee">
-                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
-                </span>
-                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
-                </span>
-              </div>
+                <div className="flex whitespace-nowrap animate-marquee">
+                  <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                      <React.Fragment key={idx}>
+                        <span>{text}</span>
+                        <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      </React.Fragment>
+                    ))}
+                  </span>
+                  <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                      <React.Fragment key={idx}>
+                        <span>{text}</span>
+                        <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      </React.Fragment>
+                    ))}
+                  </span>
+                </div>
             </div>
           </div>
 

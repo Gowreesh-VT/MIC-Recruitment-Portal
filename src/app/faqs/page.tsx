@@ -177,11 +177,21 @@ export default function FaqsPage() {
         {/* Soil Base with Marquee Text */}
         <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-center">
           <div className="flex whitespace-nowrap animate-marquee">
-            <span className="inline-block text-[18px] md:text-[22px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-              {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
+            <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+              {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                <React.Fragment key={idx}>
+                  <span>{text}</span>
+                  <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                </React.Fragment>
+              ))}
             </span>
-            <span className="inline-block text-[18px] md:text-[22px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-              {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
+            <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+              {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                <React.Fragment key={idx}>
+                  <span>{text}</span>
+                  <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                </React.Fragment>
+              ))}
             </span>
           </div>
         </div>

@@ -40,16 +40,19 @@ interface ApplicationStatus {
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
   return (
-    <img
-      src="/green_pipe.svg"
-      alt="Pipe"
+    <div
       className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
       style={{
         left,
         top,
         height: `${height}px`,
         transform: isTop ? "none" : "scaleY(-1)",
-        objectFit: "fill",
+        borderStyle: "solid",
+        borderWidth: "0 0 24px 0",
+        borderColor: "transparent",
+        borderImageSource: "url(/green_pipe.svg)",
+        borderImageSlice: "0 0 24 0 fill",
+        borderImageRepeat: "stretch",
       }}
     />
   );
@@ -601,13 +604,6 @@ export default function StagePage({
     <div className={`${pressStart.variable} font-press-start w-full h-screen overflow-hidden bg-[#DD9955] relative flex justify-center items-center`}>
       <RetroBackground scale={scale} />
 
-      {/* Back Button (Floating left) */}
-      <button
-        onClick={() => { playRetroSound(); stageNum > 1 ? router.push(`/apply/${dept}/stage-${stageNum - 1}`) : router.push("/recruitments"); }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 md:left-12 z-50 w-12 h-12 rounded-full bg-slate-300 border-4 border-black shadow-[4px_4px_0px_#000] flex items-center justify-center hover:bg-white hover:scale-105 active:scale-95 transition-all"
-      >
-        <div className="w-0 h-0 border-t-[8px] border-t-transparent border-r-[12px] border-r-black border-b-[8px] border-b-transparent mr-1" />
-      </button>
 
       {/* Main Hanging Signboard */}
       <div className="relative z-40 w-full max-w-[1000px] px-4 md:px-16 animate-pixel-slide-up" style={{ marginTop: "40px" }}>

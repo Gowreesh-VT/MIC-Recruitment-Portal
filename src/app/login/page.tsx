@@ -17,16 +17,19 @@ const pressStart = Press_Start_2P({
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
   return (
-    <img
-      src="/green_pipe.svg"
-      alt="Pipe"
+    <div
       className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
       style={{
         left,
         top,
         height: `${height}px`,
         transform: isTop ? "none" : "scaleY(-1)",
-        objectFit: "fill",
+        borderStyle: "solid",
+        borderWidth: "0 0 24px 0",
+        borderColor: "transparent",
+        borderImageSource: "url(/green_pipe.svg)",
+        borderImageSlice: "0 0 24 0 fill",
+        borderImageRepeat: "stretch",
       }}
     />
   );
@@ -153,14 +156,24 @@ export default function LoginPage() {
               <div className="w-full h-[3px] bg-[#3FA70E]" />
             </div>
             <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-start pt-3">
-              <div className="flex whitespace-nowrap animate-marquee">
-                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
-                </span>
-                <span className="inline-block text-[24px] text-[#CC7700] tracking-wider uppercase font-bold pr-10">
-                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").join("  ★  ")}
-                </span>
-              </div>
+                <div className="flex whitespace-nowrap animate-marquee">
+                  <span className="inline-flex items-center shrink-0 text-[18px] md:text-[22px] text-[#CC7700] tracking-wider uppercase font-bold">
+                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                      <React.Fragment key={idx}>
+                        <span>{text}</span>
+                        <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      </React.Fragment>
+                    ))}
+                  </span>
+                  <span className="inline-flex items-center shrink-0 text-[18px] md:text-[22px] text-[#CC7700] tracking-wider uppercase font-bold">
+                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                      <React.Fragment key={idx}>
+                        <span>{text}</span>
+                        <img src="/mic_logo_pixel.svg" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      </React.Fragment>
+                    ))}
+                  </span>
+                </div>
             </div>
           </div>
         </div>
