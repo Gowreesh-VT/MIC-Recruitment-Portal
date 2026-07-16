@@ -18,6 +18,7 @@ interface StageSubmission {
   submittedAt: string;
   result: "pending" | "passed" | "failed";
   adminNote?: string;
+  responses: Record<string, unknown>;
 }
 
 interface PrefProgress {
@@ -114,8 +115,9 @@ function StageTimeline({
 
       {/* Stage dots */}
       <div className="space-y-3">
-        {Array.from({ length: totalStages }).map((_, i) => {
-          const stageNum = i + 1;
+        {Array.from({ length: Math.max(1, totalStages - 1) }).map((_, i) => {
+          const stageNum = i + 2; // actual stage number in DB
+          const displayStageNum = i + 1; // stage number displayed to user
           const submission = progress.stages.find((s) => s.stage === stageNum);
           const isCurrentStage = stageNum === progress.currentStage && progress.status === "active";
           const isPast = submission !== undefined;
@@ -143,7 +145,7 @@ function StageTimeline({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={`text-sm font-semibold ${isPast || isCurrentStage ? "text-white" : "text-slate-600"}`}>
-                    Stage {stageNum}
+                    Stage {displayStageNum}
                   </span>
                   {submission?.result === "pending" && (
                     <span className="text-[10px] text-amber-400 font-bold uppercase">Under Review</span>
@@ -178,12 +180,11 @@ function StageTimeline({
           onClick={onContinue}
           className={`w-full py-3 rounded-xl bg-${color}-500/10 border border-${color}-500/30 text-${color}-400 font-bold text-sm flex items-center justify-center gap-2 hover:bg-${color}-500/20 transition-all`}
         >
-          Continue Stage {progress.currentStage} <ChevronRight className="h-4 w-4" />
+          {progress.currentStage === 1 ? "Fill Personal Information" : `Continue Stage ${progress.currentStage - 1}`} <ChevronRight className="h-4 w-4" />
         </button>
       )}
     </div>
-  );
-}
+  );}
 
 export default function ApplicationStatusPage() {
   const router = useRouter();
@@ -279,6 +280,52 @@ export default function ApplicationStatusPage() {
           {" · "}
           <StatusBadge status={application.overallStatus} />
         </div>
+
+        {/* Personal Info Card */}
+        {(() => {
+          const personalInfoStage =
+            application.firstPrefProgress.stages.find((s) => s.stage === 1) ||
+            application.secondPrefProgress?.stages.find((s) => s.stage === 1);
+          if (!personalInfoStage) return null;
+
+          return (
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-md p-6 space-y-4">
+              <h3 className="text-base font-bold text-white border-b border-slate-800 pb-2">
+                Personal Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Full Name</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-1">{String(personalInfoStage.responses.fullName || "—")}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Phone Number</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-1">{String(personalInfoStage.responses.phone || "—")}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Registration Number</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-1">{String(personalInfoStage.responses.regNo || "—")}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Year of Study</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-1">{String(personalInfoStage.responses.year || "—")}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Branch / Programme</p>
+                  <p className="text-sm font-semibold text-slate-200 mt-1">{String(personalInfoStage.responses.branch || "—")}</p>
+                </div>
+                {personalInfoStage.responses.whyMic ? (
+                  <div className="sm:col-span-2">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Why do you want to join MIC?</p>
+                    <p className="text-sm text-slate-300 mt-1 leading-relaxed bg-slate-950/45 p-3 rounded-lg border border-slate-800/40">
+                      {String(personalInfoStage.responses.whyMic)}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Preferences */}
         <div className="space-y-4">

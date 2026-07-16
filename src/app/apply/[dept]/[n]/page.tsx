@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import { Loader2, CheckCircle2, AlertTriangle, Send, Edit3, PlayCircle, Github, Link } from "lucide-react";
 import type { FormField, StageConfig } from "@/models/Department";
+import TurnstileWidget from "@/components/TurnstileWidget";
+import posthog from "posthog-js";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -305,6 +307,9 @@ export default function StagePage({
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [deptName, setDeptName] = useState("");
+  // Turnstile — token verified server-side before each submission
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [captchaError, setCaptchaError] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -401,9 +406,35 @@ export default function StagePage({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setCaptchaError(false);
+
+    // Require a valid Turnstile token before submitting
+    if (!turnstileToken) {
+      setCaptchaError(true);
+      setError("Please complete the CAPTCHA challenge first.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      // 1. Verify the Turnstile token server-side
+      const verifyRes = await fetch("/api/turnstile/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        setCaptchaError(true);
+        setTurnstileToken(null); // force the user to solve again
+        setError("CAPTCHA verification failed. Please solve the challenge again.");
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Submit the stage form
       const method = existingSubmission && isEditing ? "PUT" : "POST";
       const res = await fetch(`/api/apply/${dept}/stage/${stageNum}`, {
         method,
@@ -413,6 +444,12 @@ export default function StagePage({
       const data = await res.json();
 
       if (res.ok && data.success) {
+        posthog.capture("Stage Submitted", {
+          department: dept,
+          stage: stageNum,
+          isEditing: !!(existingSubmission && isEditing),
+          isLastStage: data.isLastStage,
+        });
         if (data.isLastStage) {
           setSubmitted(true);
         } else {
@@ -453,6 +490,37 @@ export default function StagePage({
           LOADING STAGE...
         </div>
       </div>
+    );
+  }
+
+  if (!stageConfig) {
+    return (
+      <main className={`${pressStart.variable} font-press-start w-full h-screen overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
+        <RetroBackground scale={scale} />
+        <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up">
+          <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
+            <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
+              <span className="text-black text-[18px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
+                ERROR: NOT FOUND
+              </span>
+            </div>
+            <div className="p-8 flex flex-col items-center">
+              <div className="border-[3px] border-black bg-white p-8 relative w-full flex flex-col items-center gap-4">
+                <AlertTriangle className="w-10 h-10 text-red-500" />
+                <h1 className="text-[12px] text-center font-bold text-[#A93710] leading-loose">STAGE {stageNum} IS NOT CONFIGURED</h1>
+                <p className="text-[9px] text-center text-black leading-loose font-bold">This stage does not exist or has not been set up yet.</p>
+                <button
+                  onClick={() => { playRetroSound(); router.push("/recruitments"); }}
+                  className="mt-4 bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-2.5 px-6 text-[10px] font-bold tracking-widest transition-transform active:translate-y-1"
+                  style={{ boxShadow: "3px 3px 0px 0px #000" }}
+                >
+                  RETURN TO MAP
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -533,7 +601,18 @@ export default function StagePage({
             </span>
             {/* Header Screws */}
             <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-[1px_1px_0px_#fff]" />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-[1px_1px_0px_#fff]" />
+            
+            {/* Retro Close Button */}
+            <button
+              type="button"
+              onClick={() => {
+                playRetroSound();
+                router.push("/recruitments");
+              }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#FF6F61] hover:bg-[#FF8575] active:translate-y-[calc(-50%+2px)] border-4 border-black w-8 h-8 flex items-center justify-center font-bold text-[10px] text-black z-30 cursor-pointer shadow-[2px_2px_0px_#000] transition-all"
+            >
+              X
+            </button>
           </div>
 
           {/* Form Body */}
@@ -541,9 +620,15 @@ export default function StagePage({
             <div className="border-[3px] border-black bg-white p-4 md:p-6 relative">
               
               {/* Progress Indicator inside form area (Retro Style) */}
-              <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
-                STAGE {stageNum}/{totalStages}
-              </div>
+              {stageNum === 1 ? (
+                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
+                  PERSONAL INFO
+                </div>
+              ) : (
+                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
+                  STAGE {stageNum - 1}/{totalStages - 1}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="mt-4">
                 {/* Hidden honeypot */}
@@ -579,19 +664,40 @@ export default function StagePage({
                   ))}
                 </div>
 
-                <div className="mt-10 flex justify-center pb-2">
-                  {(!existingSubmission || isEditing) && cycleOpen ? (
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      onClick={playRetroSound}
-                      className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-3 disabled:opacity-50"
-                      style={{ boxShadow: "3px 3px 0px 0px #000" }}
-                    >
-                      {submitting ? "SUBMITTING..." : isEditing ? "SAVE CHANGES" : "SUBMIT"}
-                      {!submitting && <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent" />}
-                    </button>
-                  ) : existingSubmission && !isEditing ? (
+                <div className="mt-10 flex flex-col items-center gap-4 pb-2">
+                  {(!existingSubmission || isEditing) && cycleOpen && (
+                    <>
+                      {/* Turnstile challenge — verified server-side on every submit */}
+                      <div className="w-full bg-white border-[3px] border-[#C85A28] rounded-[8px] flex flex-col items-center py-3 gap-2">
+                        <span className="text-[9px] font-bold text-black uppercase tracking-widest">
+                          ► COMPLETE CHALLENGE TO SUBMIT
+                        </span>
+                        <TurnstileWidget
+                          onSuccess={(token) => { setTurnstileToken(token); setCaptchaError(false); }}
+                          onError={() => { setTurnstileToken(null); setCaptchaError(true); }}
+                          onExpire={() => setTurnstileToken(null)}
+                          theme="light"
+                        />
+                        {captchaError && (
+                          <p className="text-[8px] text-red-600 font-bold uppercase tracking-widest">
+                            ⚠ CAPTCHA FAILED — PLEASE RETRY
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={submitting || !turnstileToken}
+                        onClick={playRetroSound}
+                        className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ boxShadow: "3px 3px 0px 0px #000" }}
+                      >
+                        {submitting ? "SUBMITTING..." : isEditing ? "SAVE CHANGES" : "SUBMIT"}
+                        {!submitting && <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent" />}
+                      </button>
+                    </>
+                  )}
+                  {existingSubmission && !isEditing && (
                     <div className="flex gap-4">
                       {cycleOpen && existingSubmission.result === "pending" && (
                         <button
@@ -612,7 +718,7 @@ export default function StagePage({
                         VIEW STATUS
                       </button>
                     </div>
-                  ) : null}
+                  )}
                 </div>
 
                 {isEditing && (

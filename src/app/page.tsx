@@ -30,6 +30,19 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
 export default function Homepage() {
   const router = useRouter();
   const [scale, setScale] = useState(1);
+  const [cycleOpen, setCycleOpen] = useState(true);
+
+  // Fetch recruitment cycle status on mount
+  useEffect(() => {
+    fetch("/api/apply/status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setCycleOpen(data.cycleOpen ?? true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Responsive Scaling Matrix to fit viewport height perfectly
   useEffect(() => {
@@ -146,7 +159,10 @@ export default function Homepage() {
                   <div className="text-[14px] text-black leading-loose font-bold flex flex-col gap-4 max-w-xl text-left mx-auto">
                     <p className="flex items-start gap-4"><span className="text-[#C85A28] text-[18px]">▸</span> 9 DEPARTMENTS. 100 SEATS.</p>
                     <p className="flex items-start gap-4"><span className="text-[#C85A28] text-[18px]">▸</span> ONLY THE BEST COMPLETE THE QUEST.</p>
-                    <p className="flex items-start gap-4"><span className="text-[#C85A28] text-[18px]">▸</span> ARE YOU READY, PLAYER?</p>
+                    <p className="flex items-start gap-4">
+                      <span className="text-[#C85A28] text-[18px]">▸</span>{" "}
+                      {cycleOpen ? "ARE YOU READY, PLAYER?" : "RECRUITMENTS ARE CLOSED."}
+                    </p>
                   </div>
                 </div>
 
@@ -160,18 +176,28 @@ export default function Homepage() {
                     VIEW QUESTS
                   </button>
                   
-                  <button
-                    onClick={() => { playRetroSound("select"); router.push("/login"); }}
-                    className="flex-1 bg-[#52AE26] hover:bg-[#72F418] text-white border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2 group"
-                    style={{ boxShadow: "6px 6px 0px 0px #000" }}
-                  >
-                    START QUEST <span className="group-hover:translate-x-1 transition-transform">►</span>
-                  </button>
+                  {cycleOpen ? (
+                    <button
+                      onClick={() => { playRetroSound("select"); router.push("/login"); }}
+                      className="flex-1 bg-[#52AE26] hover:bg-[#72F418] text-white border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2 group"
+                      style={{ boxShadow: "6px 6px 0px 0px #000" }}
+                    >
+                      START QUEST <span className="group-hover:translate-x-1 transition-transform">►</span>
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="flex-1 bg-slate-300 text-slate-500 border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest flex items-center justify-center gap-2 cursor-not-allowed opacity-80"
+                      style={{ boxShadow: "6px 6px 0px 0px #000" }}
+                    >
+                      QUEST CLOSED ✖
+                    </button>
+                  )}
                 </div>
 
                 <div className="mt-8 pt-8 border-t-4 border-black/10 w-full text-center">
                   <span className="text-[12px] text-[#A93710] font-bold animate-retro-blink uppercase tracking-widest">
-                    [ PRESS BUTTON TO BEGIN ]
+                    {cycleOpen ? "[ PRESS BUTTON TO BEGIN ]" : "[ QUEST CLOSED ]"}
                   </span>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import DepartmentPopup, { DepartmentData } from "@/components/DepartmentPopup";
 import { Loader2 } from "lucide-react";
+import posthog from "posthog-js";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -52,7 +53,7 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
 
       {/* Inner White Box */}
       <div className={`flex-grow w-full p-3 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
-        <div className={`w-full h-full bg-white border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-4" : ""}`}>
+        <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-4" : ""}`}>
           <p className="text-[10px] text-black font-bold tracking-wide leading-relaxed uppercase">
             {isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
@@ -303,6 +304,7 @@ export default function RecruitmentsPage() {
     if (isFirstPref || isSecondPref) {
       playRetroSound("select");
       const currentStage = isFirstPref ? appStatus.firstPrefProgress.currentStage : appStatus.secondPrefProgress.currentStage;
+      posthog.capture("Quest Resume Clicked", { slug, stage: currentStage });
       router.push(`/apply/${slug}/stage-${currentStage}`);
       return;
     }
@@ -336,6 +338,7 @@ export default function RecruitmentsPage() {
         });
         const data = await res.json();
         if (data.success) {
+          posthog.capture("First Preference Selected", { department: role });
           router.push(`/apply/${role}/stage-1`);
         } else {
           alert(data.error);
@@ -350,6 +353,7 @@ export default function RecruitmentsPage() {
         });
         const data = await res.json();
         if (data.success) {
+          posthog.capture("Second Preference Selected", { department: role });
           router.push(`/apply/${role}/stage-1`);
         } else {
           alert(data.error);
@@ -526,6 +530,14 @@ export default function RecruitmentsPage() {
       ref={scrollContainerRef}
       onScroll={handleScroll}
     >
+      {/* Profile Button */}
+      <button
+        onClick={() => router.push("/profile")}
+        className="fixed top-6 right-6 z-50 bg-[#1093EB] hover:bg-[#16B6F4] text-white px-4 py-3 border-4 border-black text-[12px] uppercase tracking-widest font-bold transition-transform hover:-translate-y-1 active:translate-y-0"
+        style={{ boxShadow: "4px 4px 0px 0px #000" }}
+      >
+        View Profile
+      </button>
       {error && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
           <div className="bg-[#FFE4D6] border-4 border-black p-8 max-w-lg w-full relative flex flex-col items-center gap-6" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
