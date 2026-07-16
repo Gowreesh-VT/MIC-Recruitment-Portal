@@ -10,6 +10,9 @@ import {
   Clock,
   Loader2,
   AlertTriangle,
+  FileText,
+  MessageSquare,
+  Award,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,17 +84,19 @@ function PrefPanel({
   label,
   onActionTrigger,
   acting,
+  totalStages,
 }: {
   progress: PrefProgress;
   deptSlug: string;
   label: string;
   onActionTrigger: (preference: "first" | "second", action: "advance" | "reject", note: string, scores?: Record<string, number>) => void;
   acting: boolean;
+  totalStages: number;
 }) {
   const prefKey = label === "1st Preference" ? "first" : "second";
   const [note, setNote] = useState("");
   const [scores, setScores] = useState<Record<string, number>>({ technical: 0, communication: 0, creativity: 0 });
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expandedStage, setExpandedStage] = useState<number | null>(null);
 
   const currentStageSubmission = progress.stages.find(
     (s) => s.stage === progress.currentStage
@@ -100,6 +105,57 @@ function PrefPanel({
     progress.status === "active" &&
     currentStageSubmission &&
     currentStageSubmission.result === "pending";
+
+  // Build timeline steps
+  const timelineSteps = [];
+
+  // Step 1: Initial submission (always completed if progress exists)
+  timelineSteps.push({
+    stageNum: 1,
+    title: "Application Submitted",
+    description: "Candidate submitted initial form",
+    state: "passed" as const,
+    date: progress.stages.find((s) => s.stage === 1)?.submittedAt || null,
+  });
+
+  // Steps 2 to totalStages + 1: Evaluation stages
+  for (let s = 1; s <= totalStages; s++) {
+    const stageDbNum = s + 1; // stage 2 in db corresponds to Stage 1 review
+    const submission = progress.stages.find((x) => x.stage === stageDbNum);
+
+    let state: "passed" | "failed" | "pending" | "upcoming" = "upcoming";
+    if (submission) {
+      if (submission.result === "passed") state = "passed";
+      else if (submission.result === "failed") state = "failed";
+      else state = "pending";
+    } else if (progress.status === "rejected" || progress.status === "passed") {
+      state = "upcoming";
+    } else if (progress.currentStage > stageDbNum) {
+      state = "passed";
+    }
+
+    timelineSteps.push({
+      stageNum: stageDbNum,
+      title: `Stage ${s} Evaluation`,
+      description: submission?.result === "pending" ? "Awaiting review" : `Stage ${s} review complete`,
+      state,
+      submission,
+      date: submission?.submittedAt || null,
+    });
+  }
+
+  // Final Step: Outcome
+  let outcomeState: "passed" | "failed" | "upcoming" = "upcoming";
+  if (progress.status === "passed") outcomeState = "passed";
+  else if (progress.status === "rejected") outcomeState = "failed";
+
+  timelineSteps.push({
+    stageNum: 99,
+    title: progress.status === "passed" ? "Accepted" : progress.status === "rejected" ? "Rejected" : "Outcome Decision",
+    description: progress.status === "passed" ? "Candidate selected" : progress.status === "rejected" ? "Preference closed" : "Funnel pending",
+    state: outcomeState,
+    date: null,
+  });
 
   return (
     <Card>
@@ -127,80 +183,111 @@ function PrefPanel({
         </Badge>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-6">
-        {/* Stage submissions list */}
-        <div className="space-y-3.5">
-          {progress.stages
-            .filter((sub) => sub.stage > 1)
-            .map((sub) => (
-              <div key={sub.stage} className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950/10">
-                <button
-                  onClick={() => setExpanded(expanded === sub.stage ? null : sub.stage)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-zinc-950/30 transition-all cursor-pointer text-left"
+      <CardContent className="p-6 space-y-8">
+        {/* Interactive Vertical Timeline */}
+        <div className="space-y-6 relative pl-4 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-900">
+          {timelineSteps.map((step, idx) => {
+            const isLast = idx === timelineSteps.length - 1;
+            const hasDetail = step.submission && step.stageNum > 1;
+            const isExpanded = expandedStage === step.stageNum;
+
+            return (
+              <div key={idx} className="relative pl-8 space-y-2">
+                {/* Node icon circle */}
+                <div
+                  className={`absolute left-[-21px] top-0.5 h-6 w-6 rounded-full border flex items-center justify-center z-10 transition-all ${
+                    step.state === "passed"
+                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400"
+                      : step.state === "failed"
+                      ? "bg-rose-500/10 border-rose-500 text-rose-400"
+                      : step.state === "pending"
+                      ? "bg-amber-500/10 border-amber-500 text-amber-400 animate-pulse"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-700"
+                  }`}
                 >
-                  <div className="flex items-center gap-3">
-                    {sub.result === "passed" ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                    ) : sub.result === "failed" ? (
-                      <XCircle className="h-4 w-4 text-rose-400" />
-                    ) : (
-                      <Clock className="h-4 w-4 text-amber-400" />
-                    )}
-                    <span className="text-xs font-bold text-white">Stage {sub.stage - 1} evaluation</span>
-                    <span className="text-[10px] font-bold text-zinc-500">
-                      {new Date(sub.submittedAt).toLocaleDateString("en-IN", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                  {step.state === "passed" ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : step.state === "failed" ? (
+                    <XCircle className="h-3.5 w-3.5" />
+                  ) : step.state === "pending" ? (
+                    <Clock className="h-3.5 w-3.5" />
+                  ) : (
+                    <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
+                  )}
+                </div>
+
+                {/* Node label */}
+                <div
+                  onClick={() => {
+                    if (hasDetail) {
+                      setExpandedStage(isExpanded ? null : step.stageNum);
+                    }
+                  }}
+                  className={`flex flex-col text-left transition-all ${
+                    hasDetail ? "cursor-pointer group hover:opacity-90" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-xs font-bold ${
+                        step.state !== "upcoming" ? "text-white" : "text-zinc-500"
+                      }`}
+                    >
+                      {step.title}
                     </span>
+                    {step.date && (
+                      <span className="text-[9px] font-semibold text-zinc-500">
+                        {new Date(step.date).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </span>
+                    )}
+                    {hasDetail && (
+                      <span className="text-[9px] text-teal-400 font-bold group-hover:underline flex items-center gap-0.5">
+                        {isExpanded ? "Hide Details" : "View Details"}
+                      </span>
+                    )}
                   </div>
-                  <ChevronRight
-                    className={`h-4 w-4 text-zinc-500 transition-transform ${
-                      expanded === sub.stage ? "rotate-90" : ""
-                    }`}
-                  />
-                </button>
+                  <span className="text-[10px] text-zinc-500 font-medium">
+                    {step.description}
+                  </span>
+                </div>
 
-                {expanded === sub.stage && (
-                  <div className="p-4 pt-0 border-t border-zinc-900 space-y-4">
-                    <div className="mt-4">
-                      <ResponseViewer responses={sub.responses} />
-                    </div>
+                {/* Expanded Stage submission info */}
+                {isExpanded && step.submission && (
+                  <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-4 space-y-4 mt-2 animate-pixel-slide-up">
+                    <ResponseViewer responses={step.submission.responses} />
 
-                    {sub.scores && Object.keys(sub.scores).length > 0 && (
-                      <div className="p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/10 grid grid-cols-3 gap-2">
-                        {Object.entries(sub.scores).map(([metric, score]) => (
-                          <div key={metric} className="text-center sm:text-left">
-                            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider block">
-                              {metric}
-                            </span>
-                            <span className="text-sm font-extrabold text-teal-400 mt-0.5 block">
-                              {score} / 5
-                            </span>
-                          </div>
-                        ))}
+                    {step.submission.scores && Object.keys(step.submission.scores).length > 0 && (
+                      <div className="p-3 rounded-xl bg-teal-500/5 border border-teal-500/10 flex items-center gap-4 flex-wrap">
+                        <Award className="h-4 w-4 text-teal-400 shrink-0" />
+                        <div className="flex gap-4 flex-wrap">
+                          {Object.entries(step.submission.scores).map(([metric, score]) => (
+                            <div key={metric} className="text-xs font-bold text-white">
+                              <span className="text-zinc-500 capitalize">{metric}:</span> {score}/5
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {sub.adminNote && (
-                      <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                        <span className="text-[10px] text-amber-400 uppercase font-extrabold tracking-wider block">
-                          Evaluation Note
-                        </span>
-                        <p className="text-xs text-zinc-300 mt-1.5 leading-relaxed">{sub.adminNote}</p>
+                    {step.submission.adminNote && (
+                      <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 flex gap-3">
+                        <MessageSquare className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="text-[10px] text-amber-400 uppercase font-extrabold tracking-wider">
+                            Reviewer Note
+                          </span>
+                          <p className="text-xs text-zinc-300 mt-1">{step.submission.adminNote}</p>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            ))}
-
-          {progress.stages.filter((sub) => sub.stage > 1).length === 0 && (
-            <div className="text-center py-6 border border-dashed border-zinc-900 rounded-xl">
-              <p className="text-xs text-zinc-500 font-semibold">No submissions received for evaluation</p>
-            </div>
-          )}
+            );
+          })}
         </div>
 
         {/* Action Panel */}
@@ -219,7 +306,7 @@ function PrefPanel({
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Write stage evaluation details, feedback, or interview instructions..."
                 rows={3}
-                className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-750 resize-none transition-all"
+                className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-700 resize-none transition-all"
               />
             </div>
 
@@ -292,6 +379,8 @@ export default function ApplicantDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const [application, setApplication] = useState<Application | null>(null);
+  const [dept1, setDept1] = useState<any>(null);
+  const [dept2, setDept2] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [message, setMessage] = useState("");
@@ -309,7 +398,11 @@ export default function ApplicantDetailPage({
     try {
       const res = await fetch(`/api/admin/applications/${id}`);
       const data = await res.json();
-      if (data.success) setApplication(data.application);
+      if (data.success) {
+        setApplication(data.application);
+        setDept1(data.dept1);
+        setDept2(data.dept2);
+      }
     } catch {
       // ignore
     } finally {
@@ -505,6 +598,7 @@ export default function ApplicantDetailPage({
             label="1st Preference"
             onActionTrigger={handleActionConfirmTrigger}
             acting={acting}
+            totalStages={dept1?.totalStages ?? 2}
           />
           {application.secondPreference ? (
             <PrefPanel
@@ -513,6 +607,7 @@ export default function ApplicantDetailPage({
               label="2nd Preference"
               onActionTrigger={handleActionConfirmTrigger}
               acting={acting}
+              totalStages={dept2?.totalStages ?? 2}
             />
           ) : (
             <Card className="flex items-center justify-center p-8 border-dashed border-zinc-900">
