@@ -9,13 +9,13 @@ import {
   XCircle,
   Clock,
   Loader2,
-  BarChart3,
-  Users,
-  Settings,
-  LogOut,
   AlertTriangle,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { AdminLayout } from "@/components/AdminLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog } from "@/components/ui/dialog";
 
 interface StageSubmission {
   stage: number;
@@ -25,6 +25,7 @@ interface StageSubmission {
   reviewedBy?: string;
   reviewedAt?: string;
   responses: Record<string, unknown>;
+  scores?: Record<string, number>;
 }
 
 interface PrefProgress {
@@ -40,7 +41,7 @@ interface Application {
   secondPreference: string;
   firstPrefType: string;
   secondPrefType: string;
-  activePreference: string;
+  activePreference: "first" | "second";
   overallStatus: string;
   firstPrefProgress: PrefProgress;
   secondPrefProgress: PrefProgress;
@@ -61,13 +62,13 @@ const DEPT_NAMES: Record<string, string> = {
 
 function ResponseViewer({ responses }: { responses: Record<string, unknown> }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {Object.entries(responses).map(([key, val]) => (
-        <div key={key} className="space-y-1">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{key}</p>
-          <p className="text-sm text-slate-200 bg-slate-800/50 rounded-lg p-3 leading-relaxed">
+        <div key={key} className="space-y-1.5">
+          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">{key}</p>
+          <div className="text-sm text-zinc-200 bg-zinc-950 border border-zinc-900 rounded-xl p-4 leading-relaxed whitespace-pre-wrap">
             {Array.isArray(val) ? val.join(", ") : String(val ?? "—")}
-          </p>
+          </div>
         </div>
       ))}
     </div>
@@ -78,17 +79,18 @@ function PrefPanel({
   progress,
   deptSlug,
   label,
-  onAction,
+  onActionTrigger,
   acting,
 }: {
   progress: PrefProgress;
   deptSlug: string;
   label: string;
-  onAction: (preference: "first" | "second", action: "advance" | "reject", note: string) => void;
+  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject", note: string, scores?: Record<string, number>) => void;
   acting: boolean;
 }) {
-  const prefKey = label === "1st Preference" ? "first" : "second" as "first" | "second";
+  const prefKey = label === "1st Preference" ? "first" : "second";
   const [note, setNote] = useState("");
+  const [scores, setScores] = useState<Record<string, number>>({ technical: 0, communication: 0, creativity: 0 });
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const currentStageSubmission = progress.stages.find(
@@ -100,97 +102,185 @@ function PrefPanel({
     currentStageSubmission.result === "pending";
 
   return (
-    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 space-y-5">
-      <div className="flex items-center justify-between">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-zinc-900">
         <div>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{label}</p>
-          <h3 className="text-lg font-bold text-white mt-0.5">{DEPT_NAMES[deptSlug] ?? deptSlug}</h3>
+          <CardDescription className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500">
+            {label}
+          </CardDescription>
+          <CardTitle className="text-base font-extrabold mt-0.5">
+            {DEPT_NAMES[deptSlug] ?? deptSlug}
+          </CardTitle>
         </div>
-        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-          progress.status === "active" ? "bg-teal-500/15 text-teal-400"
-          : progress.status === "passed" ? "bg-emerald-500/15 text-emerald-400"
-          : progress.status === "rejected" ? "bg-rose-500/15 text-rose-400"
-          : "bg-slate-700 text-slate-400"
-        }`}>
+        <Badge
+          variant={
+            progress.status === "active"
+              ? "info"
+              : progress.status === "passed"
+              ? "success"
+              : progress.status === "rejected"
+              ? "destructive"
+              : "default"
+          }
+        >
           {progress.status}
-        </span>
-      </div>
+        </Badge>
+      </CardHeader>
 
-      {/* Stage submissions */}
-      <div className="space-y-3">
-        {progress.stages.map((sub) => (
-          <div key={sub.stage} className="border border-slate-800 rounded-xl overflow-hidden">
-            <button
-              onClick={() => setExpanded(expanded === sub.stage ? null : sub.stage)}
-              className="w-full flex items-center justify-between p-4 hover:bg-slate-800/40 transition-all"
-            >
-              <div className="flex items-center gap-3">
-                {sub.result === "passed" ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                ) : sub.result === "failed" ? (
-                  <XCircle className="h-4 w-4 text-rose-400" />
-                ) : (
-                  <Clock className="h-4 w-4 text-amber-400" />
-                )}
-                <span className="text-sm font-semibold text-white">Stage {sub.stage}</span>
-                <span className="text-[10px] font-bold text-slate-500">
-                  {new Date(sub.submittedAt).toLocaleDateString("en-IN")}
-                </span>
-              </div>
-              <ChevronRight className={`h-4 w-4 text-slate-500 transition-transform ${expanded === sub.stage ? "rotate-90" : ""}`} />
-            </button>
-            {expanded === sub.stage && (
-              <div className="p-4 pt-0 border-t border-slate-800">
-                <ResponseViewer responses={sub.responses} />
-                {sub.adminNote && (
-                  <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                    <p className="text-[10px] text-amber-400 font-bold uppercase tracking-wider mb-1">Admin Note</p>
-                    <p className="text-xs text-slate-300">{sub.adminNote}</p>
+      <CardContent className="p-6 space-y-6">
+        {/* Stage submissions list */}
+        <div className="space-y-3.5">
+          {progress.stages
+            .filter((sub) => sub.stage > 1)
+            .map((sub) => (
+              <div key={sub.stage} className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-950/10">
+                <button
+                  onClick={() => setExpanded(expanded === sub.stage ? null : sub.stage)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-zinc-950/30 transition-all cursor-pointer text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    {sub.result === "passed" ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    ) : sub.result === "failed" ? (
+                      <XCircle className="h-4 w-4 text-rose-400" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-amber-400" />
+                    )}
+                    <span className="text-xs font-bold text-white">Stage {sub.stage - 1} evaluation</span>
+                    <span className="text-[10px] font-bold text-zinc-500">
+                      {new Date(sub.submittedAt).toLocaleDateString("en-IN", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <ChevronRight
+                    className={`h-4 w-4 text-zinc-500 transition-transform ${
+                      expanded === sub.stage ? "rotate-90" : ""
+                    }`}
+                  />
+                </button>
+
+                {expanded === sub.stage && (
+                  <div className="p-4 pt-0 border-t border-zinc-900 space-y-4">
+                    <div className="mt-4">
+                      <ResponseViewer responses={sub.responses} />
+                    </div>
+
+                    {sub.scores && Object.keys(sub.scores).length > 0 && (
+                      <div className="p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/10 grid grid-cols-3 gap-2">
+                        {Object.entries(sub.scores).map(([metric, score]) => (
+                          <div key={metric} className="text-center sm:text-left">
+                            <span className="text-[10px] text-zinc-500 uppercase font-extrabold tracking-wider block">
+                              {metric}
+                            </span>
+                            <span className="text-sm font-extrabold text-teal-400 mt-0.5 block">
+                              {score} / 5
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {sub.adminNote && (
+                      <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                        <span className="text-[10px] text-amber-400 uppercase font-extrabold tracking-wider block">
+                          Evaluation Note
+                        </span>
+                        <p className="text-xs text-zinc-300 mt-1.5 leading-relaxed">{sub.adminNote}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
-        {progress.stages.length === 0 && (
-          <p className="text-sm text-slate-500 text-center py-4">No stages submitted yet</p>
-        )}
-      </div>
+            ))}
 
-      {/* Action panel */}
-      {canAct && (
-        <div className="border-t border-slate-800 pt-4 space-y-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Reviewing Stage {progress.currentStage} Response
-          </p>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional admin note (visible to applicant)"
-            rows={2}
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-slate-600 resize-none"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={() => onAction(prefKey, "advance", note)}
-              disabled={acting}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-sm hover:bg-emerald-500/20 transition-all disabled:opacity-50"
-            >
-              {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Advance
-            </button>
-            <button
-              onClick={() => onAction(prefKey, "reject", note)}
-              disabled={acting}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold text-sm hover:bg-rose-500/20 transition-all disabled:opacity-50"
-            >
-              {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-              Reject
-            </button>
-          </div>
+          {progress.stages.filter((sub) => sub.stage > 1).length === 0 && (
+            <div className="text-center py-6 border border-dashed border-zinc-900 rounded-xl">
+              <p className="text-xs text-zinc-500 font-semibold">No submissions received for evaluation</p>
+            </div>
+          )}
         </div>
-      )}
-    </div>
+
+        {/* Action Panel */}
+        {canAct && (
+          <div className="border-t border-zinc-900 pt-6 space-y-4">
+            <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
+              Reviewing Stage {progress.currentStage - 1} Submission
+            </Badge>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold block">
+                Evaluation Notes (visible to applicant)
+              </label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Write stage evaluation details, feedback, or interview instructions..."
+                rows={3}
+                className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-750 resize-none transition-all"
+              />
+            </div>
+
+            <div className="space-y-3 bg-zinc-950 border border-zinc-900 rounded-xl p-4">
+              <p className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                Grading Rubric (Required to Advance)
+              </p>
+              {["Technical", "Communication", "Creativity"].map((metric) => {
+                const key = metric.toLowerCase();
+                return (
+                  <div key={metric} className="flex items-center justify-between flex-wrap gap-2">
+                    <span className="text-xs font-bold text-zinc-300">{metric} score</span>
+                    <div className="flex gap-1.5">
+                      {[1, 2, 3, 4, 5].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setScores((s) => ({ ...s, [key]: val }))}
+                          className={`h-8 w-8 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                            scores[key] === val
+                              ? "bg-teal-500 text-slate-950 shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+                              : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                          }`}
+                        >
+                          {val}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="destructive"
+                onClick={() => onActionTrigger(prefKey, "reject", note)}
+                disabled={acting}
+                className="flex-1 font-bold h-11"
+              >
+                Reject Candidate
+              </Button>
+              <Button
+                variant="emerald"
+                onClick={() => {
+                  if (Object.values(scores).some((s) => s === 0)) {
+                    alert("Please grade all Rubric criteria (1-5) before advancing.");
+                    return;
+                  }
+                  onActionTrigger(prefKey, "advance", note, scores);
+                }}
+                disabled={acting}
+                className="flex-1 font-bold h-11"
+              >
+                Advance Stage
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -206,6 +296,15 @@ export default function ApplicantDetailPage({
   const [acting, setActing] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Custom alert confirmation dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    preference: "first" | "second";
+    action: "advance" | "reject";
+    note: string;
+    scores?: Record<string, number>;
+  } | null>(null);
+
   const load = async () => {
     try {
       const res = await fetch(`/api/admin/applications/${id}`);
@@ -218,27 +317,42 @@ export default function ApplicantDetailPage({
     }
   };
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    load();
+  }, [id]);
 
-  const handleAction = async (
+  const handleActionConfirmTrigger = (
     preference: "first" | "second",
     action: "advance" | "reject",
-    note: string
+    note: string,
+    scores?: Record<string, number>
   ) => {
-    if (!confirm(`Are you sure you want to ${action} this applicant from their ${preference} preference?`)) return;
+    setConfirmDialog({
+      isOpen: true,
+      preference,
+      action,
+      note,
+      scores,
+    });
+  };
+
+  const handleActionExecute = async () => {
+    if (!confirmDialog) return;
+    const { preference, action, note, scores } = confirmDialog;
+    setConfirmDialog(null);
     setActing(true);
     setMessage("");
     try {
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, preference, note }),
+        body: JSON.stringify({ action, preference, note, scores }),
       });
       const data = await res.json();
-      setMessage(data.success ? data.message : data.error ?? "Error");
+      setMessage(data.success ? data.message : data.error ?? "Action failed.");
       if (data.success) await load();
     } catch {
-      setMessage("Network error.");
+      setMessage("Network communication failure.");
     } finally {
       setActing(false);
     }
@@ -246,113 +360,186 @@ export default function ApplicantDetailPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 text-teal-400 animate-spin" />
+          <p className="text-sm text-zinc-400 font-medium">Loading details...</p>
+        </div>
       </div>
     );
   }
 
   if (!application) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <AlertTriangle className="h-10 w-10 text-amber-400 mx-auto" />
-          <p className="text-white font-bold">Applicant not found</p>
-          <button onClick={() => router.push("/admin/applications")} className="text-teal-400 text-sm hover:text-teal-300">← Back</button>
-        </div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Card className="max-w-xs text-center p-6 border-zinc-900 space-y-4 bg-zinc-950">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto" />
+          <h2 className="text-lg font-bold text-white">Application Not Found</h2>
+          <Button onClick={() => router.push("/admin/applications")} className="w-full font-bold">
+            Back to Applications
+          </Button>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-56 bg-slate-900 border-r border-slate-800 flex flex-col z-20">
-        <div className="p-5 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">MIC Admin</p>
-          <p className="text-base font-bold text-white mt-1">Applicant</p>
-        </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {[
-            { icon: <BarChart3 className="h-4 w-4" />, label: "Dashboard", href: "/admin/dashboard" },
-            { icon: <Users className="h-4 w-4" />, label: "Applications", href: "/admin/applications", active: true },
-            { icon: <Settings className="h-4 w-4" />, label: "Settings", href: "/admin/settings" },
-          ].map((item) => (
-            <button
-              key={item.href}
-              onClick={() => router.push(item.href)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                item.active ? "bg-teal-500/10 text-teal-400 border border-teal-500/20" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-slate-800">
-          <button onClick={() => signOut({ callbackUrl: "/admin/login" })} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-            <LogOut className="h-4 w-4" /> Sign Out
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div className="ml-56 p-8 space-y-6">
-        <button onClick={() => router.push("/admin/applications")} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors">
+    <AdminLayout activePage="applications">
+      <div className="p-8 space-y-6 max-w-7xl mx-auto w-full">
+        {/* Back Link */}
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/admin/applications")}
+          className="gap-2 text-zinc-450 hover:text-white pl-0 -ml-1 text-xs"
+        >
           <ChevronLeft className="h-4 w-4" /> Back to Applications
-        </button>
+        </Button>
 
         {/* Header */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="h-12 w-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-lg font-bold text-white">
+          <div className="h-12 w-12 rounded-full bg-zinc-950 border border-zinc-900 flex items-center justify-center text-lg font-bold text-teal-400">
             {application.userEmail.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-white">{application.userEmail}</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              Applied {new Date(application.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+            <h1 className="text-2xl font-extrabold text-white tracking-tight">{application.userEmail}</h1>
+            <p className="text-xs text-zinc-500 mt-1">
+              Registered on{" "}
+              {new Date(application.createdAt).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
             </p>
           </div>
           <div className="ml-auto">
-            <span className={`text-sm font-bold px-3 py-1.5 rounded-full ${
-              application.overallStatus === "selected" ? "bg-emerald-500/15 text-emerald-400"
-              : application.overallStatus === "rejected" ? "bg-rose-500/15 text-rose-400"
-              : "bg-amber-500/15 text-amber-400"
-            }`}>
+            <Badge
+              variant={
+                application.overallStatus === "selected"
+                  ? "success"
+                  : application.overallStatus === "rejected"
+                  ? "destructive"
+                  : "warning"
+              }
+              className="text-xs px-3.5 py-1.5"
+            >
               {application.overallStatus}
-            </span>
+            </Badge>
           </div>
         </div>
 
+        {/* Status notification messages */}
         {message && (
-          <div className={`p-4 rounded-xl border text-sm ${
-            message.includes("success") || message.includes("uccess")
-              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-              : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-          }`}>
+          <div
+            className={`p-4 rounded-xl border text-sm font-bold ${
+              message.toLowerCase().includes("success")
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+            }`}
+          >
             {message}
           </div>
         )}
 
-        {/* Preference panels side by side */}
+        {/* Personal Info Card */}
+        {(() => {
+          const personalInfoStage =
+            application.firstPrefProgress.stages.find((s) => s.stage === 1) ||
+            application.secondPrefProgress.stages.find((s) => s.stage === 1);
+          if (!personalInfoStage) return null;
+
+          return (
+            <Card>
+              <CardHeader className="border-b border-zinc-900 pb-4">
+                <CardTitle className="text-base font-bold text-white">Personal Information</CardTitle>
+                <CardDescription>General registration parameters submitted by student</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-6">
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Full Name</p>
+                  <p className="text-sm font-semibold text-zinc-200 mt-1.5">
+                    {String(personalInfoStage.responses.fullName || "—")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Phone Number</p>
+                  <p className="text-sm font-semibold text-zinc-200 mt-1.5">
+                    {String(personalInfoStage.responses.phone || "—")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Registration No</p>
+                  <p className="text-sm font-semibold text-zinc-200 mt-1.5">
+                    {String(personalInfoStage.responses.regNo || "—")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Year of Study</p>
+                  <p className="text-sm font-semibold text-zinc-200 mt-1.5">
+                    {String(personalInfoStage.responses.year || "—")}
+                  </p>
+                </div>
+                <div className="md:col-span-2">
+                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Branch / Program</p>
+                  <p className="text-sm font-semibold text-zinc-200 mt-1.5">
+                    {String(personalInfoStage.responses.branch || "—")}
+                  </p>
+                </div>
+                {!!personalInfoStage.responses.whyMic && (
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Why MIC?</p>
+                    <p className="text-sm text-zinc-300 mt-2 leading-relaxed bg-black border border-zinc-900 p-4 rounded-xl">
+                      {String(personalInfoStage.responses.whyMic)}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+        {/* Preference panel columns */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <PrefPanel
             progress={application.firstPrefProgress}
             deptSlug={application.firstPreference}
             label="1st Preference"
-            onAction={handleAction}
+            onActionTrigger={handleActionConfirmTrigger}
             acting={acting}
           />
-          <PrefPanel
-            progress={application.secondPrefProgress}
-            deptSlug={application.secondPreference}
-            label="2nd Preference"
-            onAction={handleAction}
-            acting={acting}
-          />
+          {application.secondPreference ? (
+            <PrefPanel
+              progress={application.secondPrefProgress}
+              deptSlug={application.secondPreference}
+              label="2nd Preference"
+              onActionTrigger={handleActionConfirmTrigger}
+              acting={acting}
+            />
+          ) : (
+            <Card className="flex items-center justify-center p-8 border-dashed border-zinc-900">
+              <div className="text-center">
+                <p className="text-xs text-zinc-500 font-bold">No 2nd Preference Selection</p>
+                <p className="text-[10px] text-zinc-650 mt-1">Applicant selected only one department choice</p>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
-    </div>
+
+      {/* AlertDialog to replace standard window.confirm for applicant updates */}
+      <AlertDialog
+        isOpen={confirmDialog?.isOpen ?? false}
+        onClose={() => setConfirmDialog(null)}
+        onConfirm={handleActionExecute}
+        title={confirmDialog?.action === "advance" ? "Advance Candidate Stage?" : "Reject Candidate?"}
+        description={
+          confirmDialog?.action === "advance"
+            ? `Are you sure you want to ADVANCE this candidate to the next stage in their ${confirmDialog?.preference} preference department?`
+            : `Are you sure you want to REJECT this candidate from their ${confirmDialog?.preference} preference department?`
+        }
+        confirmText={confirmDialog?.action === "advance" ? "Yes, Advance" : "Yes, Reject"}
+        variant={confirmDialog?.action === "reject" ? "destructive" : "default"}
+        loading={acting}
+      />
+    </AdminLayout>
   );
 }
