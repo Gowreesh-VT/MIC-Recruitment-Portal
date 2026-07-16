@@ -24,6 +24,7 @@ export interface StageSubmission {
   stage: number;
   submittedAt: Date;
   responses: Record<string, unknown>;
+  scores?: Record<string, number>;
   adminNote?: string;
   reviewedBy?: string;
   reviewedAt?: Date;
@@ -61,6 +62,7 @@ const StageSubmissionSchema = new Schema<StageSubmission>(
     stage: { type: Number, required: true },
     submittedAt: { type: Date, required: true },
     responses: { type: Schema.Types.Mixed, default: {} },
+    scores: { type: Map, of: Number },
     adminNote: { type: String },
     reviewedBy: { type: String },
     reviewedAt: { type: Date },
