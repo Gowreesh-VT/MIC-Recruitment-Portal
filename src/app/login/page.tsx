@@ -124,13 +124,15 @@ export default function LoginPage() {
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.2s" }} />
 
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[500px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
           
           {Array.from({ length: 12 }).map((_, idx) => (
             <img key={idx} src="/city_skyline.svg" alt="Skyline Block" className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated" style={{ left: `${idx * 245}px` }} />
           ))}
 
-          <img src="/bushes_pixel.svg" alt="Bushes" className="absolute top-[739px] left-[500px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
+          <img src="/bushes_pixel.svg" alt="Bushes Left" className="absolute top-[739px] left-0 w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
+          <img src="/bushes_pixel.svg" alt="Bushes Right" className="absolute top-[739px] left-[1454px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
 
           <RetroPipe left="1156px" top="-5px" height={400} isTop={true} />
           <RetroPipe left="1656px" top="-5px" height={400} isTop={true} />
@@ -177,7 +179,7 @@ export default function LoginPage() {
           <div className="w-full p-6 md:p-8 flex flex-col items-center gap-6 bg-[#FFDED6] mt-2 border-4 border-black rounded-[6px]">
             
             <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center p-1 shadow-[4px_4px_0px_#000] hover:animate-retro-shake">
-                <img src="/flappy_bird.svg" alt="Bird" className="pixelated object-contain w-full h-full animate-retro-float" />
+                <img src="/flappy_bird.svg" alt="Bird" className="pixelated object-contain w-full h-full animate-retro-float-small" />
             </div>
 
             <div className="text-center space-y-4">

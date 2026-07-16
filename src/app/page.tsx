@@ -140,7 +140,7 @@ export default function Homepage() {
 
             {/* Background Skyline */}
             <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
-            <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1437px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+            <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
             
             {/* Midground Skyline Blocks */}
             {Array.from({ length: 12 }).map((_, idx) => (
@@ -149,7 +149,7 @@ export default function Homepage() {
 
             {/* Green Bushes */}
             <img src="/bushes_pixel.svg" alt="Bushes Left" className="absolute top-[739px] left-0 w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
-            <img src="/bushes_pixel.svg" alt="Bushes Right" className="absolute top-[739px] left-[1456px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
+            <img src="/bushes_pixel.svg" alt="Bushes Right" className="absolute top-[739px] left-[1454px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated" />
 
             {/* Green Pipes framing the center (Aligned vertically to hold the signboard) */}
             <RetroPipe left="900px" top="-5px" height={250} isTop={true} />
@@ -159,7 +159,7 @@ export default function Homepage() {
             <RetroPipe left="1900px" top="730px" height={200} isTop={false} />
 
             {/* Main Hero Center Box (Inside Scaled Canvas so it perfectly aligns with the pipes) */}
-            <div className="absolute z-40 animate-pixel-slide-up" style={{ top: "220px", left: "860px", width: "1132px" }}>
+            <div className="absolute z-40 animate-pixel-slide-up" style={{ top: "170px", left: "860px", width: "1132px" }}>
               <div 
                 className="bg-[#FFE4D6] rounded-[10px] border-[6px] border-black flex flex-col items-center p-4 relative"
                 style={{ boxShadow: "16px 16px 0px 0px rgba(0,0,0,0.4)" }}
