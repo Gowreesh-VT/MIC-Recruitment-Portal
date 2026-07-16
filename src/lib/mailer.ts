@@ -1,5 +1,19 @@
 import nodemailer from 'nodemailer';
 
+/**
+ * Escape HTML special characters to prevent XSS when embedding
+ * user-supplied or admin-supplied strings in HTML email bodies.
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+
 const smtpEmail = process.env.SMTP_EMAIL;
 const smtpPassword = process.env.SMTP_PASSWORD;
 
@@ -63,7 +77,7 @@ export async function sendStageUpdate(userEmail: string, status: string, notes?:
           <h1 style="color: ${color}; text-transform: uppercase;">${title}</h1>
           <p>Hello,</p>
           <p>${body}</p>
-          ${notes ? `<div style="margin-top: 20px; padding: 15px; background-color: #e2e8f0; border: 2px dashed #000;"><p><strong>Admin Notes:</strong> ${notes}</p></div>` : ''}
+          ${notes ? `<div style="margin-top: 20px; padding: 15px; background-color: #e2e8f0; border: 2px dashed #000;"><p><strong>Admin Notes:</strong> ${escapeHtml(notes)}</p></div>` : ''}
           <br/>
           <p>- MIC Core Team</p>
         </div>
