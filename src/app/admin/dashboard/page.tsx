@@ -2,21 +2,41 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import {
   Users,
   CheckCircle2,
-  XCircle,
-  TrendingUp,
-  ToggleLeft,
-  ToggleRight,
   Loader2,
-  LogOut,
-  Settings,
-  BarChart3,
-  Clock,
   RefreshCw,
+  Clock,
+  Compass,
+  Zap,
+  TrendingUp,
+  ShieldAlert,
 } from "lucide-react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { AdminLayout } from "@/components/AdminLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface AuditLogEntry {
+  _id: string;
+  adminEmail: string;
+  action: string;
+  target: string;
+  details?: string;
+  createdAt: string;
+}
 
 interface Stats {
   total: number;
@@ -24,6 +44,11 @@ interface Stats {
   selected: number;
   rejected: number;
   conversionRate: string;
+  byDepartment: {
+    byFirst: Array<{ _id: string; count: number }>;
+    bySecond: Array<{ _id: string; count: number }>;
+  };
+  dailyApplications: Array<{ _id: string; applications: number }>;
   recentActivity: Array<{
     userEmail: string;
     overallStatus: string;
@@ -31,6 +56,7 @@ interface Stats {
     secondPreference: string;
     updatedAt: string;
   }>;
+  auditLogs?: AuditLogEntry[];
 }
 
 interface Cycle {
@@ -39,33 +65,6 @@ interface Cycle {
   label: string;
   openedAt?: string;
   closedAt?: string;
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  sub?: string;
-  color: string;
-}) {
-  return (
-    <div className={`bg-slate-900/50 border border-slate-800 rounded-2xl p-5 space-y-3 hover:border-slate-700 transition-all`}>
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">{label}</span>
-        <div className={`p-2 rounded-xl ${color}`}>{icon}</div>
-      </div>
-      <div>
-        <p className="text-3xl font-extrabold text-white">{value}</p>
-        {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
-      </div>
-    </div>
-  );
 }
 
 const DEPT_NAMES: Record<string, string> = {
@@ -87,6 +86,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Custom dialog state
+  const [showCycleConfirm, setShowCycleConfirm] = useState(false);
 
   const loadData = async () => {
     try {
@@ -108,11 +110,13 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const toggleCycle = async () => {
+  const handleToggleCycleConfirm = async () => {
     if (!cycle) return;
-    if (!confirm(`Are you sure you want to ${cycle.isOpen ? "CLOSE" : "OPEN"} recruitment?`)) return;
+    setShowCycleConfirm(false);
     setToggling(true);
     try {
       const res = await fetch("/api/admin/cycle", {
@@ -131,210 +135,346 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 text-teal-400 animate-spin" />
+          <p className="text-sm text-zinc-400 font-medium">Loading Dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-56 bg-slate-900 border-r border-slate-800 flex flex-col z-20">
-        <div className="p-5 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">MIC Admin</p>
-          <p className="text-base font-bold text-white mt-1">Dashboard</p>
-        </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {[
-            { icon: <BarChart3 className="h-4 w-4" />, label: "Dashboard", href: "/admin/dashboard", active: true },
-            { icon: <Users className="h-4 w-4" />, label: "Applications", href: "/admin/applications", active: false },
-            { icon: <Settings className="h-4 w-4" />, label: "Settings", href: "/admin/settings", active: false },
-          ].map((item) => (
-            <button
-              key={item.href}
-              onClick={() => router.push(item.href)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                item.active
-                  ? "bg-teal-500/10 text-teal-400 border border-teal-500/20"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-slate-800">
-          <button
-            onClick={() => signOut({ callbackUrl: "/admin/login" })}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
-        </div>
-      </div>
+  const getActionBadgeVariant = (action: string) => {
+    switch (action) {
+      case "cycle_toggle":
+        return "destructive";
+      case "stage_select":
+        return "success";
+      case "stage_advance":
+        return "info";
+      case "candidate_reject":
+        return "destructive";
+      case "dept_update":
+        return "warning";
+      default:
+        return "default";
+    }
+  };
 
-      {/* Main */}
-      <div className="ml-56 p-8 space-y-8">
+  return (
+    <AdminLayout activePage="dashboard">
+      <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Overview</h1>
-            <p className="text-sm text-slate-400 mt-1">MIC Recruitment 2026–27</p>
+            <h1 className="text-3xl font-extrabold text-white tracking-tight">Overview</h1>
+            <p className="text-sm text-zinc-450 mt-1">MIC Recruitment Cycle 2026–27</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => { setRefreshing(true); loadData(); }}
-              className="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-all"
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setRefreshing(true);
+                loadData();
+              }}
+              className="h-10 w-10 text-zinc-400 hover:text-white"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-            </button>
+            </Button>
 
-            {/* Recruitment toggle */}
-            <button
-              onClick={toggleCycle}
+            {/* Recruitment Toggle */}
+            <Button
+              variant={cycle?.isOpen ? "default" : "destructive"}
+              onClick={() => setShowCycleConfirm(true)}
               disabled={toggling}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border font-bold text-sm transition-all ${
-                cycle?.isOpen
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-              }`}
+              className="px-5 font-bold shadow-md h-10 gap-2"
             >
-              {toggling ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : cycle?.isOpen ? (
-                <ToggleRight className="h-5 w-5" />
-              ) : (
-                <ToggleLeft className="h-5 w-5" />
-              )}
+              {toggling && <Loader2 className="h-4 w-4 animate-spin" />}
               Recruitment {cycle?.isOpen ? "OPEN" : "CLOSED"}
-            </button>
+            </Button>
           </div>
         </div>
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={<Users className="h-4 w-4 text-teal-400" />}
-            label="Total Applicants"
-            value={stats?.total ?? 0}
-            color="bg-teal-500/10"
-          />
-          <StatCard
-            icon={<Clock className="h-4 w-4 text-amber-400" />}
-            label="In Progress"
-            value={stats?.inProgress ?? 0}
-            color="bg-amber-500/10"
-          />
-          <StatCard
-            icon={<CheckCircle2 className="h-4 w-4 text-emerald-400" />}
-            label="Selected"
-            value={stats?.selected ?? 0}
-            color="bg-emerald-500/10"
-          />
-          <StatCard
-            icon={<TrendingUp className="h-4 w-4 text-violet-400" />}
-            label="Conversion Rate"
-            value={`${stats?.conversionRate ?? "0"}%`}
-            sub={`${stats?.rejected ?? 0} not selected`}
-            color="bg-violet-500/10"
-          />
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">
+                Total Applicants
+              </CardTitle>
+              <div className="p-2 rounded-xl bg-teal-500/10 text-teal-400">
+                <Users className="h-4 w-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-extrabold text-white">{stats?.total ?? 0}</div>
+              <p className="text-xs text-zinc-500 mt-1">Submissions in current cycle</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">
+                In Progress
+              </CardTitle>
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                <Clock className="h-4 w-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-extrabold text-white">{stats?.inProgress ?? 0}</div>
+              <p className="text-xs text-zinc-500 mt-1">Currently being reviewed</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">
+                Selected
+              </CardTitle>
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <CheckCircle2 className="h-4 w-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-extrabold text-white">{stats?.selected ?? 0}</div>
+              <p className="text-xs text-zinc-500 mt-1">Accepted into MIC</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-xs font-extrabold uppercase tracking-wider text-zinc-500">
+                Conversion Rate
+              </CardTitle>
+              <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400">
+                <TrendingUp className="h-4 w-4" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-extrabold text-white">{stats?.conversionRate ?? "0"}%</div>
+              <p className="text-xs text-zinc-500 mt-1">{stats?.rejected ?? 0} applications rejected</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Recent activity + Quick actions */}
+        {/* Basic Analytics: Daily Applications Chart */}
+        {stats && (
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Daily Application Flow</CardTitle>
+              <CardDescription>Submissions received over calendar days</CardDescription>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.dailyApplications} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
+                  <XAxis
+                    dataKey="_id"
+                    stroke="#52525b"
+                    fontSize={11}
+                    tickLine={false}
+                    tickFormatter={(val) =>
+                      new Date(val).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                    }
+                  />
+                  <YAxis stroke="#52525b" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#09090b", borderColor: "#27272a" }}
+                    itemStyle={{ color: "#2dd4bf" }}
+                    labelStyle={{ color: "#a1a1aa" }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="applications"
+                    name="Submissions"
+                    stroke="#2dd4bf"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "#2dd4bf", strokeWidth: 0 }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Lower Grid: Activity & Audit Feed + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent activity */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-white">Recent Activity</h2>
-              <button
-                onClick={() => router.push("/admin/applications")}
-                className="text-xs text-teal-400 hover:text-teal-300 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-            <div className="space-y-3">
-              {(stats?.recentActivity ?? []).length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-6">No activity yet</p>
-              ) : (
-                (stats?.recentActivity ?? []).map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-all cursor-pointer" onClick={() => router.push("/admin/applications")}>
-                    <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
-                      {item.userEmail.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{item.userEmail}</p>
-                      <p className="text-[10px] text-slate-500">
-                        {DEPT_NAMES[item.firstPreference] ?? item.firstPreference} → {DEPT_NAMES[item.secondPreference] ?? item.secondPreference}
-                      </p>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      item.overallStatus === "selected"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : item.overallStatus === "rejected"
-                          ? "bg-rose-500/15 text-rose-400"
-                          : "bg-amber-500/15 text-amber-400"
-                    }`}>
-                      {item.overallStatus}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          {/* Tabbed Activity Feed & Audit logs */}
+          <Card>
+            <CardHeader className="pb-0">
+              <CardTitle className="text-base font-bold">Activity Tracking</CardTitle>
+              <CardDescription>Monitor live candidates and administrative operations</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <Tabs defaultValue="activity" className="w-full">
+                <TabsList className="grid grid-cols-2 w-full mb-4">
+                  <TabsTrigger value="activity">Recent Activity</TabsTrigger>
+                  <TabsTrigger value="audit">Admin Audit Logs</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="activity" className="space-y-4">
+                  {(stats?.recentActivity ?? []).length === 0 ? (
+                    <div className="text-sm text-zinc-500 text-center py-10">No activity yet</div>
+                  ) : (
+                    (stats?.recentActivity ?? []).map((item, i) => (
+                      <div
+                        key={i}
+                        onClick={() => router.push("/admin/applications")}
+                        className="flex items-center gap-4 p-3 rounded-xl bg-zinc-950/40 border border-zinc-900/80 hover:bg-zinc-900/40 hover:border-zinc-800 transition-all cursor-pointer"
+                      >
+                        <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center text-xs font-bold text-zinc-300 border border-zinc-800">
+                          {item.userEmail.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-white truncate">{item.userEmail}</p>
+                          <p className="text-[10px] text-zinc-500 mt-0.5">
+                            {DEPT_NAMES[item.firstPreference] ?? item.firstPreference} →{" "}
+                            {DEPT_NAMES[item.secondPreference] ?? item.secondPreference}
+                          </p>
+                        </div>
+                        <Badge
+                          variant={
+                            item.overallStatus === "selected"
+                              ? "success"
+                              : item.overallStatus === "rejected"
+                              ? "destructive"
+                              : "warning"
+                          }
+                        >
+                          {item.overallStatus}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
 
-          {/* Quick actions */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
-            <h2 className="text-base font-bold text-white mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <button
+                <TabsContent value="audit" className="space-y-4">
+                  {(stats?.auditLogs ?? []).length === 0 ? (
+                    <div className="text-sm text-zinc-500 text-center py-10 flex flex-col items-center justify-center gap-2">
+                      <ShieldAlert className="h-8 w-8 text-zinc-650" />
+                      <span>No administrator audit logs recorded yet</span>
+                    </div>
+                  ) : (
+                    (stats?.auditLogs ?? []).map((item) => (
+                      <div
+                        key={item._id}
+                        className="flex items-start gap-4 p-3.5 rounded-xl bg-zinc-950/40 border border-zinc-900/80 hover:border-zinc-800 transition-all text-left"
+                      >
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center justify-between flex-wrap gap-1">
+                            <span className="text-[11px] font-bold text-white truncate max-w-44">
+                              {item.adminEmail}
+                            </span>
+                            <span className="text-[9px] font-semibold text-zinc-500">
+                              {new Date(item.createdAt).toLocaleTimeString(undefined, {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant={getActionBadgeVariant(item.action)}>
+                              {item.action.replace("_", " ")}
+                            </Badge>
+                            <span className="text-[10px] font-bold text-teal-400 truncate max-w-48">
+                              {item.target}
+                            </span>
+                          </div>
+                          {item.details && (
+                            <p className="text-[11px] text-zinc-400 font-medium leading-relaxed">
+                              {item.details}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Quick Actions</CardTitle>
+              <CardDescription>Shortcut workflows for recruitment admins</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                variant="outline"
                 onClick={() => router.push("/admin/applications")}
-                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all text-left"
+                className="w-full flex items-center justify-start gap-4 p-6 rounded-xl hover:border-teal-500/30 hover:bg-teal-500/5 group text-left h-auto"
               >
-                <Users className="h-5 w-5 text-teal-400 shrink-0" />
-                <div>
-                  <p className="text-sm font-bold text-white">Review Applications</p>
-                  <p className="text-[11px] text-slate-400">Advance or reject applicants through stages</p>
+                <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-400 group-hover:bg-teal-500/20 transition-all">
+                  <Users className="h-5 w-5" />
                 </div>
-              </button>
-              <button
+                <div>
+                  <p className="text-sm font-bold text-white">Review Submissions</p>
+                  <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                    Advance, select, or reject applicant cycles
+                  </p>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
                 onClick={() => router.push("/admin/settings")}
-                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all text-left"
+                className="w-full flex items-center justify-start gap-4 p-6 rounded-xl hover:border-violet-500/30 hover:bg-violet-500/5 group text-left h-auto"
               >
-                <Settings className="h-5 w-5 text-violet-400 shrink-0" />
-                <div>
-                  <p className="text-sm font-bold text-white">Department Settings</p>
-                  <p className="text-[11px] text-slate-400">Edit questions, capacity, and active status</p>
+                <div className="p-2.5 rounded-xl bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20 transition-all">
+                  <Compass className="h-5 w-5" />
                 </div>
-              </button>
-              <button
-                onClick={toggleCycle}
-                disabled={toggling}
-                className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 transition-all text-left disabled:opacity-50"
+                <div>
+                  <p className="text-sm font-bold text-white">Manage Departments</p>
+                  <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                    Toggle statuses, cycle parameters, and question forms
+                  </p>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setShowCycleConfirm(true)}
+                className="w-full flex items-center justify-start gap-4 p-6 rounded-xl hover:border-amber-500/30 hover:bg-amber-500/5 group text-left h-auto"
               >
-                {cycle?.isOpen ? (
-                  <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
-                ) : (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-                )}
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-all">
+                  <Zap className="h-5 w-5" />
+                </div>
                 <div>
                   <p className="text-sm font-bold text-white">
-                    {cycle?.isOpen ? "Close Recruitment" : "Open Recruitment"}
+                    {cycle?.isOpen ? "Suspend Submissions" : "Resume Submissions"}
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-zinc-400 font-medium mt-0.5">
                     {cycle?.isOpen
-                      ? "Stop accepting new applications and edits"
-                      : "Allow students to apply and edit responses"}
+                      ? "Temporarily close forms for new applicants"
+                      : "Allow open submissions and editing forms"}
                   </p>
                 </div>
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
+
+      {/* AlertDialog to replace standard window.confirm */}
+      <AlertDialog
+        isOpen={showCycleConfirm}
+        onClose={() => setShowCycleConfirm(false)}
+        onConfirm={handleToggleCycleConfirm}
+        title={cycle?.isOpen ? "Suspend Recruitment Cycle?" : "Resume Recruitment Cycle?"}
+        description={
+          cycle?.isOpen
+            ? "This will prevent applicants from submitting new forms or making edits to existing ones. Are you sure you want to suspend recruitment?"
+            : "This will open the recruitment forms and allow new submissions to be processed. Are you sure you want to resume recruitment?"
+        }
+        confirmText={cycle?.isOpen ? "Yes, Suspend" : "Yes, Resume"}
+        variant={cycle?.isOpen ? "destructive" : "default"}
+        loading={toggling}
+      />
+    </AdminLayout>
   );
 }

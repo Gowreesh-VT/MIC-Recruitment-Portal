@@ -2,20 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import {
-  BarChart3,
-  Users,
-  Settings,
-  LogOut,
   Loader2,
-  ToggleLeft,
-  ToggleRight,
   ChevronDown,
   ChevronUp,
   Save,
   CheckCircle2,
 } from "lucide-react";
+import { AdminLayout } from "@/components/AdminLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { AlertDialog } from "@/components/ui/dialog";
 
 const DEPTS = [
   { slug: "development", name: "Development", type: "tech" },
@@ -45,6 +44,9 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [toggling, setToggling] = useState(false);
   const [expanded, setExpanded] = useState<string>("");
+  
+  // AlertDialog state
+  const [showCycleConfirm, setShowCycleConfirm] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -79,18 +81,23 @@ export default function AdminSettingsPage() {
     load();
   }, []);
 
-  const toggleCycle = async () => {
+  const handleToggleCycleConfirm = async () => {
     if (!cycle) return;
-    if (!confirm(`${cycle.isOpen ? "Close" : "Open"} recruitment?`)) return;
+    setShowCycleConfirm(false);
     setToggling(true);
-    const res = await fetch("/api/admin/cycle", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isOpen: !cycle.isOpen }),
-    });
-    const data = await res.json();
-    if (data.success) setCycle(data.cycle);
-    setToggling(false);
+    try {
+      const res = await fetch("/api/admin/cycle", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isOpen: !cycle.isOpen }),
+      });
+      const data = await res.json();
+      if (data.success) setCycle(data.cycle);
+    } catch {
+      // ignore
+    } finally {
+      setToggling(false);
+    }
   };
 
   const saveDept = async (slug: string) => {
@@ -118,142 +125,116 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 text-teal-400 animate-spin" />
+          <p className="text-sm text-zinc-400 font-medium">Loading settings...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-56 bg-slate-900 border-r border-slate-800 flex flex-col z-20">
-        <div className="p-5 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">MIC Admin</p>
-          <p className="text-base font-bold text-white mt-1">Settings</p>
-        </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {[
-            { icon: <BarChart3 className="h-4 w-4" />, label: "Dashboard", href: "/admin/dashboard" },
-            { icon: <Users className="h-4 w-4" />, label: "Applications", href: "/admin/applications" },
-            { icon: <Settings className="h-4 w-4" />, label: "Settings", href: "/admin/settings", active: true },
-          ].map((item) => (
-            <button
-              key={item.href}
-              onClick={() => router.push(item.href)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                item.active ? "bg-teal-500/10 text-teal-400 border border-teal-500/20" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </nav>
-        <div className="p-3 border-t border-slate-800">
-          <button onClick={() => signOut({ callbackUrl: "/admin/login" })} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-all">
-            <LogOut className="h-4 w-4" /> Sign Out
-          </button>
-        </div>
-      </div>
-
-      {/* Main */}
-      <div className="ml-56 p-8 space-y-8">
+    <AdminLayout activePage="settings">
+      <div className="p-8 space-y-8 max-w-7xl mx-auto w-full">
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Settings</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage recruitment cycle and department configurations</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Settings</h1>
+          <p className="text-sm text-zinc-450 mt-1">Manage recruitment cycles and configure department stages</p>
         </div>
 
         {/* Recruitment cycle toggle */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <h2 className="text-base font-bold text-white">Recruitment Cycle</h2>
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold">Recruitment Forms Status</CardTitle>
+            <CardDescription>Open or close applications for the recruitment cycle</CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between flex-wrap gap-6 pt-0">
             <div>
-              <p className="text-sm font-semibold text-slate-200">{cycle?.label ?? "MIC Recruitment 2026–27"}</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm font-bold text-zinc-200">{cycle?.label ?? "MIC Recruitment 2026–27"}</p>
+              <p className="text-xs text-zinc-500 mt-1">
                 {cycle?.isOpen
-                  ? "Students can apply and edit their responses."
-                  : "Applications and edits are locked."}
+                  ? "Students can currently access the portal to apply and modify responses."
+                  : "All application forms and candidate edit controls are currently locked."}
               </p>
             </div>
-            <button
-              onClick={toggleCycle}
+            <Button
+              variant={cycle?.isOpen ? "default" : "destructive"}
+              onClick={() => setShowCycleConfirm(true)}
               disabled={toggling}
-              className={`flex items-center gap-2.5 px-5 py-3 rounded-xl border font-bold text-sm transition-all ${
-                cycle?.isOpen
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                  : "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-              }`}
+              className="px-6 font-bold h-11"
             >
-              {toggling ? <Loader2 className="h-4 w-4 animate-spin" /> : cycle?.isOpen ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
+              {toggling && <Loader2 className="h-4 w-4 animate-spin" />}
               {cycle?.isOpen ? "OPEN — Click to Close" : "CLOSED — Click to Open"}
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Department configurations */}
-        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-slate-800">
-            <h2 className="text-base font-bold text-white">Department Configuration</h2>
-            <p className="text-xs text-slate-400 mt-1">Toggle active status, set max capacity, and configure stage counts.</p>
-          </div>
-
-          <div className="divide-y divide-slate-800">
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-zinc-900 bg-zinc-950/10">
+            <CardTitle className="text-base font-bold">Department Configuration</CardTitle>
+            <CardDescription>
+              Toggle active status, cap admission counts, and configure stage sequences
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-0 divide-y divide-zinc-900">
             {DEPTS.map((dept) => {
               const config = deptConfigs[dept.slug];
               const isExpanded = expanded === dept.slug;
 
               return (
-                <div key={dept.slug}>
+                <div key={dept.slug} className="transition-colors hover:bg-zinc-950/10">
                   <button
                     onClick={() => setExpanded(isExpanded ? "" : dept.slug)}
-                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-800/30 transition-all text-left"
+                    className="w-full flex items-center justify-between px-6 py-4 text-left transition-all hover:bg-zinc-900/30 cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold text-white`}>{dept.name}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        dept.type === "tech" ? "bg-cyan-500/15 text-cyan-400" : "bg-violet-500/15 text-violet-400"
-                      }`}>
+                      <span className="text-sm font-bold text-white">{dept.name}</span>
+                      <Badge variant={dept.type === "tech" ? "info" : "secondary"}>
                         {dept.type}
-                      </span>
+                      </Badge>
                       {config && (
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          config.isActive ? "bg-emerald-500/15 text-emerald-400" : "bg-slate-700 text-slate-500"
-                        }`}>
+                        <Badge variant={config.isActive ? "success" : "default"}>
                           {config.isActive ? "Active" : "Inactive"}
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    {isExpanded ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-zinc-500" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-zinc-500" />
+                    )}
                   </button>
 
                   {isExpanded && config && (
-                    <div className="px-5 pb-5 space-y-4">
+                    <div className="px-6 pb-6 pt-2 space-y-5 bg-zinc-900/10">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {/* Active toggle */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Active</label>
-                          <button
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">
+                            Status State
+                          </label>
+                          <Button
+                            variant={config.isActive ? "emerald" : "secondary"}
                             onClick={() =>
                               setDeptConfigs((p) => ({
                                 ...p,
                                 [dept.slug]: { ...p[dept.slug], isActive: !p[dept.slug].isActive },
                               }))
                             }
-                            className={`w-full py-2.5 rounded-xl border font-bold text-sm transition-all ${
-                              config.isActive
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                : "bg-slate-800 border-slate-700 text-slate-400"
-                            }`}
+                            className="w-full font-bold text-sm h-10"
                           >
-                            {config.isActive ? "Enabled" : "Disabled"}
-                          </button>
+                            {config.isActive ? "Active / Enabled" : "Inactive / Disabled"}
+                          </Button>
                         </div>
 
                         {/* Max capacity */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Max Capacity</label>
-                          <input
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">
+                            Max Capacity Limit
+                          </label>
+                          <Input
                             type="number"
                             min={1}
                             max={200}
@@ -261,17 +242,22 @@ export default function AdminSettingsPage() {
                             onChange={(e) =>
                               setDeptConfigs((p) => ({
                                 ...p,
-                                [dept.slug]: { ...p[dept.slug], maxCapacity: parseInt(e.target.value) || 1 },
+                                [dept.slug]: {
+                                  ...p[dept.slug],
+                                  maxCapacity: parseInt(e.target.value) || 1,
+                                },
                               }))
                             }
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-slate-600"
+                            className="font-bold"
                           />
                         </div>
 
                         {/* Total stages */}
                         <div className="space-y-2">
-                          <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Total Stages</label>
-                          <input
+                          <label className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">
+                            Total Evaluation Stages
+                          </label>
+                          <Input
                             type="number"
                             min={1}
                             max={5}
@@ -279,36 +265,58 @@ export default function AdminSettingsPage() {
                             onChange={(e) =>
                               setDeptConfigs((p) => ({
                                 ...p,
-                                [dept.slug]: { ...p[dept.slug], totalStages: parseInt(e.target.value) || 1 },
+                                [dept.slug]: {
+                                  ...p[dept.slug],
+                                  totalStages: parseInt(e.target.value) || 1,
+                                },
                               }))
                             }
-                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-slate-600"
+                            className="font-bold"
                           />
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => saveDept(dept.slug)}
-                        disabled={saving[dept.slug]}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-teal-500/10 border border-teal-500/30 text-teal-400 font-bold text-sm hover:bg-teal-500/20 transition-all disabled:opacity-50"
-                      >
-                        {saving[dept.slug] ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : saved[dept.slug] ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        {saved[dept.slug] ? "Saved!" : "Save Changes"}
-                      </button>
+                      <div className="flex justify-end pt-2">
+                        <Button
+                          onClick={() => saveDept(dept.slug)}
+                          disabled={saving[dept.slug]}
+                          variant="emerald"
+                          className="font-bold text-sm h-10 min-w-36 gap-2"
+                        >
+                          {saving[dept.slug] ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : saved[dept.slug] ? (
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          {saved[dept.slug] ? "Changes Saved!" : "Save Changes"}
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
               );
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+
+      {/* AlertDialog to replace standard window.confirm */}
+      <AlertDialog
+        isOpen={showCycleConfirm}
+        onClose={() => setShowCycleConfirm(false)}
+        onConfirm={handleToggleCycleConfirm}
+        title={cycle?.isOpen ? "Lock Recruitment Applications?" : "Unlock Recruitment Applications?"}
+        description={
+          cycle?.isOpen
+            ? "Students will no longer be able to submit application requests or adjust their existing application settings. Are you sure you want to proceed?"
+            : "This action will reopen forms and allow new candidates to submit forms and edit settings. Are you sure you want to proceed?"
+        }
+        confirmText={cycle?.isOpen ? "Yes, Lock Cycle" : "Yes, Unlock Cycle"}
+        variant={cycle?.isOpen ? "destructive" : "default"}
+        loading={toggling}
+      />
+    </AdminLayout>
   );
 }
