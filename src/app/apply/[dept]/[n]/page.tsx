@@ -50,8 +50,8 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
         borderStyle: "solid",
         borderWidth: "0 0 24px 0",
         borderColor: "transparent",
-        borderImageSource: "url(/green_pipe.svg)",
-        borderImageSlice: "0 0 24 0 fill",
+        borderImageSource: "url(/green_pipe.png)",
+        borderImageSlice: "0 0 64 0 fill",
         borderImageRepeat: "stretch",
       }}
     />
