@@ -116,7 +116,7 @@ export default function Homepage() {
     <>
       <RetroLoader isLoading={isLoading} title="BOOTING THE QUEST" />
 
-      <div className={`${pressStart.variable} font-press-start w-full h-screen overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
+      <div className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
         {/* Absolute positioned scaled background container centered horizontally */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2"

@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState, Fragment } from "react";
 import { Press_Start_2P } from "next/font/google";
 import MicLogo from "@/components/MicLogo";
+import BackButton from "@/components/BackButton";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -11,12 +12,13 @@ const pressStart = Press_Start_2P({
   variable: "--font-press-start-2p",
 });
 
-function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
+function RetroPipe({ height, top, left, right, isTop }: { height: number; top?: string; left?: string; right?: string; isTop: boolean }) {
   return (
     <div
-      className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
+      className="absolute select-none pointer-events-none z-[-1] w-[52px] pixelated"
       style={{
         left,
+        right,
         top,
         height: `${height}px`,
         transform: isTop ? "none" : "scaleY(-1)",
@@ -25,7 +27,7 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
         borderColor: "transparent",
         borderImageSource: "url(/green_pipe.png)",
         borderImageSlice: "0 0 64 0 fill",
-        borderImageRepeat: "stretch",
+        borderImageRepeat: "repeat",
       }}
     />
   );
@@ -92,7 +94,7 @@ function ErrorContent() {
   };
 
   return (
-    <div className={`${pressStart.variable} font-press-start w-full h-screen overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
+    <div className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
       {/* Absolute positioned scaled background container centered horizontally */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2"
@@ -112,7 +114,8 @@ function ErrorContent() {
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.2s" }} />
 
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[500px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
           
           {Array.from({ length: 12 }).map((_, idx) => (
             <img key={idx} src="/city_skyline.svg" alt="Skyline Block" className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated" style={{ left: `${idx * 245}px` }} />
@@ -128,8 +131,7 @@ function ErrorContent() {
             />
           ))}
 
-          <RetroPipe left="1156px" top="-5px" height={400} isTop={true} />
-          <RetroPipe left="1656px" top="-5px" height={400} isTop={true} />
+          {/* Pipes moved to Foreground Error Box for perfect alignment */}
           
 
           <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col select-none pointer-events-none">
@@ -162,9 +164,18 @@ function ErrorContent() {
       </div>
 
       <MicLogo />
+      
+      {/* Back Button */}
+      <BackButton onClick={() => router.push("/login")} />
 
       {/* Error Box */}
-      <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up">
+      <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up mt-10">
+        
+        {/* Support Pipes - Positioned relative to the box so they never break alignment */}
+        <RetroPipe left="48px" top="-400px" height={420} isTop={true} />
+        <RetroPipe right="48px" top="-400px" height={420} isTop={true} />
+
+        {/* Retro Window Container */}
         <div 
           className="bg-[#FFE4D6] rounded-[10px] border-4 border-black flex flex-col items-center p-2 relative"
           style={{ boxShadow: "12px 12px 0px 0px rgba(0,0,0,0.4)" }}
@@ -179,14 +190,9 @@ function ErrorContent() {
 
           <div className="w-full p-6 md:p-8 flex flex-col items-center gap-6 bg-[#FFDED6] mt-2 border-4 border-black rounded-[6px]">
             
-            {/* Pixel Art Error/X Shield Icon */}
+            {/* Flappy Bird Icon */}
             <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center p-1.5 shadow-[4px_4px_0px_#000] hover:animate-retro-shake">
-              <svg className="w-full h-full pixelated" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 1h12v1H2V1zM2 2h1v9h-1V2zm12 0h1v9h-1V2zm-11 9h1v1H3v-1zm10 0h1v1h-1v-1zm-9 1h1v1H4v-1zm8 0h1v1h-1v-1zm-7 1h1v1H5v-1zm6 0h1v1H6v-1zm-5 1h4v1H6v-1z" fill="#000"/>
-                <path d="M3 2h10v7H3V2zm0 7h1v1H3V9zm9 0h1v1h-1V9zm-8 1h1v1H4v-1zm6 0h1v1h-1v-1zm-5 1h4v1H5v-1z" fill="#A93710"/>
-                {/* Red X shape in the shield */}
-                <path d="M5 4h2v1H5V4zm4 0h2v1H9V4zm1 1h-1v1H9V5zm-2 1H6v1h2V6zm-1 1h1v1H7V7zm-2-2h1v1H5V5zm4 0h1v1H9V5z" fill="#fff"/>
-              </svg>
+              <img src="/flappy_bird.svg" alt="Bird" className="pixelated object-contain w-full h-full animate-retro-float-small" />
             </div>
 
             <div className="text-center space-y-4 w-full">

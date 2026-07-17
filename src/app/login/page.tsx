@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import MicLogo from "@/components/MicLogo";
+import BackButton from "@/components/BackButton";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -29,7 +30,7 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
         borderColor: "transparent",
         borderImageSource: "url(/green_pipe.png)",
         borderImageSlice: "0 0 64 0 fill",
-        borderImageRepeat: "stretch",
+        borderImageRepeat: "repeat",
       }}
     />
   );
@@ -108,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={`${pressStart.variable} font-press-start w-full h-screen overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
+    <div className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
       {/* Absolute positioned scaled background container centered horizontally */}
       <div
         className="absolute top-0 left-1/2 -translate-x-1/2"
@@ -121,11 +122,11 @@ export default function LoginPage() {
       >
         <div className="w-[2865px] h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden">
           
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[300px] left-[1060px] w-[280px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[1167px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.5s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[333px] left-[2509px] w-[260px] opacity-75 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.8s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
+          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[300px] left-[850px] w-[280px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0s" }} />
+        <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1s" }} />
+        <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[1300px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.5s" }} />
+        <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[333px] left-[2509px] w-[260px] opacity-75 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.8s" }} />
+        <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[1800px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.2s" }} />
 
           <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
@@ -145,9 +146,26 @@ export default function LoginPage() {
             />
           ))}
 
-          <RetroPipe left="1156px" top="-5px" height={400} isTop={true} />
-          <RetroPipe left="1656px" top="-5px" height={400} isTop={true} />
+          <RetroPipe left="1156px" top="-30px" height={430} isTop={true} />
+          <RetroPipe left="1656px" top="-30px" height={430} isTop={true} />
           
+
+          {/* Angry Birds Elements */}
+          
+          {/* Scaled up Tower (Building) on the Right */}
+          <img 
+            src="/angry_bird_building.png?v=2" 
+            alt="Angry Bird Building" 
+            className="absolute top-[475px] left-[1900px] h-[450px] w-auto z-30 pointer-events-none select-none pixelated drop-shadow-md" 
+          />
+          
+          {/* Small Pipe on the Right to balance composition near slingshot (Removed as per request) */}
+
+          {/* Slingshot Composite on the Left */}
+          <div className="absolute top-[675px] left-[600px] w-[170px] h-[250px] z-30 pointer-events-none select-none drop-shadow-md">
+            {/* Base Slingshot */}
+            <img src="/angry_bird_catapult.png?v=2" className="absolute inset-0 w-full h-full pixelated" alt="Slingshot Base" />
+          </div>
 
           <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col select-none pointer-events-none">
             <div className="w-full h-5 bg-[#52AE26] border-t-4 border-b-4 border-black flex flex-col justify-between shrink-0">
@@ -180,6 +198,9 @@ export default function LoginPage() {
 
       <MicLogo />
 
+      {/* Back Button */}
+      <BackButton onClick={() => router.push("/")} />
+
       {/* Login Dialog Box */}
       <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up">
         <div 
@@ -195,10 +216,6 @@ export default function LoginPage() {
           </div>
 
           <div className="w-full p-6 md:p-8 flex flex-col items-center gap-6 bg-[#FFDED6] mt-2 border-4 border-black rounded-[6px]">
-            
-            <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center p-1 shadow-[4px_4px_0px_#000] hover:animate-retro-shake">
-                <img src="/flappy_bird.svg" alt="Bird" className="pixelated object-contain w-full h-full animate-retro-float-small" />
-            </div>
 
             <div className="text-center space-y-4">
               <h2 className="text-[12px] font-bold text-[#A93710] leading-loose drop-shadow-[1px_1px_0px_#fff]">
