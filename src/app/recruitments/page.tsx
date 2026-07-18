@@ -725,12 +725,7 @@ export default function RecruitmentsPage() {
 
 
 
-          {/* Score Counter (Flappy Bird Interaction) */}
-          {birdScore > 0 && (
-            <div className="absolute right-[160px] top-8 z-30 bg-black/80 border-4 border-black p-3 text-[11px] text-yellow-400 retro-shadow">
-              FLAPS: {birdScore}
-            </div>
-          )}
+          
 
 
 
