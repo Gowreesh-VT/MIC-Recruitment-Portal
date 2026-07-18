@@ -579,10 +579,10 @@ export default function RecruitmentsPage() {
         <div 
           className="px-8 py-6 flex flex-col items-start justify-center pointer-events-auto" 
         >
-          <h1 className="font-normal text-black text-[64px] tracking-[0] leading-[67px] uppercase whitespace-nowrap drop-shadow-[3px_3px_0px_#fff]">
+          <h1 className="font-normal text-black text-[64px] tracking-[0] leading-[67px] uppercase whitespace-nowrap">
             {pageTitle}
           </h1>
-          <p className="text-[12px] text-black font-bold tracking-[0] leading-[21px] mt-2 uppercase drop-shadow-[1px_1px_0px_#fff]">
+          <p className="text-[12px] text-black font-bold tracking-[0] leading-[21px] mt-2 uppercase">
             {pageSubtitle}
           </p>
         </div>
