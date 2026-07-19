@@ -272,6 +272,20 @@ export default function RecruitmentsPage() {
   const targetScrollXRef = useRef(0);
   const isKeyScrollingRef = useRef(false);
 
+  // Instructions Popup State
+  const [showInstructions, setShowInstructions] = useState(false);
+  const showInstructionsRef = useRef(false);
+
+  const updateShowInstructions = (val: boolean) => {
+    setShowInstructions(val);
+    showInstructionsRef.current = val;
+  };
+
+  const closeInstructions = () => {
+    updateShowInstructions(false);
+    sessionStorage.setItem("hasShownInstructions", "true");
+  };
+
   const updateGameStatus = (status: "idle" | "playing" | "dead") => {
     setGameStatus(status);
     gameStatusRef.current = status;
@@ -445,6 +459,16 @@ export default function RecruitmentsPage() {
       active = false;
     };
   }, [fetchStatus]);
+
+  // Show instructions on first load of the page in the browser session
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasShown = sessionStorage.getItem("hasShownInstructions");
+      if (!hasShown) {
+        updateShowInstructions(true);
+      }
+    }
+  }, []);
 
   // Ultra-Smooth GPU Physics Engine for Flappy Bird (native 60/120fps camera follow & jump arcs)
   useEffect(() => {
@@ -623,6 +647,15 @@ export default function RecruitmentsPage() {
         return;
       }
       
+      // Handle closing instructions overlay with Spacebar or Enter
+      if (showInstructionsRef.current) {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          closeInstructions();
+        }
+        return;
+      }
+
       // Don't capture keys if popup is open or error is displayed
       if (selectedDepartment !== null || error !== null) {
         return;
@@ -661,7 +694,7 @@ export default function RecruitmentsPage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedDepartment, error]);
+  }, [selectedDepartment, error, showInstructions]);
 
   // Map vertical wheel scroll to horizontal scroll (scaled down for smooth touchpad/wheel sliding)
   useEffect(() => {
@@ -1265,6 +1298,46 @@ export default function RecruitmentsPage() {
               style={{ boxShadow: "4px 4px 0px 0px #000" }}
             >
               REPLAY
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================= INSTRUCTIONS POPUP OVERLAY ================= */}
+      {showInstructions && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div 
+            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-md w-full relative flex flex-col items-center gap-4 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]" 
+          >
+            {/* Header Tag */}
+            <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-10 mb-2 shadow-[2px_2px_0px_#000]">
+              QUEST RULES
+            </div>
+
+            <div className="text-[12px] text-black font-bold tracking-wider uppercase my-2">
+              Please read before questing:
+            </div>
+
+            <div className="flex flex-col gap-3 text-left w-full text-[10px] text-black/85 leading-loose font-bold uppercase border-2 border-dashed border-[#A93710] p-4 bg-white/50">
+              <div className="flex items-start gap-2.5">
+                <span className="text-[#A93710]">▶</span>
+                <span>You can apply for a maximum of <span className="text-[#E29A2B]">ONE TECHNICAL</span> department preference.</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-[#A93710]">▶</span>
+                <span>You can apply for a maximum of <span className="text-[#E29A2B]">ONE NON-TECHNICAL</span> department preference.</span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="text-[#A93710]">▶</span>
+                <span>Once a quest is started, your preference choice for that category is locked.</span>
+              </div>
+            </div>
+
+            <button 
+              onClick={closeInstructions}
+              className="bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-2.5 px-6 text-[10px] font-bold text-black uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 mt-2 shadow-[4px_4px_0px_0px_#000]"
+            >
+              START QUESTING!
             </button>
           </div>
         </div>
