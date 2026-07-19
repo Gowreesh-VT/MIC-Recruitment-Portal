@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import DepartmentPopup, { DepartmentData } from "@/components/DepartmentPopup";
+import PreferenceConfirmationModal from "@/components/PreferenceConfirmationModal";
 import { Loader2 } from "lucide-react";
 import posthog from "posthog-js";
 import RetroLoader from "@/components/RetroLoader";
@@ -358,6 +359,7 @@ export default function RecruitmentsPage() {
   const [isLoadingApp, setIsLoadingApp] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
+  const [prefConfirmRole, setPrefConfirmRole] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Backend design & dynamic configuration state
@@ -742,24 +744,28 @@ export default function RecruitmentsPage() {
     setSelectedDepartment(quest);
   };
 
-  const handleApplyFromPopup = async (role: string) => {
-    if (isApplying) return;
-    
-    if (!user) {
-      router.push("/login?callbackUrl=/recruitments");
-      return;
-    }
-
-    setIsApplying(true);
-    playRetroSound("select");
-    
-    if (!isLoggedIn) {
+  const handleApplyFromPopup = (role: string) => {
+    if (!user || !isLoggedIn) {
+      playRetroSound("select");
       router.push(`/login?callbackUrl=/recruitments`);
       return;
     }
-    
+    playRetroSound("open");
+    setPrefConfirmRole(role);
+  };
+
+  const handleConfirmPreference = async (preference: 1 | 2) => {
+    if (!prefConfirmRole || isApplying) return;
+
+    setIsApplying(true);
+    playRetroSound("select");
+
+    const role = prefConfirmRole;
+    setPrefConfirmRole(null);
+    setSelectedDepartment(null);
+
     try {
-      if (!appStatus) {
+      if (preference === 1) {
         // Init first preference
         const res = await fetch("/api/apply/init", {
           method: "POST",
@@ -774,7 +780,7 @@ export default function RecruitmentsPage() {
           alert(data.error);
           setIsApplying(false);
         }
-      } else if (!appStatus.secondPreference) {
+      } else {
         // Init second preference
         const res = await fetch("/api/apply/second-pref", {
           method: "POST",
@@ -1266,6 +1272,19 @@ export default function RecruitmentsPage() {
             setSelectedDepartment(null);
           }}
           onApply={handleApplyFromPopup}
+        />
+      )}
+
+      {prefConfirmRole && (
+        <PreferenceConfirmationModal
+          roleTitle={selectedDepartment?.title || prefConfirmRole}
+          firstPreference={appStatus?.firstPreference}
+          secondPreference={appStatus?.secondPreference}
+          onConfirm={handleConfirmPreference}
+          onCancel={() => {
+            playRetroSound("close");
+            setPrefConfirmRole(null);
+          }}
         />
       )}
 
