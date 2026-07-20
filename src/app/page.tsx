@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import RetroLoader from "@/components/RetroLoader";
 import MicLogo from "@/components/MicLogo";
+import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -148,38 +149,7 @@ export default function Homepage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const playRetroSound = (type: "select" | "open") => {
-    if (typeof window === "undefined") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
 
-      if (type === "select") {
-        osc.type = "square";
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.setValueAtTime(900, ctx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.2);
-      } else if (type === "open") {
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(300, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      }
-    } catch (e) {
-      console.warn("Audio Context failed", e);
-    }
-  };
 
   return (
     <>
