@@ -3,13 +3,15 @@
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
-import { Loader2, CheckCircle2, AlertTriangle, Send, Edit3, PlayCircle, Github, Link } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Send, Edit3, PlayCircle, Github, Link, FileText } from "lucide-react";
 import type { FormField, StageConfig } from "@/models/Department";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import posthog from "posthog-js";
 import BackButton from "@/components/BackButton";
 import RetroLoader from "@/components/RetroLoader";
+import { playRetroSound as playRetroSoundImport } from "@/lib/audio";
 import { validateResponses } from "@/lib/validation";
+import StageProgressHeader from "@/components/StageProgressHeader";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -289,6 +291,96 @@ function FieldRenderer({
       );
     }
 
+    case "file": {
+      const isUploading = value === "_UPLOADING_";
+      const fileUrl = (typeof value === "string" && value !== "_UPLOADING_") ? value : "";
+
+      const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Ensure PDF
+        if (file.type !== "application/pdf") {
+          alert("Only PDF files are allowed.");
+          return;
+        }
+        if (file.size > 8 * 1024 * 1024) {
+          alert("File size must be less than 8MB.");
+          return;
+        }
+
+        try {
+          onChange("_UPLOADING_");
+
+          // 1. Get presigned URL
+          const res = await fetch("/api/upload/presigned", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({ filename: file.name, contentType: file.type }),
+          });
+
+          const data = await res.json();
+          if (!res.ok || !data.success) throw new Error(data.error || "Failed to generate presigned URL");
+
+          // 2. Upload file directly to S3
+          const uploadRes = await fetch(data.presignedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+
+          if (!uploadRes.ok) throw new Error("Failed to upload to S3.");
+
+          // 3. Save final URL
+          onChange(data.finalUrl);
+        } catch (error: any) {
+          console.error("Upload error:", error);
+          alert(error.message || "Upload failed.");
+          onChange(""); // reset
+        }
+      };
+
+      return (
+        <div className="flex flex-col gap-2">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+            {field.label} {field.required && <span className="text-red-500">*</span>}
+          </div>
+          {fileUrl ? (
+            <div className={`flex items-center justify-between p-3 border-[3px] border-[#52AE26] bg-[#E8F8E2] rounded-[8px] ${disabled ? 'opacity-70' : ''}`}>
+              <div className="flex items-center gap-2 overflow-hidden">
+                <CheckCircle2 className="w-5 h-5 text-[#52AE26] flex-shrink-0" />
+                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-black font-sans truncate underline decoration-[#52AE26] underline-offset-2 hover:text-[#52AE26]">
+                  {fileUrl.split('/').pop()}
+                </a>
+              </div>
+              {!disabled && (
+                <button type="button" onClick={() => onChange("")} className="ml-2 text-red-500 hover:text-red-700 font-bold text-xs uppercase px-2 py-1 shrink-0">
+                  Remove
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                id={field.id}
+                type="file"
+                accept=".pdf"
+                required={field.required}
+                disabled={disabled || isUploading}
+                onChange={handleFileUpload}
+                className={`${base} file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#FFE4D6] file:text-[#A05522] hover:file:bg-[#FFDED6] file:cursor-pointer ${disabled ? 'opacity-70 cursor-not-allowed bg-slate-100' : ''}`}
+              />
+              {isUploading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs text-slate-500 font-bold uppercase bg-white px-2">
+                  <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     default:
       return (
         <div className="flex flex-col gap-2">
@@ -336,8 +428,10 @@ export default function StagePage({
   const [showLoader, setShowLoader] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [lockError, setLockError] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [deptName, setDeptName] = useState("");
+  const [application, setApplication] = useState<ApplicationStatus | null>(null);
   // Turnstile — token verified server-side before each submission
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
@@ -378,6 +472,9 @@ export default function StagePage({
             setResponses(data.submission.responses ?? {});
             hasSubmission = true;
           }
+        } else {
+          const data = await stageRes.json();
+          setLockError(data.error || "This stage is locked.");
         }
 
         if (deptRes.ok) {
@@ -394,6 +491,7 @@ export default function StagePage({
           setCycleOpen(statusData.cycleOpen ?? true);
           userData = statusData.user;
           appData = statusData.application;
+          setApplication(statusData.application);
         }
 
         // Auto-fill logic
@@ -506,34 +604,49 @@ export default function StagePage({
   };
 
   const playRetroSound = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "square";
-      osc.frequency.setValueAtTime(400, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {}
+    playRetroSoundImport("jump");
   };
 
   if (showLoader) {
     return <RetroLoader isLoading={!dataLoaded} onComplete={() => setShowLoader(false)} title="LOADING STAGE..." />;
   }
 
+  if (lockError) {
+    return (
+      <main className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
+        <RetroBackground scale={scale} />
+        <div className="relative z-40 w-full max-w-[650px] px-4">
+          <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
+            <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
+              <span className="text-black text-[16px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
+                LOCKED
+              </span>
+            </div>
+            <div className="p-8 flex flex-col items-center">
+              <div className="border-[3px] border-black bg-white p-8 relative w-full flex flex-col items-center gap-4">
+                <AlertTriangle className="w-10 h-10 text-amber-500" />
+                <h1 className="text-[10px] text-center font-bold text-[#A93710] leading-loose">STAGE {stageNum} IS LOCKED</h1>
+                <p className="text-[8px] text-center text-black leading-loose font-bold">{lockError}</p>
+                <button
+                  onClick={() => { playRetroSound(); router.push("/recruitments"); }}
+                  className="mt-4 bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-2.5 px-6 text-[8px] font-bold tracking-widest transition-transform active:translate-y-1"
+                  style={{ boxShadow: "3px 3px 0px 0px #000" }}
+                >
+                  RETURN TO MAP
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (!stageConfig) {
     return (
       <main className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
         <RetroBackground scale={scale} />
-        <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up">
+        <div className="relative z-40 w-full max-w-[650px] px-4">
           <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
             <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
               <span className="text-black text-[18px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
@@ -565,7 +678,7 @@ export default function StagePage({
       <main className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
         <RetroBackground scale={scale} />
         
-        <div className="relative z-40 w-full max-w-[650px] px-4 animate-pixel-slide-up" style={{ marginTop: "40px" }}>
+        <div className="relative z-40 w-full max-w-[650px] px-4" style={{ marginTop: "40px" }}>
           
           <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
             
@@ -614,7 +727,7 @@ export default function StagePage({
       <BackButton onClick={() => { stageNum > 1 ? router.push(`/apply/${dept}/stage-${stageNum - 1}`) : router.push("/recruitments"); }} />
 
       {/* Main Hanging Signboard */}
-      <div className="relative z-40 w-full max-w-[1000px] px-4 md:px-16 animate-pixel-slide-up" style={{ marginTop: "40px" }}>
+      <div className="relative z-40 w-full max-w-[1000px] px-4 md:px-16" style={{ marginTop: "40px" }}>
         
         {/* Signboard Container */}
         <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col max-h-[85vh]" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
@@ -645,24 +758,68 @@ export default function StagePage({
             </button>
           </div>
 
+          {/* Progress Circles */}
+          {application && (
+            <div className="border-b-[3px] border-black bg-[#FFD4C0] py-2 flex justify-center shrink-0">
+              <StageProgressHeader
+                currentStage={
+                  application.firstPreference === dept
+                    ? application.firstPrefProgress.currentStage
+                    : application.secondPrefProgress?.currentStage ?? 1
+                }
+                stages={
+                  application.firstPreference === dept
+                    ? application.firstPrefProgress.stages
+                    : application.secondPrefProgress?.stages ?? []
+                }
+                status={
+                  application.firstPreference === dept
+                    ? application.firstPrefProgress.status
+                    : application.secondPrefProgress?.status ?? "active"
+                }
+              />
+            </div>
+          )}
+
           {/* Form Body */}
           <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar flex-grow">
             <div className="border-[3px] border-black bg-white p-4 md:p-6 relative">
               
               {/* Progress Indicator inside form area (Retro Style) */}
-              {stageNum === 1 ? (
-                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
-                  PERSONAL INFO
-                </div>
-              ) : (
-                <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
-                  STAGE {stageNum - 1}/{totalStages - 1}
-                </div>
-              )}
+              <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
+                {stageNum === 1 && "FORM FILLING: PERSONAL INFO"}
+                {stageNum === 2 && "FORM FILLING: DOMAIN QUESTIONS"}
+                {stageNum === 3 && "TASK SUBMISSION"}
+              </div>
 
               <form onSubmit={handleSubmit} className="mt-4">
                 {/* Hidden honeypot */}
                 <input type="text" name="_trap" className="hidden" tabIndex={-1} aria-hidden="true" />
+
+                {stageConfig?.stage === 3 && (
+                  <div className="mb-8 p-6 bg-[#FFF2E6] border-[3px] border-[#A05522] rounded-[8px] flex flex-col gap-4 font-sans text-black">
+                    <h2 className="text-[10px] font-press-start font-bold text-[#A05522] uppercase tracking-wider">
+                      ► TASK INSTRUCTIONS
+                    </h2>
+                    <p className="text-xs leading-relaxed whitespace-pre-line font-medium text-slate-800">
+                      {stageConfig.description}
+                    </p>
+                    {stageConfig.taskPdf && (
+                      <div className="mt-2 flex">
+                        <a
+                          href={stageConfig.taskPdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[8px] py-2.5 px-5 text-[8px] font-press-start font-bold tracking-widest transition-transform active:translate-y-0.5 inline-flex items-center gap-2"
+                          style={{ boxShadow: "3px 3px 0px 0px #000" }}
+                        >
+                          <FileText className="w-4 h-4 text-[#A05522]" />
+                          DOWNLOAD TASK PDF
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {error && (
                   <div className="p-3 mb-6 bg-red-100 border-[3px] border-red-500 flex items-center gap-3 text-xs text-red-700 font-bold uppercase">

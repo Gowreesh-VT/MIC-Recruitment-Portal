@@ -25,9 +25,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   await dbConnect();
 
-  const [application, department] = await Promise.all([
+  const [application, department, cycle] = await Promise.all([
     Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
     Department.findOne({ slug: dept }),
+    RecruitmentCycle.findOne({ cycleId: CYCLE_ID }),
   ]);
 
   if (!application) {
@@ -37,9 +38,25 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: false, error: "Department not found." }, { status: 404 });
   }
 
+  const { isStageOpen } = await import("@/lib/cycle");
+  if (!isStageOpen(cycle, department, stageNum)) {
+    return NextResponse.json(
+      { success: false, error: `Stage ${stageNum} is currently closed for this department.` },
+      { status: 403 }
+    );
+  }
+
   // Determine which preference this dept belongs to
   const isFirst = application.firstPreference === dept;
   const progress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
+
+  if (stageNum > progress.currentStage) {
+    return NextResponse.json(
+      { success: false, error: "This stage is locked. Please wait for the recruitment team to review your previous stages." },
+      { status: 403 }
+    );
+  }
+
   const stageSubmission = progress.stages.find((s) => s.stage === stageNum);
   const stageConfig = department.stages.find((s) => s.stage === stageNum);
 
@@ -69,18 +86,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     await dbConnect();
 
-    const cycle = await RecruitmentCycle.findOne({ cycleId: CYCLE_ID });
-    const { isCycleOpen } = await import("@/lib/cycle");
-    if (!isCycleOpen(cycle)) {
-      return NextResponse.json(
-        { success: false, error: "Recruitment is currently closed." },
-        { status: 403 }
-      );
-    }
-
-    const [application, department] = await Promise.all([
+    const [application, department, cycle] = await Promise.all([
       Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
       Department.findOne({ slug: dept }),
+      RecruitmentCycle.findOne({ cycleId: CYCLE_ID })
     ]);
 
     if (!application) {
@@ -88,6 +97,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
     if (!department) {
       return NextResponse.json({ success: false, error: "Department not found." }, { status: 404 });
+    }
+
+    const { isStageOpen } = await import("@/lib/cycle");
+    if (!isStageOpen(cycle, department, stageNum)) {
+      return NextResponse.json(
+        { success: false, error: `Stage ${stageNum} is currently closed for this department.` },
+        { status: 403 }
+      );
     }
 
     const isFirst = application.firstPreference === dept;
@@ -163,25 +180,21 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     } else {
       // Push new stage submission
-      const nextStage = Math.max(progress.currentStage, stageNum + 1);
-      const reachedMax = nextStage > department.totalStages;
+      // Only Stage 1 automatically advances the candidate's currentStage to Stage 2
+      const nextStage = stageNum === 1 ? 2 : progress.currentStage;
 
       await Application.updateOne(
         { userId: session.user.id, cycleId: CYCLE_ID },
         {
           $push: { [`${progressKey}.stages`]: submission },
           $set: {
-            [`${progressKey}.currentStage`]: reachedMax
-              ? department.totalStages
-              : nextStage,
+            [`${progressKey}.currentStage`]: nextStage,
           },
         }
       );
 
       // Send email receipt on initial application submission (stage 1)
       if (stageNum === 1) {
-        // we use session.user.email, which requires adding email to session or fetching it.
-        // wait, application model has userEmail
         sendApplicationReceipt(application.userEmail, department.name).catch(console.error);
       }
     }
@@ -189,8 +202,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       success: true,
       message: `Stage ${stageNum} submitted successfully.`,
-      nextStage: Math.min(stageNum + 1, department.totalStages),
-      isLastStage: stageNum >= department.totalStages,
+      nextStage: stageNum === 1 ? 2 : stageNum,
+      isLastStage: stageNum >= 2,
     });
   } catch (err) {
     console.error("stage submit error:", err);
@@ -215,19 +228,23 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   try {
     await dbConnect();
 
-    const cycle = await RecruitmentCycle.findOne({ cycleId: CYCLE_ID });
-    const { isCycleOpen } = await import("@/lib/cycle");
-    if (!isCycleOpen(cycle)) {
+    const [application, department, cycle] = await Promise.all([
+      Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
+      Department.findOne({ slug: dept }),
+      RecruitmentCycle.findOne({ cycleId: CYCLE_ID })
+    ]);
+
+    if (!application || !department) {
+      return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
+    }
+
+    const { isStageOpen } = await import("@/lib/cycle");
+    if (!isStageOpen(cycle, department, stageNum)) {
       return NextResponse.json(
-        { success: false, error: "Recruitment is closed. Editing is no longer available." },
+        { success: false, error: `Stage ${stageNum} is closed. Editing is no longer available.` },
         { status: 403 }
       );
     }
-
-    const [application, department] = await Promise.all([
-      Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
-      Department.findOne({ slug: dept }),
-    ]);
 
     if (!application || !department) {
       return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
@@ -277,8 +294,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ 
       success: true, 
       message: "Stage updated successfully.",
-      nextStage: Math.min(stageNum + 1, department.totalStages),
-      isLastStage: stageNum >= department.totalStages,
+      nextStage: stageNum === 1 ? 2 : stageNum,
+      isLastStage: stageNum >= 2,
     });
   } catch (err) {
     console.error("stage edit error:", err);
