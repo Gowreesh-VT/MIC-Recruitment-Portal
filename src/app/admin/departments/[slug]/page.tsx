@@ -162,7 +162,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
 
   if (loading || !deptInfo) {
     return (
-      <AdminLayout activePage="departments" as any>
+      <AdminLayout activePage="departments">
         <div className="min-h-[80dvh] flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-12 w-12 text-teal-500 animate-spin" />
@@ -174,7 +174,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
   }
 
   return (
-    <AdminLayout activePage="departments" as any>
+    <AdminLayout activePage="departments">
       {/* Dynamic Background Glow */}
       <div className="fixed inset-0 pointer-events-none z-0 flex justify-center items-start overflow-hidden">
         <div className="w-[800px] h-[500px] bg-teal-900/20 blur-[120px] rounded-full translate-y-[-50%]" />
@@ -272,7 +272,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
             <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Stage 2 Active</p>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Task Submission Active</p>
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <p className="text-3xl font-black text-pink-400">{stats?.byStage[2] || 0}</p>}
               </div>
               <div className="h-10 w-10 rounded-full bg-pink-500/10 flex items-center justify-center">

@@ -179,17 +179,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         }
       );
     } else {
-      // Push new stage submission
-      // Only Stage 1 automatically advances the candidate's currentStage to Stage 2
-      const nextStage = stageNum === 1 ? 2 : progress.currentStage;
-
+      // Do not automatically advance the candidate's currentStage.
+      // The admin will evaluate and advance them manually.
       await Application.updateOne(
         { userId: session.user.id, cycleId: CYCLE_ID },
         {
-          $push: { [`${progressKey}.stages`]: submission },
-          $set: {
-            [`${progressKey}.currentStage`]: nextStage,
-          },
+          $push: { [`${progressKey}.stages`]: submission }
         }
       );
 
@@ -202,8 +197,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       success: true,
       message: `Stage ${stageNum} submitted successfully.`,
-      nextStage: stageNum === 1 ? 2 : stageNum,
-      isLastStage: stageNum >= 2,
+      nextStage: stageNum,
+      isLastStage: true, // Forces frontend to show the Success screen and not navigate to the next stage automatically
     });
   } catch (err) {
     console.error("stage submit error:", err);
@@ -294,8 +289,8 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ 
       success: true, 
       message: "Stage updated successfully.",
-      nextStage: stageNum === 1 ? 2 : stageNum,
-      isLastStage: stageNum >= 2,
+      nextStage: stageNum,
+      isLastStage: true,
     });
   } catch (err) {
     console.error("stage edit error:", err);

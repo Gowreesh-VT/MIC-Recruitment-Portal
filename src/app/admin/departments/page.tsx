@@ -70,7 +70,7 @@ export default function AdminDepartmentsPage() {
   }
 
   return (
-    <AdminLayout activePage="departments" as any>
+    <AdminLayout activePage="departments">
       <div className="p-8 space-y-8 max-w-7xl mx-auto w-full pb-20">
         {/* Header */}
         <div>

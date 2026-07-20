@@ -787,9 +787,7 @@ export default function StagePage({
               
               {/* Progress Indicator inside form area (Retro Style) */}
               <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
-                {stageNum === 1 && "FORM FILLING: PERSONAL INFO"}
-                {stageNum === 2 && "FORM FILLING: DOMAIN QUESTIONS"}
-                {stageNum === 3 && "TASK SUBMISSION"}
+                {stageConfig?.title ? stageConfig.title.toUpperCase() : `STAGE ${stageNum}`}
               </div>
 
               <form onSubmit={handleSubmit} className="mt-4">
