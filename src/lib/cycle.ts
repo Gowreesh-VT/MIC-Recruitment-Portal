@@ -18,3 +18,21 @@ export function isCycleOpen(cycle: any): boolean {
   // Fallback to manual toggle state
   return !!cycle.isOpen;
 }
+
+export function isStageOpen(cycle: any, dept: any, stageNum: number): boolean {
+  if (!isCycleOpen(cycle)) return false;
+  if (!dept) return false;
+  
+  const stageKey = stageNum.toString();
+  // If stageToggles map exists, check it. Default to true if not explicitly set to false.
+  if (dept.stageToggles && dept.stageToggles.get) {
+    return dept.stageToggles.get(stageKey) !== false;
+  }
+  
+  // Fallback for objects that aren't full Mongoose docs (like plain objects)
+  if (dept.stageToggles && typeof dept.stageToggles === 'object') {
+    return dept.stageToggles[stageKey] !== false;
+  }
+
+  return true;
+}

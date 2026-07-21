@@ -66,6 +66,14 @@ export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1, limit: 25 });
   const [loading, setLoading] = useState(true);
+
+  const getStageLabel = (stage: number) => {
+    if (stage === 1) return "Personal Info";
+    if (stage === 2) return "Stage 1: Form";
+    if (stage === 3) return "Stage 2: Task";
+    if (stage === 4) return "Stage 3: Interview";
+    return `Stage ${stage}`;
+  };
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -197,8 +205,9 @@ export default function AdminApplicationsPage() {
 
   const getKanbanColumns = () => {
     const cols = {
-      stage1: { title: "Stage 1 Review", items: [] as Application[], border: "border-cyan-500/25", headerBg: "bg-cyan-500/10 text-cyan-400" },
-      stage2: { title: "Stage 2 Review", items: [] as Application[], border: "border-violet-500/25", headerBg: "bg-violet-500/10 text-violet-400" },
+      stage1: { title: "Stage 1: Form Review", items: [] as Application[], border: "border-cyan-500/25", headerBg: "bg-cyan-500/10 text-cyan-400" },
+      stage2: { title: "Stage 2: Task Review", items: [] as Application[], border: "border-violet-500/25", headerBg: "bg-violet-500/10 text-violet-400" },
+      stage3: { title: "Stage 3: Interview Review", items: [] as Application[], border: "border-amber-500/25", headerBg: "bg-amber-500/10 text-amber-400" },
       selected: { title: "Selected", items: [] as Application[], border: "border-emerald-500/25", headerBg: "bg-emerald-500/10 text-emerald-400" },
       waitlisted: { title: "Waitlisted", items: [] as Application[], border: "border-blue-500/25", headerBg: "bg-blue-500/10 text-blue-400" },
       rejected: { title: "Rejected", items: [] as Application[], border: "border-rose-500/25", headerBg: "bg-rose-500/10 text-rose-400" },
@@ -217,8 +226,10 @@ export default function AdminApplicationsPage() {
           cols.stage1.items.push(app);
         } else if (stage === 3) {
           cols.stage2.items.push(app);
+        } else if (stage === 4) {
+          cols.stage3.items.push(app);
         } else {
-          cols.stage1.items.push(app); // fallback
+          cols.stage1.items.push(app); // fallback (e.g. stage 1)
         }
       }
     });
@@ -236,8 +247,9 @@ export default function AdminApplicationsPage() {
     else if (targetCol === "waitlisted") action = "waitlist";
     else if (targetCol === "rejected") action = "reject";
     else if (targetCol === "stage2") action = "advance";
+    else if (targetCol === "stage3") action = "advance";
     else if (targetCol === "stage1") {
-      alert("Demoting or resetting to Stage 1 is not supported via drag and drop. Please use the detailed view page.");
+      alert("Demoting or resetting stages is not supported via drag and drop. Please use the detailed view page.");
       return;
     }
 
@@ -454,10 +466,11 @@ export default function AdminApplicationsPage() {
                           {DEPT_NAMES[app.secondPreference] ?? app.secondPreference}
                         </TableCell>
                         <TableCell className="text-zinc-400 text-xs font-semibold">
-                          Stage{" "}
-                          {app.activePreference === "first"
-                            ? app.firstPrefProgress.currentStage
-                            : app.secondPrefProgress.currentStage}
+                          {getStageLabel(
+                            app.activePreference === "first"
+                              ? app.firstPrefProgress.currentStage
+                              : app.secondPrefProgress.currentStage
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge
@@ -529,9 +542,9 @@ export default function AdminApplicationsPage() {
           </Card>
         ) : (
           /* Kanban Board View */
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-start select-none pb-4 overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start select-none pb-4 overflow-x-auto">
             {loading ? (
-              <div className="col-span-5 py-24 flex flex-col items-center justify-center gap-2">
+              <div className="col-span-6 py-24 flex flex-col items-center justify-center gap-2">
                 <Loader2 className="h-10 w-10 text-teal-400 animate-spin" />
                 <span className="text-sm text-zinc-500 font-medium">Arranging Kanban Columns...</span>
               </div>

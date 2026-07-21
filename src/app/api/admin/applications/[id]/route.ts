@@ -10,6 +10,9 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
 // GET — full application details
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
@@ -42,6 +45,47 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     ...application,
     userName: user ? user.name : "",
   };
+
+  // Convert private S3 submission URLs to Presigned GET URLs
+  try {
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION || "ap-south-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+      },
+    });
+    const bucketName = process.env.AWS_S3_BUCKET_NAME || "";
+    const s3Prefix = `https://${bucketName}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/submissions/`;
+
+    const processResponses = async (responses: Record<string, unknown>) => {
+      if (!responses) return;
+      for (const key of Object.keys(responses)) {
+        const val = responses[key];
+        if (typeof val === "string" && val.startsWith(s3Prefix)) {
+          const objectKey = val.split(".amazonaws.com/")[1];
+          if (objectKey) {
+            const command = new GetObjectCommand({ Bucket: bucketName, Key: objectKey });
+            const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+            responses[key] = presignedUrl;
+          }
+        }
+      }
+    };
+
+    if (enrichedApplication.firstPrefProgress?.stages) {
+      for (const stage of enrichedApplication.firstPrefProgress.stages) {
+        await processResponses(stage.responses as Record<string, unknown>);
+      }
+    }
+    if (enrichedApplication.secondPrefProgress?.stages) {
+      for (const stage of enrichedApplication.secondPrefProgress.stages) {
+        await processResponses(stage.responses as Record<string, unknown>);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to generate presigned GET URLs:", err);
+  }
 
   // Enrich with dept names
   const [dept1, dept2] = await Promise.all([
@@ -214,8 +258,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   if (action === "advance") {
-    const nextStage = progress.currentStage + 1;
-    const isLastStage = nextStage > (department?.totalStages ?? 2);
+    const currentStage = progress.currentStage;
+    const isLastStage = currentStage === 4;
 
     (preference === "first"
       ? application.firstPrefProgress
@@ -228,15 +272,44 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
 
-    if (isLastStage) {
+    if (currentStage === 2) {
+      // Advance from Form to Task Submission
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).currentStage = 3;
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).status = "active";
+      application.overallStatus = "in-progress";
+    } else if (currentStage === 3) {
+      // Advance from Task Submission to Interview Booking phase
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).currentStage = 4;
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).status = "active";
+      application.overallStatus = "in-progress";
+      
+      // Auto-push the Stage 4 (Interview) pending entry to progress stages array
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).stages.push({
+          stage: 4,
+          submittedAt: new Date(),
+          responses: {},
+          result: "pending",
+        } as any);
+    } else if (currentStage === 4) {
+      // Direct selected
       (preference === "first"
         ? application.firstPrefProgress
         : application.secondPrefProgress).status = "passed";
       application.overallStatus = "selected";
-    } else {
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).currentStage = nextStage;
+
+      if (preference === "first" && application.secondPreference) {
+        application.secondPrefProgress.status = "rejected";
+      }
     }
 
     // Log advance action
@@ -245,7 +318,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       session.user.email ?? "unknown",
       isLastStage ? "stage_select" : "stage_advance",
       application.userEmail,
-      `Advanced ${preference} preference (${deptSlug}) to ${isLastStage ? "Selected" : "Stage " + (nextStage - 1)}.`
+      `Advanced ${preference} preference (${deptSlug}) to ${isLastStage ? "Selected" : "Stage " + (currentStage + 1)}.`
     );
   } else {
     // reject
@@ -270,11 +343,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).status = "rejected";
 
-    // If rejected from first preference, activate second
+    // If rejected from first preference, activate second (if they have one)
     if (preference === "first") {
-      application.activePreference = "second";
-      application.secondPrefProgress.status = "active";
-      // Second pref has just been activated, overall stays in-progress
+      if (application.secondPreference && (application.secondPreference as string) !== "") {
+        application.activePreference = "second";
+        application.secondPrefProgress.status = "active";
+        application.overallStatus = "in-progress";
+      } else {
+        application.overallStatus = "rejected";
+      }
     } else {
       // Rejected from second preference — check if both are now rejected
       if (application.firstPrefProgress.status === "rejected") {

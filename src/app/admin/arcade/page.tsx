@@ -5,6 +5,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Gamepad2, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { playRetroSound as playRetroSoundImport } from "@/lib/audio";
 
 // Color mappings for pixel drawing
 const COLOR_MAP: Record<string, string> = {
@@ -87,64 +88,8 @@ export default function AdminArcadePage() {
 
   // Web Audio API Retro sound synthesizers
   const playRetroSound = (type: "jump" | "coin" | "gameover" | "kick") => {
-    if (!soundEnabled || typeof window === "undefined") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const gain = ctx.createGain();
-      gain.connect(ctx.destination);
-
-      if (type === "jump") {
-        const osc = ctx.createOscillator();
-        osc.type = "triangle";
-        osc.connect(gain);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-        osc.frequency.setValueAtTime(160, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.25);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.25);
-      } else if (type === "coin") {
-        const osc = ctx.createOscillator();
-        osc.type = "square";
-        osc.connect(gain);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime + 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.frequency.setValueAtTime(987.77, ctx.currentTime); // B5
-        osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08); // E6
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } else if (type === "kick") {
-        const osc = ctx.createOscillator();
-        osc.type = "triangle";
-        osc.connect(gain);
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-        osc.frequency.setValueAtTime(120, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(40, ctx.currentTime + 0.12);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.12);
-      } else if (type === "gameover") {
-        // Descending 8-bit melody
-        const notes = [392.00, 349.23, 311.13, 261.63]; // G4, F4, D#4, C4
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const noteGain = ctx.createGain();
-          osc.type = "square";
-          osc.connect(noteGain);
-          noteGain.connect(ctx.destination);
-          noteGain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.15);
-          noteGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx + 1) * 0.15);
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.15);
-          osc.start(ctx.currentTime + idx * 0.15);
-          osc.stop(ctx.currentTime + (idx + 1) * 0.15);
-        });
-      }
-    } catch (e) {
-      console.warn("Audio Context error:", e);
-    }
+    if (!soundEnabled) return;
+    playRetroSoundImport(type === "jump" ? "arcade_jump" : type);
   };
 
   // Helper to draw pixel sprite on Canvas

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import MicLogo from "@/components/MicLogo";
+import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -193,25 +194,7 @@ export default function LoginPage() {
     }
   };
 
-  const playRetroSound = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "square";
-      osc.frequency.setValueAtTime(600, ctx.currentTime);
-      osc.frequency.setValueAtTime(900, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
-    } catch (e) {}
-  };
+
 
   const dialogProps = {
     turnstileToken,

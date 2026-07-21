@@ -32,13 +32,7 @@ export async function POST(req: NextRequest) {
 
     // Check recruitment is open
     const cycle = await RecruitmentCycle.findOne({ cycleId: CYCLE_ID });
-    const { isCycleOpen } = await import("@/lib/cycle");
-    if (!isCycleOpen(cycle)) {
-      return NextResponse.json(
-        { success: false, error: "Recruitment is currently closed." },
-        { status: 403 }
-      );
-    }
+
 
     // Check existing application
     const existing = await Application.findOne({
@@ -60,7 +54,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const { firstPreference, _trap } = parseResult.data;
+    const { firstPreference, fullName, phone, regNo, year, branch, whyMic, _trap } = parseResult.data;
 
     // Honeypot check
     if (_trap) {
@@ -86,12 +80,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const { isStageOpen } = await import("@/lib/cycle");
+    if (!isStageOpen(cycle, dept1, 1)) {
+      return NextResponse.json(
+        { success: false, error: "Stage 1 (Registration) is currently closed for this department." },
+        { status: 403 }
+      );
+    }
+
     const application = await Application.create({
       userId: session.user.id,
       userEmail: session.user.email,
       cycleId: CYCLE_ID,
       firstPreference,
       firstPrefType,
+      fullName,
+      phone,
+      regNo,
+      year,
+      branch,
+      whyMic,
       activePreference: "first",
       overallStatus: "in-progress",
       firstPrefProgress: { currentStage: 1, status: "active", stages: [] },

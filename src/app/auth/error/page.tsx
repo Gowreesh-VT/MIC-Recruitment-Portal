@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState, Fragment } from "react";
 import { Press_Start_2P } from "next/font/google";
 import MicLogo from "@/components/MicLogo";
 import BackButton from "@/components/BackButton";
+import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -74,24 +75,8 @@ function ErrorContent() {
     body: "Something went wrong during sign-in. Please try again.",
   };
 
-  const playRetroSound = () => {
-    if (typeof window === "undefined") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      const ctx = new AudioContextClass();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = "square";
-      osc.frequency.setValueAtTime(400, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {}
+  const playRetroSoundLocal = () => {
+    playRetroSound("jump");
   };
 
   return (
@@ -211,7 +196,7 @@ function ErrorContent() {
             {/* Buttons */}
             <div className="flex w-full flex-col sm:flex-row gap-4 mt-4">
               <button
-                onClick={() => { playRetroSound(); router.push("/recruitments"); }}
+                onClick={() => { playRetroSoundLocal(); router.push("/recruitments"); }}
                 className="flex-1 bg-white hover:bg-slate-100 text-black border-4 border-black py-4 px-4 text-[9px] md:text-[10px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2 cursor-pointer"
                 style={{ boxShadow: "4px 4px 0px 0px #000" }}
               >
@@ -219,7 +204,7 @@ function ErrorContent() {
               </button>
 
               <button
-                onClick={() => { playRetroSound(); router.push("/login"); }}
+                onClick={() => { playRetroSoundLocal(); router.push("/login"); }}
                 className="flex-1 bg-[#52AE26] hover:bg-[#72F418] text-white border-4 border-black py-4 px-4 text-[9px] md:text-[10px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2 cursor-pointer"
                 style={{ boxShadow: "4px 4px 0px 0px #000" }}
               >

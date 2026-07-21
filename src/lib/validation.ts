@@ -60,19 +60,22 @@ export function validateResponses(
       // GitHub: must be a valid URL pointing to github.com or *.github.io
       let githubSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
-        .url(`"${field.label}" must be a valid URL (e.g., https://github.com/username).`)
+        .url(`"${field.label}" must be a valid URL (e.g., https://github.com/username/repo).`)
         .refine(val => {
           try {
             const url = new URL(val);
-            return (
+            const isGithub = (
               url.hostname === "github.com" ||
               url.hostname.endsWith(".github.com") ||
               url.hostname.endsWith(".github.io")
             );
+            if (!isGithub) return false;
+            const parts = url.pathname.split("/").filter(Boolean);
+            return parts.length >= 2;
           } catch {
             return false;
           }
-        }, `"${field.label}" must be a valid GitHub URL (e.g., https://github.com/username).`);
+        }, `"${field.label}" must be a valid GitHub repository URL (e.g., https://github.com/username/repo).`);
 
       const githubArraySchema = z.array(githubSchema);
       fieldSchema = field.required
@@ -100,8 +103,8 @@ export function validateResponses(
       fieldSchema = field.required
         ? z.union([linkedinSchema, linkedinArraySchema.min(1, `"${field.label}" is required.`)])
         : z.union([linkedinSchema, linkedinArraySchema, z.literal(""), z.null(), z.undefined()]).optional();
-    } else if (field.type === "url") {
-      // Generic URL field
+    } else if (field.type === "url" || field.type === "file") {
+      // Generic URL or uploaded file URL field
       let urlSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
         .url(`"${field.label}" must be a valid URL.`);
@@ -200,6 +203,12 @@ export const applyInitSchema = z.object({
   ], {
     message: "Invalid department selection."
   }),
+  fullName: z.string().min(1, "Full Name is required."),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits."),
+  regNo: z.string().min(1, "Registration Number is required."),
+  year: z.string().min(1, "Year of Study is required."),
+  branch: z.string().min(1, "Branch is required."),
+  whyMic: z.string().min(1, "This field is required."),
   _trap: z.string().optional().nullable(),
 });
 
@@ -209,3 +218,38 @@ export const cycleUpdateSchema = z.object({
   endAt: z.string().datetime({ message: "Invalid endAt date format." }).optional().nullable(),
 });
 
+export const formFieldSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  type: z.enum([
+    "text",
+    "textarea",
+    "select",
+    "radio",
+    "checkbox",
+    "url",
+    "number",
+    "email",
+    "file",
+  ]),
+  placeholder: z.string().optional(),
+  options: z.array(z.string()).optional(),
+  required: z.boolean().default(true),
+  maxLength: z.number().optional(),
+  helpText: z.string().optional(),
+});
+
+export const stageConfigSchema = z.object({
+  stage: z.number().int().min(1),
+  title: z.string().min(1),
+  description: z.string(),
+  taskPdf: z.string().optional(),
+  formFields: z.array(formFieldSchema).default([]),
+});
+
+export const deptUpdateSchema = z.object({
+  isActive: z.boolean().optional(),
+  totalStages: z.number().int().min(1).max(5).optional(),
+  stageToggles: z.record(z.string(), z.boolean()).optional(),
+  stages: z.array(stageConfigSchema).optional(),
+});

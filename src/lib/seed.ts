@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Seed script — run once to populate departments and recruitment cycle.
  * Usage: npx tsx src/lib/seed.ts
@@ -23,66 +24,7 @@ async function run() {
   );
 
   // -------------------------------------------------------------------------
-  // Stage 1 — Personal Info (shared across all departments)
-  // -------------------------------------------------------------------------
-  const personalInfoStage = {
-    stage: 1,
-    title: "Personal Information",
-    description:
-      "Tell us about yourself. This information will be used across your entire application.",
-    formFields: [
-      {
-        id: "fullName",
-        label: "Full Name",
-        type: "text" as const,
-        placeholder: "e.g. Priya Sharma",
-        required: true,
-        maxLength: 80,
-      },
-      {
-        id: "phone",
-        label: "Phone Number",
-        type: "text" as const,
-        placeholder: "e.g. 9876543210",
-        required: true,
-        maxLength: 15,
-      },
-      {
-        id: "regNo",
-        label: "Registration Number",
-        type: "text" as const,
-        placeholder: "e.g. 23BCE1234",
-        required: true,
-        maxLength: 20,
-      },
-      {
-        id: "year",
-        label: "Year of Study",
-        type: "select" as const,
-        options: ["1st Year", "2nd Year", "3rd Year", "4th Year"],
-        required: true,
-      },
-      {
-        id: "branch",
-        label: "Branch / Programme",
-        type: "text" as const,
-        placeholder: "e.g. B.Tech CSE",
-        required: true,
-        maxLength: 60,
-      },
-      {
-        id: "whyMic",
-        label: "Why do you want to join MIC?",
-        type: "textarea" as const,
-        placeholder: "Tell us what excites you about MIC...",
-        required: true,
-        maxLength: 500,
-      },
-    ],
-  };
-
-  // -------------------------------------------------------------------------
-  // Department definitions with Stage 2 questions
+  // Department definitions with Stage 1 questions
   // -------------------------------------------------------------------------
   const departments = [
     // ── TECH ──────────────────────────────────────────────────────────────
@@ -90,17 +32,16 @@ async function run() {
       slug: "development",
       name: "Development",
       type: "tech" as const,
-      totalStages: 2,
-      maxCapacity: 20,
+      totalStages: 1,
       desc: "CONSTRUCTING SYSTEMS/PRODUCTS THAT NEED TO STAND, SCALE, AND FUNCTION RELIABLY",
       tagline: "BUILDING THE ARCHITECTURE AND CORE MOTORS THAT POWER DIGITAL PRODUCTS AND PLATFORMS",
       description: "FROM FRONTEND WIZARDRY TO ROBUST BACKEND PIPELINES, JOIN DEVELOPMENT TO WRITE CLEAN CODE, SOLVE REAL-WORLD ENGINEERING PROBLEMS, AND SHIP PRODUCTION-READY APPS.",
       skills: "REACT · NEXT.JS · NODE.JS · SYSTEM DESIGN",
       iconType: "dev",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Development Domain Questions",
           description:
             "Show us your technical depth. Answer honestly — we value clarity over jargon.",
@@ -157,6 +98,24 @@ async function run() {
               required: false,
               maxLength: 400,
             },
+            {
+              id: "projectPdf",
+              label: "Upload your Task Project PDF",
+              type: "file" as const,
+              required: true,
+            },
+            {
+              id: "taskGithubUrl",
+              label: "GitHub Repository URL for the task",
+              type: "url" as const,
+              required: true,
+            },
+            {
+              id: "taskDeployedUrl",
+              label: "Deployed Project Link (if applicable)",
+              type: "url" as const,
+              required: false,
+            },
           ],
         },
       ],
@@ -166,17 +125,16 @@ async function run() {
       slug: "competitive-coding",
       name: "Competitive Coding",
       type: "tech" as const,
-      totalStages: 2,
-      maxCapacity: 15,
+      totalStages: 1,
       desc: "LITERALLY ADVERSARIAL/COMPETITIVE, PUZZLE-SOLVING UNDER RULES AND TIME PRESSURE",
       tagline: "MASTERING ALGORITHMS, DATA STRUCTURES, AND SPEED TO CONQUER COMPLEX LOGICAL CHALLENGES",
       description: "LOVE CRUSHING TIMEOUTS AND OPTIMIZING CODE TO O(1)? JOIN COMPETITIVE CODING TO TRAIN FOR HACKATHONS, ICPC, CONTESTS, AND BECOME AN ALGORITHMIC NINJA.",
       skills: "C++ · PYTHON · DSA · DYNAMIC PROGRAMMING",
       iconType: "cc",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Competitive Coding Domain Questions",
           description:
             "We want to know how you think algorithmically. Be specific.",
@@ -243,17 +201,16 @@ async function run() {
       slug: "ui-ux",
       name: "UI/UX",
       type: "tech" as const,
-      totalStages: 2,
-      maxCapacity: 12,
+      totalStages: 1,
       desc: "DESIGNING STRUCTURAL FLOWS AND SYSTEMS USERS NAVIGATE — ARCHITECTURE OF EXPERIENCE",
       tagline: "UI/UX IS ABOUT GUIDING USERS THROUGH A STRUCTURE/FLOW, HELPING THEM NAVIGATE WITHOUT GETTING LOST",
       description: "PASSIONATE ABOUT HOW THINGS LOOK AND FEEL? JOIN UI/UX AND HELP DESIGN THE INTERFACES AND EXPERIENCES THAT CONNECT PEOPLE TO TECHNOLOGY — ONE THOUGHTFUL PIXEL AND FLOW AT A TIME.",
       skills: "FIGMA · UI CRAFT · FRAMES",
       iconType: "uiux",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "UI/UX Domain Questions",
           description:
             "We want to understand how you think about design problems and users.",
@@ -304,6 +261,24 @@ async function run() {
               required: true,
               maxLength: 400,
             },
+            {
+              id: "projectPdf",
+              label: "Upload your Task Design PDF / Presentation",
+              type: "file" as const,
+              required: true,
+            },
+            {
+              id: "taskFigmaUrl",
+              label: "Figma File URL for the task",
+              type: "url" as const,
+              required: true,
+            },
+            {
+              id: "taskDeployedUrl",
+              label: "Live Prototype Link (if applicable)",
+              type: "url" as const,
+              required: false,
+            },
           ],
         },
       ],
@@ -313,17 +288,16 @@ async function run() {
       slug: "ai-ml",
       name: "AI/ML",
       type: "tech" as const,
-      totalStages: 2,
-      maxCapacity: 15,
+      totalStages: 1,
       desc: "HEAVY EXPERIMENTATION, ITERATION, TINKERING WITH MODELS/DATA UNTIL SOMETHING WORKS — CRAFT-DRIVEN",
       tagline: "TEACHING MACHINES TO LEARN, PREDICT, AND REASON THROUGH DATA AND NEURAL ARCHITECTURES",
       description: "FASCINATED BY LLMS, COMPUTER VISION, AND DEEP LEARNING? JOIN AI/ML TO BUILD INTELLIGENT AGENTS, TRAIN NEURAL NETWORKS, AND PUSH THE FRONTIERS OF AI.",
       skills: "PYTORCH · TENSORFLOW · LLMS · DATA SCIENCE",
       iconType: "aiml",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "AI/ML Domain Questions",
           description:
             "Tell us about your machine learning journey. Both beginners and advanced learners are welcome.",
@@ -385,6 +359,18 @@ async function run() {
               ],
               required: true,
             },
+            {
+              id: "projectPdf",
+              label: "Upload your Task Analysis/Report PDF",
+              type: "file" as const,
+              required: true,
+            },
+            {
+              id: "taskGithubUrl",
+              label: "GitHub/Colab URL for the task",
+              type: "url" as const,
+              required: true,
+            },
           ],
         },
       ],
@@ -394,17 +380,16 @@ async function run() {
       slug: "cyber-security",
       name: "Cyber Security",
       type: "tech" as const,
-      totalStages: 2,
-      maxCapacity: 12,
+      totalStages: 1,
       desc: "ATTACKER-VS-DEFENDER MINDSET, CTF CULTURE, EXPLOITING/PATCHING CAT-AND-MOUSE",
       tagline: "PROTECTING DIGITAL ASSETS, ETHICAL HACKING, AND MASTERING THE ART OF DEFENSE AND OFFENSE",
       description: "READY TO CRACK CODES AND DEFEND SYSTEMS? JOIN CYBER SECURITY TO COMPETE IN CAPTURE-THE-FLAG (CTF) CONTESTS, PERFORM VULNERABILITY ASSESSMENTS, AND LEARN NETWORK SECURITY.",
       skills: "CTF · ETHICAL HACKING · CRYPTOGRAPHY · PEN TESTING",
       iconType: "cyber",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Cyber Security Domain Questions",
           description:
             "We want ethical hackers, defenders, and curious minds. Tell us where you stand.",
@@ -473,17 +458,16 @@ async function run() {
       slug: "design",
       name: "Design",
       type: "non-tech" as const,
-      totalStages: 2,
-      maxCapacity: 15,
+      totalStages: 1,
       desc: "CRAFTING THE CLUB'S VISUAL IDENTITIES, MERCHANDISE, POSTERS, AND DIGITAL ART.",
       tagline: "COMMUNICATING IDEAS AND STORIES THROUGH VISUAL ART, BRANDING, AND GRAPHIC MASTERY",
       description: "HAVE AN EYE FOR COLOR, TYPOGRAPHY, AND COMPOSITION? JOIN THE DESIGN QUEST TO CREATE STUNNING POSTERS, SOCIAL MEDIA ASSETS, AND BRANDING THAT DEFINE MIC.",
       skills: "PHOTOSHOP · ILLUSTRATOR · GRAPHIC ART · BRANDING",
       iconType: "design",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Design Domain Questions",
           description:
             "Show us your creative eye and design sensibility.",
@@ -543,17 +527,16 @@ async function run() {
       slug: "management",
       name: "Management",
       type: "non-tech" as const,
-      totalStages: 2,
-      maxCapacity: 15,
+      totalStages: 1,
       desc: "THE BACKBONE OF CLUB OPERATIONS, EVENT LOGISTICS, AND PEOPLE LEADERSHIP.",
       tagline: "ORCHESTRATING EVENTS, LEADING TEAMS, AND TURNING BIG IDEAS INTO SEAMLESS EXECUTION",
       description: "THRIVE ON LEADERSHIP, STRATEGY, AND ORGANIZING HACKATHONS AND WORKSHOPS? JOIN MANAGEMENT TO DIRECT MAJOR EVENTS, MANAGE LOGISTICS, AND CONNECT THE TECH ECOSYSTEM.",
       skills: "EVENT MANAGEMENT · STRATEGY · LEADERSHIP · OPERATIONS",
       iconType: "mgmt",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Management Domain Questions",
           description:
             "We're looking for leaders who can execute. Tell us about your experience.",
@@ -606,17 +589,16 @@ async function run() {
       slug: "entrepreneurship",
       name: "Entrepreneurship",
       type: "non-tech" as const,
-      totalStages: 2,
-      maxCapacity: 12,
+      totalStages: 1,
       desc: "INNOVATION MEETS BUSINESS STRATEGY, PRODUCT MARKET FIT, AND PITCH DECKS.",
       tagline: "IDENTIFYING MARKET GAPS, PITCHING VENTURES, AND TRANSFORMING PROJECTS INTO STARTUPS",
       description: "DREAM OF LAUNCHING YOUR OWN STARTUP? JOIN ENTREPRENEURSHIP TO LEARN PITCHING, BUSINESS MODELS, PRODUCT INCUBATION, AND BUILD THE NEXT GENERATION OF DISRUPTIVE VENTURES.",
       skills: "PITCHING · BUSINESS STRATEGY · PRODUCT INCUBATION",
       iconType: "ep",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Entrepreneurship Domain Questions",
           description:
             "We want builders who think in problems and solutions. Tell us how you see the world.",
@@ -672,17 +654,16 @@ async function run() {
       slug: "content-media",
       name: "Content & Media",
       type: "non-tech" as const,
-      totalStages: 2,
-      maxCapacity: 12,
+      totalStages: 1,
       desc: "CONTENT CREATION, VIDEO PRODUCTION, SOCIAL MEDIA PRESENCE, AND PUBLIC RELATIONS.",
       tagline: "CAPTURING STORIES, DIRECTING MEDIA, AND CRAFTING COMPELLING NARRATIVES FOR THE WORLD",
       description: "PASSIONATE ABOUT FILMING, EDITING, COPYWRITING, AND SOCIAL MEDIA? JOIN CONTENT & MEDIA TO BROADCAST MIC'S IMPACT, DIRECT CREATIVE REELS, AND ENGAGE OUR COMMUNITY.",
       skills: "VIDEO EDITING · COPYWRITING · SOCIAL MEDIA · PR",
       iconType: "media",
+      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
       stages: [
-        personalInfoStage,
         {
-          stage: 2,
+          stage: 1,
           title: "Content & Media Domain Questions",
           description:
             "We create stories, content, and media that define MIC's voice. Show us yours.",
@@ -750,13 +731,101 @@ async function run() {
   // -------------------------------------------------------------------------
   // Upsert departments
   // -------------------------------------------------------------------------
+  const S3_BASE = `https://${process.env.AWS_S3_BUCKET_NAME || "mic-recruitment-portal-files"}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/tasks`;
+
+  const DEPT_TASKS: Record<string, { title: string; description: string; pdf: string }> = {
+    development: {
+      title: "Development Task",
+      description: "Build a responsive Next.js application that integrates with a public API (e.g. Weather, GitHub, or NASA) and displays data interactively. Add a search filter and persistent local storage.",
+      pdf: `${S3_BASE}/development-task.pdf`,
+    },
+    "competitive-coding": {
+      title: "Competitive Coding Task",
+      description: "Solve the set of 3 advanced data structure and dynamic programming problems hosted on HackerRank/Codeforces. Ensure optimal time complexity.",
+      pdf: `${S3_BASE}/cc-task.pdf`,
+    },
+    "ui-ux": {
+      title: "UI/UX Task",
+      description: "Redesign the dashboard UI for a modern digital wallet application. Create high-fidelity wireframes and interactive prototypes in Figma with micro-interactions.",
+      pdf: `${S3_BASE}/uiux-task.pdf`,
+    },
+    "ai-ml": {
+      title: "AI/ML Task",
+      description: "Build a predictive machine learning model using PyTorch or Scikit-learn. Perform EDA on the provided dataset, train the model, and submit a Jupyter notebook.",
+      pdf: `${S3_BASE}/aiml-task.pdf`,
+    },
+    "cyber-security": {
+      title: "Cyber Security Task",
+      description: "Find and exploit the vulnerabilities in the target virtual machine. Provide a detailed walkthrough of your flags captured and a mitigation report.",
+      pdf: `${S3_BASE}/cyber-task.pdf`,
+    },
+    design: {
+      title: "Design Task",
+      description: "Design a poster, social media banner, and a custom sticker sheet for MIC's upcoming annual hackathon 'DevSpace'. Maintain cohesive branding.",
+      pdf: `${S3_BASE}/design-task.pdf`,
+    },
+    management: {
+      title: "Management Task",
+      description: "Draft a comprehensive event proposal for a 24-hour campus hackathon. Include timeline, logistics checklist, sponsor outreach email drafts, and budget.",
+      pdf: `${S3_BASE}/mgmt-task.pdf`,
+    },
+    entrepreneurship: {
+      title: "Entrepreneurship Task",
+      description: "Prepare a 10-slide pitch deck and a Lean Canvas for a SaaS startup solving a student lifestyle problem. Focus on value prop and unit economics.",
+      pdf: `${S3_BASE}/ep-task.pdf`,
+    },
+    "content-media": {
+      title: "Content & Media Task",
+      description: "Create a 60-second video trailer promoting MIC recruitments. Write a copy deck with 3 sample Instagram posts and captions.",
+      pdf: `${S3_BASE}/media-task.pdf`,
+    },
+  };
+
   for (const dept of departments) {
+    const taskInfo = DEPT_TASKS[dept.slug];
+    if (taskInfo) {
+      (dept as any).totalStages = 2;
+      (dept as any).stages = [
+        ...dept.stages,
+        {
+          stage: 2,
+          title: taskInfo.title,
+          description: taskInfo.description,
+          taskPdf: taskInfo.pdf,
+          formFields: [
+            {
+              id: "githubUrl",
+              label: "GitHub Repository URL",
+              type: "url" as const,
+              placeholder: "https://github.com/username/repo",
+              required: true,
+            },
+            {
+              id: "demoUrl",
+              label: "Live Demo / Deployment URL",
+              type: "url" as const,
+              placeholder: "https://project-demo.vercel.app",
+              required: false,
+            },
+            {
+              id: "comments",
+              label: "Additional Notes / Comments",
+              type: "textarea" as const,
+              placeholder: "Explain your design choices, setup instructions, or assumptions...",
+              required: false,
+              maxLength: 600,
+            },
+          ],
+        }
+      ];
+    }
+
     await Department.findOneAndUpdate(
       { slug: dept.slug },
       { $set: dept },
       { upsert: true, new: true }
     );
-    console.log(`✅ Upserted department: ${dept.name}`);
+    console.log(`✅ Upserted department: ${dept.name} with totalStages: ${(dept as any).totalStages}`);
   }
 
   // -------------------------------------------------------------------------

@@ -57,7 +57,26 @@ interface Application {
   overallStatus: string;
   firstPrefProgress: PrefProgress;
   secondPrefProgress: PrefProgress;
+  fullName: string;
+  phone: string;
+  regNo: string;
+  year: string;
+  branch: string;
+  whyMic: string;
   createdAt: string;
+}
+interface FormField {
+  id: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  required?: boolean;
+}
+interface StageConfig {
+  stage: number;
+  title: string;
+  description?: string;
+  formFields: FormField[];
 }
 interface ClientDepartment {
   slug: string;
@@ -65,7 +84,7 @@ interface ClientDepartment {
   type: "tech" | "non-tech";
   totalStages: number;
   isActive: boolean;
-  maxCapacity: number;
+  stages: StageConfig[];
 }
 
 const DEPT_NAMES: Record<string, string> = {
@@ -80,17 +99,41 @@ const DEPT_NAMES: Record<string, string> = {
   "content-media": "Content & Media",
 };
 
-function ResponseViewer({ responses }: { responses: Record<string, unknown> }) {
+function ResponseViewer({
+  responses = {},
+  getFieldLabel,
+}: {
+  responses?: Record<string, unknown>;
+  getFieldLabel: (fieldId: string) => string;
+}) {
   return (
     <div className="space-y-4">
-      {Object.entries(responses).map(([key, val]) => (
-        <div key={key} className="space-y-1.5">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">{key}</p>
-          <div className="text-sm text-zinc-200 bg-zinc-950 border border-zinc-900 rounded-xl p-4 leading-relaxed whitespace-pre-wrap">
-            {Array.isArray(val) ? val.join(", ") : String(val ?? "—")}
+      {Object.entries(responses).map(([key, val]) => {
+        const valStr = Array.isArray(val) ? val.join(", ") : String(val ?? "—");
+        const isUrl = valStr.startsWith("http://") || valStr.startsWith("https://");
+        
+        return (
+          <div key={key} className="space-y-1.5">
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold text-left">
+              {getFieldLabel(key)}
+            </p>
+            <div className="text-sm text-zinc-200 bg-zinc-950 border border-zinc-900 rounded-xl p-4 leading-relaxed text-left">
+              {isUrl ? (
+                <a
+                  href={valStr}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-400 hover:text-teal-350 underline font-bold"
+                >
+                  {valStr}
+                </a>
+              ) : (
+                <span className="whitespace-pre-wrap">{valStr}</span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -115,6 +158,8 @@ function PrefPanel({
   onActionTrigger,
   acting,
   totalStages,
+  overallStatus,
+  deptStages,
 }: {
   progress: PrefProgress;
   deptSlug: string;
@@ -122,10 +167,21 @@ function PrefPanel({
   onActionTrigger: (preference: "first" | "second", action: "advance" | "reject" | "score", note: string, scores?: Record<string, number>) => void;
   acting: boolean;
   totalStages: number;
+  overallStatus: string;
+  deptStages?: StageConfig[];
 }) {
   const prefKey = label === "1st Preference" ? "first" : "second";
   const [note, setNote] = useState("");
   
+  // Gather all form fields for this department
+  const allFields = deptStages?.flatMap((s) => s.formFields) || [];
+  
+  // Find the label for a field ID
+  const getFieldLabel = (fieldId: string) => {
+    const field = allFields.find((f) => f.id === fieldId);
+    return field ? field.label : fieldId;
+  };
+
   const rubricList = DEPT_RUBRICS[deptSlug] || DEFAULT_RUBRIC;
   const [scores, setScores] = useState<Record<string, number>>({});
   const [expandedStage, setExpandedStage] = useState<number | null>(null);
@@ -143,24 +199,25 @@ function PrefPanel({
   );
   const canAct =
     progress.status === "active" &&
+    overallStatus === "in-progress" &&
     currentStageSubmission &&
     currentStageSubmission.result === "pending";
 
   // Build timeline steps
   const timelineSteps = [];
 
-  // Step 1: Initial submission (always completed if progress exists)
+  // Step 1: Initial application start
   timelineSteps.push({
-    stageNum: 1,
-    title: "Application Submitted",
-    description: "Candidate submitted initial form",
+    stageNum: 0,
+    title: "Application Started",
+    description: "Candidate initiated application",
     state: "passed" as const,
-    date: progress.stages.find((s) => s.stage === 1)?.submittedAt || null,
+    date: null, // we don't have this date directly in PrefProgress easily without passing it down
   });
 
-  // Steps 2 to totalStages + 1: Evaluation stages
+  // Steps 1 to totalStages: Evaluation stages
   for (let s = 1; s <= totalStages; s++) {
-    const stageDbNum = s + 1; // stage 2 in db corresponds to Stage 1 review
+    const stageDbNum = s;
     const submission = progress.stages.find((x) => x.stage === stageDbNum);
 
     let state: "passed" | "failed" | "pending" | "upcoming" = "upcoming";
@@ -174,10 +231,23 @@ function PrefPanel({
       state = "passed";
     }
 
+    let stageTitle = `Stage ${s} Evaluation`;
+    let stageDesc = submission?.result === "pending" ? "Awaiting review" : `Stage ${s} review complete`;
+    if (stageDbNum === 1) {
+      stageTitle = "Stage 1: Domain Evaluation";
+      stageDesc = submission?.result === "pending" ? "Awaiting Domain screening" : "Domain screening complete";
+    } else if (stageDbNum === 2) {
+      stageTitle = "Stage 2: Task Evaluation";
+      stageDesc = submission?.result === "pending" ? "Awaiting Task evaluation" : "Task evaluation complete";
+    } else if (stageDbNum === 3) {
+      stageTitle = "Stage 3: Interview Evaluation";
+      stageDesc = submission?.result === "pending" ? "Awaiting Interview grading" : "Interview grading complete";
+    }
+
     timelineSteps.push({
       stageNum: stageDbNum,
-      title: `Stage ${s} Evaluation`,
-      description: submission?.result === "pending" ? "Awaiting review" : `Stage ${s} review complete`,
+      title: stageTitle,
+      description: stageDesc,
       state,
       submission,
       date: submission?.submittedAt || null,
@@ -228,7 +298,7 @@ function PrefPanel({
         <div className="space-y-6 relative pl-4 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-900">
           {timelineSteps.map((step, idx) => {
             const isLast = idx === timelineSteps.length - 1;
-            const hasDetail = step.submission && step.stageNum > 1;
+            const hasDetail = step.submission && step.stageNum > 0;
             const isExpanded = expandedStage === step.stageNum;
 
             return (
@@ -297,7 +367,7 @@ function PrefPanel({
                 {/* Expanded Stage submission info */}
                 {isExpanded && step.submission && (
                   <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-4 space-y-4 mt-2 animate-pixel-slide-up">
-                    <ResponseViewer responses={step.submission.responses} />
+                    <ResponseViewer responses={step.submission.responses} getFieldLabel={getFieldLabel} />
 
                     {step.submission.scores && Object.keys(step.submission.scores).length > 0 && (
                       <div className="p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/10 flex flex-col gap-2">
@@ -381,9 +451,9 @@ function PrefPanel({
         {/* Action Panel */}
         {canAct && (
           <div className="border-t border-zinc-900 pt-6 space-y-4">
-            <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
-              Reviewing Stage {progress.currentStage - 1} Submission
-            </Badge>
+              <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
+                Reviewing Stage {progress.currentStage} Submission
+              </Badge>
 
             <div className="space-y-1.5">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold block">
@@ -671,10 +741,7 @@ export default function ApplicantDetailPage({
 
         {/* Personal Info Card */}
         {(() => {
-          const personalInfoStage =
-            application.firstPrefProgress.stages.find((s) => s.stage === 1) ||
-            application.secondPrefProgress.stages.find((s) => s.stage === 1);
-          if (!personalInfoStage) return null;
+          if (!application.fullName) return null;
 
           return (
             <Card>
@@ -686,38 +753,38 @@ export default function ApplicantDetailPage({
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Full Name</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1.5">
-                    {String(personalInfoStage.responses.fullName || "—")}
+                    {application.fullName || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Phone Number</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1.5">
-                    {String(personalInfoStage.responses.phone || "—")}
+                    {application.phone || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Registration No</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1.5">
-                    {String(personalInfoStage.responses.regNo || "—")}
+                    {application.regNo || "—"}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Year of Study</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1.5">
-                    {String(personalInfoStage.responses.year || "—")}
+                    {application.year || "—"}
                   </p>
                 </div>
                 <div className="md:col-span-2">
                   <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Branch / Program</p>
                   <p className="text-sm font-semibold text-zinc-200 mt-1.5">
-                    {String(personalInfoStage.responses.branch || "—")}
+                    {application.branch || "—"}
                   </p>
                 </div>
-                {!!personalInfoStage.responses.whyMic && (
+                {!!application.whyMic && (
                   <div className="md:col-span-2 lg:col-span-3">
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Why MIC?</p>
                     <p className="text-sm text-zinc-300 mt-2 leading-relaxed bg-black border border-zinc-900 p-4 rounded-xl">
-                      {String(personalInfoStage.responses.whyMic)}
+                      {application.whyMic}
                     </p>
                   </div>
                 )}
@@ -735,6 +802,8 @@ export default function ApplicantDetailPage({
             onActionTrigger={handleActionConfirmTrigger}
             acting={acting}
             totalStages={dept1?.totalStages ?? 2}
+            overallStatus={application.overallStatus}
+            deptStages={dept1?.stages}
           />
           {application.secondPreference ? (
             <PrefPanel
@@ -744,6 +813,8 @@ export default function ApplicantDetailPage({
               onActionTrigger={handleActionConfirmTrigger}
               acting={acting}
               totalStages={dept2?.totalStages ?? 2}
+              overallStatus={application.overallStatus}
+              deptStages={dept2?.stages}
             />
           ) : (
             <Card className="flex items-center justify-center p-8 border-dashed border-zinc-900">
