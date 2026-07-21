@@ -55,6 +55,13 @@ export interface IApplication extends Document {
   secondPreference?: DeptSlug;
   secondPrefType?: PrefType;
 
+  fullName: string;
+  phone: string;
+  regNo: string;
+  year: string;
+  branch: string;
+  whyMic: string;
+
   activePreference: "first" | "second";
   overallStatus: OverallStatus;
 
@@ -139,6 +146,13 @@ const ApplicationSchema = new Schema<IApplication>(
       enum: ["tech", "non-tech"],
       required: false,
     },
+
+    fullName: { type: String, required: true },
+    phone: { type: String, required: true },
+    regNo: { type: String, required: true },
+    year: { type: String, required: true },
+    branch: { type: String, required: true },
+    whyMic: { type: String, required: true },
 
     activePreference: {
       type: String,
