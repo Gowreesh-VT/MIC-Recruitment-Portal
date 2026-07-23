@@ -9,7 +9,7 @@ const ContentSecurityPolicy = [
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://challenges.cloudflare.com",
   // Turnstile challenge iframe is served from challenges.cloudflare.com
   "frame-src 'self' https://challenges.cloudflare.com",
-  "connect-src 'self' https://challenges.cloudflare.com https://*.posthog.com",
+  "connect-src 'self' https://challenges.cloudflare.com https://*.posthog.com https://*.amazonaws.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

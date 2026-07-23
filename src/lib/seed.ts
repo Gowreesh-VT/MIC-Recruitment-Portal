@@ -38,7 +38,7 @@ async function run() {
       description: "FROM FRONTEND WIZARDRY TO ROBUST BACKEND PIPELINES, JOIN DEVELOPMENT TO WRITE CLEAN CODE, SOLVE REAL-WORLD ENGINEERING PROBLEMS, AND SHIP PRODUCTION-READY APPS.",
       skills: "REACT · NEXT.JS · NODE.JS · SYSTEM DESIGN",
       iconType: "dev",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -131,7 +131,7 @@ async function run() {
       description: "LOVE CRUSHING TIMEOUTS AND OPTIMIZING CODE TO O(1)? JOIN COMPETITIVE CODING TO TRAIN FOR HACKATHONS, ICPC, CONTESTS, AND BECOME AN ALGORITHMIC NINJA.",
       skills: "C++ · PYTHON · DSA · DYNAMIC PROGRAMMING",
       iconType: "cc",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -207,7 +207,7 @@ async function run() {
       description: "PASSIONATE ABOUT HOW THINGS LOOK AND FEEL? JOIN UI/UX AND HELP DESIGN THE INTERFACES AND EXPERIENCES THAT CONNECT PEOPLE TO TECHNOLOGY — ONE THOUGHTFUL PIXEL AND FLOW AT A TIME.",
       skills: "FIGMA · UI CRAFT · FRAMES",
       iconType: "uiux",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -294,7 +294,7 @@ async function run() {
       description: "FASCINATED BY LLMS, COMPUTER VISION, AND DEEP LEARNING? JOIN AI/ML TO BUILD INTELLIGENT AGENTS, TRAIN NEURAL NETWORKS, AND PUSH THE FRONTIERS OF AI.",
       skills: "PYTORCH · TENSORFLOW · LLMS · DATA SCIENCE",
       iconType: "aiml",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -386,7 +386,7 @@ async function run() {
       description: "READY TO CRACK CODES AND DEFEND SYSTEMS? JOIN CYBER SECURITY TO COMPETE IN CAPTURE-THE-FLAG (CTF) CONTESTS, PERFORM VULNERABILITY ASSESSMENTS, AND LEARN NETWORK SECURITY.",
       skills: "CTF · ETHICAL HACKING · CRYPTOGRAPHY · PEN TESTING",
       iconType: "cyber",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -464,7 +464,7 @@ async function run() {
       description: "HAVE AN EYE FOR COLOR, TYPOGRAPHY, AND COMPOSITION? JOIN THE DESIGN QUEST TO CREATE STUNNING POSTERS, SOCIAL MEDIA ASSETS, AND BRANDING THAT DEFINE MIC.",
       skills: "PHOTOSHOP · ILLUSTRATOR · GRAPHIC ART · BRANDING",
       iconType: "design",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -533,7 +533,7 @@ async function run() {
       description: "THRIVE ON LEADERSHIP, STRATEGY, AND ORGANIZING HACKATHONS AND WORKSHOPS? JOIN MANAGEMENT TO DIRECT MAJOR EVENTS, MANAGE LOGISTICS, AND CONNECT THE TECH ECOSYSTEM.",
       skills: "EVENT MANAGEMENT · STRATEGY · LEADERSHIP · OPERATIONS",
       iconType: "mgmt",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -595,7 +595,7 @@ async function run() {
       description: "DREAM OF LAUNCHING YOUR OWN STARTUP? JOIN ENTREPRENEURSHIP TO LEARN PITCHING, BUSINESS MODELS, PRODUCT INCUBATION, AND BUILD THE NEXT GENERATION OF DISRUPTIVE VENTURES.",
       skills: "PITCHING · BUSINESS STRATEGY · PRODUCT INCUBATION",
       iconType: "ep",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
@@ -660,7 +660,7 @@ async function run() {
       description: "PASSIONATE ABOUT FILMING, EDITING, COPYWRITING, AND SOCIAL MEDIA? JOIN CONTENT & MEDIA TO BROADCAST MIC'S IMPACT, DIRECT CREATIVE REELS, AND ENGAGE OUR COMMUNITY.",
       skills: "VIDEO EDITING · COPYWRITING · SOCIAL MEDIA · PR",
       iconType: "media",
-      stageToggles: { "1": true, "2": false, "3": false, "4": false, "5": false },
+      stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,

@@ -68,10 +68,9 @@ export default function AdminApplicationsPage() {
   const [loading, setLoading] = useState(true);
 
   const getStageLabel = (stage: number) => {
-    if (stage === 1) return "Personal Info";
-    if (stage === 2) return "Stage 1: Form";
-    if (stage === 3) return "Stage 2: Task";
-    if (stage === 4) return "Stage 3: Interview";
+    if (stage === 1) return "Stage 1: Form";
+    if (stage === 2) return "Stage 2: Task";
+    if (stage === 3) return "Stage 3: Interview";
     return `Stage ${stage}`;
   };
   const [search, setSearch] = useState("");
@@ -222,14 +221,14 @@ export default function AdminApplicationsPage() {
         cols.rejected.items.push(app);
       } else {
         const stage = app.activePreference === "first" ? app.firstPrefProgress.currentStage : app.secondPrefProgress.currentStage;
-        if (stage === 2) {
+        if (stage === 1) {
           cols.stage1.items.push(app);
-        } else if (stage === 3) {
+        } else if (stage === 2) {
           cols.stage2.items.push(app);
-        } else if (stage === 4) {
+        } else if (stage === 3) {
           cols.stage3.items.push(app);
         } else {
-          cols.stage1.items.push(app); // fallback (e.g. stage 1)
+          cols.stage1.items.push(app); // fallback
         }
       }
     });

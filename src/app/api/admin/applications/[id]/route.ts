@@ -259,8 +259,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   if (action === "advance") {
     const currentStage = progress.currentStage;
-    const isLastStage = currentStage === 4;
+    const totalStages = department?.totalStages ?? 3;
+    const isLastStage = currentStage >= totalStages;
+    const nextStage = currentStage + 1;
+    const nextIsLastStage = nextStage === totalStages;
 
+    // Mark current stage as passed
     (preference === "first"
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].result = "passed";
@@ -272,36 +276,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
 
-    if (currentStage === 2) {
-      // Advance from Form to Task Submission
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).currentStage = 3;
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).status = "active";
-      application.overallStatus = "in-progress";
-    } else if (currentStage === 3) {
-      // Advance from Task Submission to Interview Booking phase
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).currentStage = 4;
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).status = "active";
-      application.overallStatus = "in-progress";
-      
-      // Auto-push the Stage 4 (Interview) pending entry to progress stages array
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).stages.push({
-          stage: 4,
-          submittedAt: new Date(),
-          responses: {},
-          result: "pending",
-        } as any);
-    } else if (currentStage === 4) {
-      // Direct selected
+    if (isLastStage) {
+      // Final stage passed → select the candidate
       (preference === "first"
         ? application.firstPrefProgress
         : application.secondPrefProgress).status = "passed";
@@ -309,6 +285,28 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
       if (preference === "first" && application.secondPreference) {
         application.secondPrefProgress.status = "rejected";
+      }
+    } else {
+      // Advance to next stage
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).currentStage = nextStage;
+      (preference === "first"
+        ? application.firstPrefProgress
+        : application.secondPrefProgress).status = "active";
+      application.overallStatus = "in-progress";
+
+      // If the next stage is the final (interview) stage, auto-create a pending entry
+      // so the applicant can book a slot without needing to submit a form
+      if (nextIsLastStage) {
+        (preference === "first"
+          ? application.firstPrefProgress
+          : application.secondPrefProgress).stages.push({
+            stage: nextStage,
+            submittedAt: new Date(),
+            responses: {},
+            result: "pending",
+          } as any);
       }
     }
 

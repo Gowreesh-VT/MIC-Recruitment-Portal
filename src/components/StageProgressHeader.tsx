@@ -14,26 +14,26 @@ export default function StageProgressHeader({
   stages,
   status,
 }: StageProgressHeaderProps) {
-  const formSub = stages.find((s) => s.stage === 2);
-  const taskSub = stages.find((s) => s.stage === 3);
-  const interviewSub = stages.find((s) => s.stage === 4);
+  const formSub = stages.find((s) => s.stage === 1);
+  const taskSub = stages.find((s) => s.stage === 2);
+  const interviewSub = stages.find((s) => s.stage === 3);
 
-  // 1. Form Circle State
+  // 1. Form Circle State  (stage 1)
   let formState: CircleState = "active";
-  if (status === "rejected" && (formSub?.result === "failed" || currentStage === 2)) {
+  if (status === "rejected" && (formSub?.result === "failed" || currentStage === 1)) {
     formState = "failed";
-  } else if (currentStage >= 3 || status === "passed" || formSub?.result === "passed") {
+  } else if (currentStage >= 2 || status === "passed" || formSub?.result === "passed") {
     formState = "completed";
   } else if (formSub?.result === "pending") {
     formState = "under_review";
   }
 
-  // 2. Task Circle State
+  // 2. Task Circle State  (stage 2)
   let taskState: CircleState = "locked";
-  if (currentStage >= 3) {
-    if (status === "rejected" && (taskSub?.result === "failed" || currentStage === 3)) {
+  if (currentStage >= 2) {
+    if (status === "rejected" && (taskSub?.result === "failed" || currentStage === 2)) {
       taskState = "failed";
-    } else if (currentStage >= 4 || status === "passed" || taskSub?.result === "passed") {
+    } else if (currentStage >= 3 || status === "passed" || taskSub?.result === "passed") {
       taskState = "completed";
     } else if (taskSub?.result === "pending") {
       taskState = "under_review";
@@ -42,9 +42,9 @@ export default function StageProgressHeader({
     }
   }
 
-  // 3. Interview Circle State
+  // 3. Interview Circle State  (stage 3 — final)
   let interviewState: CircleState = "locked";
-  if (currentStage >= 4) {
+  if (currentStage >= 3) {
     if (status === "passed" || interviewSub?.result === "passed") {
       interviewState = "completed";
     } else if (status === "rejected" || interviewSub?.result === "failed") {

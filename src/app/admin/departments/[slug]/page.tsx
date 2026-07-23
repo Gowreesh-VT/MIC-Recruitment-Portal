@@ -84,7 +84,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
             slug: dept.slug,
             isActive: dept.isActive,
             totalStages: dept.totalStages,
-            stageToggles: dept.stageToggles || { "1": true, "2": false, "3": false, "4": false, "5": false },
+            stageToggles: dept.stageToggles || { "1": true, "2": false, "3": false },
             stages: dept.stages?.length > 0 ? dept.stages : [{ stage: 1, title: "Stage 1", description: "Registration", formFields: [] }],
           });
         }

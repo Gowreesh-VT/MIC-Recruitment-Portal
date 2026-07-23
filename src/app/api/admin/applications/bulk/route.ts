@@ -51,6 +51,10 @@ export async function POST(req: NextRequest) {
 
       if (action === "advance") {
         const currentStage = progress.currentStage;
+        const totalStages = department?.totalStages ?? 3;
+        const isLastStage = currentStage >= totalStages;
+        const nextStage = currentStage + 1;
+        const nextIsLastStage = nextStage === totalStages;
 
         if (currentStageIdx !== -1) {
           if (preference === "first") {
@@ -66,43 +70,30 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        if (currentStage === 2) {
-          if (preference === "first") {
-            app.firstPrefProgress.currentStage = 3;
-            app.firstPrefProgress.status = "active";
-          } else {
-            app.secondPrefProgress.currentStage = 3;
-            app.secondPrefProgress.status = "active";
-          }
-          app.overallStatus = "in-progress";
-        } else if (currentStage === 3) {
-          if (preference === "first") {
-            app.firstPrefProgress.currentStage = 4;
-            app.firstPrefProgress.status = "active";
-          } else {
-            app.secondPrefProgress.currentStage = 4;
-            app.secondPrefProgress.status = "active";
-          }
-          app.overallStatus = "in-progress";
-          
-          // Auto-push the Stage 4 (Interview) pending entry to progress stages array
+        if (isLastStage) {
+          // Final stage passed → select the candidate
           const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
-          targetProgress.stages.push({
-            stage: 4,
-            submittedAt: new Date(),
-            responses: {},
-            result: "pending",
-          } as any);
-        } else if (currentStage === 4) {
-          if (preference === "first") {
-            app.firstPrefProgress.status = "passed";
-            if (app.secondPreference) {
-              app.secondPrefProgress.status = "rejected";
-            }
-          } else {
-            app.secondPrefProgress.status = "passed";
-          }
+          targetProgress.status = "passed";
           app.overallStatus = "selected";
+          if (preference === "first" && app.secondPreference) {
+            app.secondPrefProgress.status = "rejected";
+          }
+        } else {
+          // Advance to next stage
+          const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
+          targetProgress.currentStage = nextStage;
+          targetProgress.status = "active";
+          app.overallStatus = "in-progress";
+
+          // If the next stage is the final (interview) stage, auto-create a pending entry
+          if (nextIsLastStage) {
+            targetProgress.stages.push({
+              stage: nextStage,
+              submittedAt: new Date(),
+              responses: {},
+              result: "pending",
+            } as any);
+          }
         }
       } else {
         // reject

@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   RefreshCw,
   Loader2,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +58,13 @@ export default function AdminInterviewsPage() {
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Filters & Pagination
+  const [filterDept, setFilterDept] = useState("all");
+  const [filterDate, setFilterDate] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Form States
   const [creationMode, setCreationMode] = useState<"single" | "generate">("single");
@@ -220,6 +230,24 @@ export default function AdminInterviewsPage() {
       alert("Failed to communicate with server.");
     }
   };
+
+  // Derived state for filtering and pagination
+  const filteredSlots = slots.filter(slot => {
+    if (filterDept !== "all" && slot.deptSlug !== filterDept) return false;
+    if (filterStatus !== "all" && slot.status !== filterStatus) return false;
+    if (filterDate) {
+      const slotDate = slot.startTime.split('T')[0];
+      if (slotDate !== filterDate) return false;
+    }
+    return true;
+  });
+
+  const totalPages = Math.ceil(filteredSlots.length / PAGE_SIZE) || 1;
+  const paginatedSlots = filteredSlots.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterDept, filterDate, filterStatus]);
 
   if (loading) {
     return (
@@ -450,9 +478,36 @@ export default function AdminInterviewsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
-                {slots.length === 0 ? (
+                {/* Filters */}
+                <div className="p-4 border-b border-zinc-900 bg-zinc-950/60 flex flex-col sm:flex-row gap-3 items-end">
+                  <div className="space-y-1.5 flex-1 w-full">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold flex items-center gap-1"><Filter className="h-3 w-3" /> Dept</label>
+                    <Select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
+                      {Object.entries(DEPT_NAMES).map(([slug, name]) => (
+                        <option key={`filter-${slug}`} value={slug}>{name}</option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5 flex-1 w-full">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Date</label>
+                    <Input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5 flex-1 w-full">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Status</label>
+                    <Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                      <option value="all">All</option>
+                      <option value="available">Available</option>
+                      <option value="booked">Booked</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </Select>
+                  </div>
+                  <Button variant="ghost" onClick={() => { setFilterDept("all"); setFilterDate(""); setFilterStatus("all"); }} className="h-10 text-xs font-bold text-zinc-400 hover:text-white">Clear</Button>
+                </div>
+
+                {filteredSlots.length === 0 ? (
                   <div className="text-center py-20 text-zinc-500 font-medium text-xs">
-                    No scheduled interview slots found. Set up availability on the left.
+                    {slots.length === 0 ? "No scheduled interview slots found. Set up availability on the left." : "No slots match the current filters."}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -467,7 +522,7 @@ export default function AdminInterviewsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {slots.map((slot) => {
+                        {paginatedSlots.map((slot) => {
                           const dateObj = new Date(slot.startTime);
                           const startStr = dateObj.toLocaleString("en-IN", {
                             day: "2-digit",
@@ -539,6 +594,37 @@ export default function AdminInterviewsPage() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                )}
+                
+                {filteredSlots.length > 0 && (
+                  <div className="p-4 border-t border-zinc-900 bg-zinc-950/60 flex items-center justify-between">
+                    <span className="text-xs text-zinc-500 font-medium">
+                      Showing {Math.min((currentPage - 1) * PAGE_SIZE + 1, filteredSlots.length)} to {Math.min(currentPage * PAGE_SIZE, filteredSlots.length)} of {filteredSlots.length} slots
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs font-bold text-zinc-300 px-3">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
