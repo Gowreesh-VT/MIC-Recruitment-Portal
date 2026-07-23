@@ -26,6 +26,23 @@ interface StageSubmission {
   responses: Record<string, unknown>;
 }
 
+interface InterviewSlot {
+  _id: string;
+  adminEmail: string;
+  deptSlug: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  locationType: "offline" | "online";
+  locationDetails: string;
+  bookedBy?: {
+    userId: string;
+    userEmail: string;
+    userName?: string;
+  };
+  meetingLink?: string;
+}
+
 interface ApplicationStatus {
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
   firstPreference: string;
@@ -44,22 +61,40 @@ interface ApplicationStatus {
 
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
+  const bodyHeight = Math.max(0, height - 24);
+  const gradientStyle = {
+    background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)",
+  };
+
   return (
     <div
-      className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
-      style={{
-        left,
-        top,
-        height: `${height}px`,
-        transform: isTop ? "none" : "scaleY(-1)",
-        borderStyle: "solid",
-        borderWidth: "0 0 24px 0",
-        borderColor: "transparent",
-        borderImageSource: "url(/green_pipe.png)",
-        borderImageSlice: "0 0 64 0 fill",
-        borderImageRepeat: "stretch",
-      }}
-    />
+      className="absolute select-none pointer-events-none z-10 w-[52px] flex flex-col items-center"
+      style={{ left, top, height: `${height}px` }}
+    >
+      {isTop ? (
+        <>
+          <div
+            className="w-[46px] border-x-[3px] border-t-[3px] border-black box-border"
+            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
+          />
+          <div
+            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
+            style={gradientStyle}
+          />
+        </>
+      ) : (
+        <>
+          <div
+            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_3px_0_0_rgba(255,255,255,0.4)] flex-shrink-0"
+            style={gradientStyle}
+          />
+          <div
+            className="w-[46px] border-x-[3px] border-b-[3px] border-black box-border"
+            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
+          />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -455,6 +490,74 @@ export default function StagePage({
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
 
+  // Booking states
+  const [bookingData, setBookingData] = useState<{
+    slots: InterviewSlot[];
+    currentBooking: InterviewSlot | null;
+    deptSlug: string;
+  } | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(true);
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
+  const [selectedSlotId, setSelectedSlotId] = useState("");
+  const [showReschedule, setShowReschedule] = useState(false);
+
+  const loadBookingInfo = async () => {
+    try {
+      const res = await fetch("/api/apply/interviews", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setBookingData({
+            slots: data.slots,
+            currentBooking: data.currentBooking,
+            deptSlug: data.deptSlug,
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const handleBookSlot = async (slotId: string) => {
+    if (!slotId) return;
+    setBookingSubmitting(true);
+    setError("");
+    try {
+      const res = await fetch("/api/apply/interviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadBookingInfo();
+        setShowReschedule(false);
+        // Also mark stage 3 as submitted
+        await fetch(`/api/apply/${dept}/stage/3`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ responses: { slotId } }),
+        });
+        const statusRes = await fetch(`/api/apply/${dept}/stage/3`, { cache: "no-store" });
+        if (statusRes.ok) {
+           const sData = await statusRes.json();
+           if (sData.success && sData.submission) {
+             setExistingSubmission(sData.submission);
+           }
+        }
+      } else {
+        setError(data.error || "Failed to book slot.");
+      }
+    } catch {
+      setError("Failed to connect to server.");
+    } finally {
+      setBookingSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== "undefined") {
@@ -472,10 +575,13 @@ export default function StagePage({
   useEffect(() => {
     const fetchStage = async () => {
       try {
+        if (stageNum === 3) {
+          loadBookingInfo();
+        }
         const [stageRes, deptRes, cycleRes] = await Promise.all([
-          fetch(`/api/apply/${dept}/stage/${stageNum}`),
-          fetch(`/api/admin/departments/${dept}`),
-          fetch("/api/apply/status"),
+          fetch(`/api/apply/${dept}/stage/${stageNum}`, { cache: "no-store" }),
+          fetch(`/api/admin/departments/${dept}`, { cache: "no-store" }),
+          fetch("/api/apply/status", { cache: "no-store" }),
         ]);
 
         let userData: Record<string, unknown> | null = null;
@@ -556,6 +662,11 @@ export default function StagePage({
     e.preventDefault();
     setError("");
     setCaptchaError(false);
+
+    if (stageNum === 3 && selectedSlotId) {
+       await handleBookSlot(selectedSlotId);
+       return;
+    }
 
     // Client-side Zod validation — phone, GitHub, LinkedIn, email, required fields
     if (stageConfig) {
@@ -819,10 +930,10 @@ export default function StagePage({
                 {/* Hidden honeypot */}
                 <input type="text" name="_trap" className="hidden" tabIndex={-1} aria-hidden="true" />
 
-                {stageConfig?.stage === 3 && (
+                {(stageConfig?.stage === 2 || stageConfig?.stage === 3) && (
                   <div className="mb-8 p-6 bg-[#FFF2E6] border-[3px] border-[#A05522] rounded-[8px] flex flex-col gap-4 font-sans text-black">
                     <h2 className="text-[10px] font-press-start font-bold text-[#A05522] uppercase tracking-wider">
-                      ► TASK INSTRUCTIONS
+                      ► {stageConfig.stage === 2 ? "TASK INSTRUCTIONS" : "INTERVIEW INSTRUCTIONS"}
                     </h2>
                     <p className="text-xs leading-relaxed whitespace-pre-line font-medium text-slate-800">
                       {stageConfig.description}
@@ -858,24 +969,88 @@ export default function StagePage({
                   </div>
                 )}
 
-                {/* Grid Layout for Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                  {stageConfig?.formFields.map((field) => (
-                    <div key={field.id} className={field.type === "textarea" ? "md:col-span-2" : ""}>
-                      <FieldRenderer
-                        field={field}
-                        value={responses[field.id]}
-                        onChange={(val) =>
-                          setResponses((prev) => ({ ...prev, [field.id]: val }))
-                        }
-                        disabled={existingSubmission !== null && !isEditing}
-                      />
-                    </div>
-                  ))}
-                </div>
+                {stageNum === 3 ? (
+                  <div className="flex flex-col gap-6 font-sans">
+                    <h3 className="text-[12px] font-black text-black font-press-start uppercase tracking-widest border-b-[3px] border-black pb-2">
+                      SELECT AN INTERVIEW SLOT <span className="text-red-500">*</span>
+                    </h3>
+                    
+                    {bookingLoading ? (
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Fetching slots...
+                      </div>
+                    ) : bookingData?.currentBooking && !showReschedule ? (
+                      <div className="bg-[#E6F4EA] border-[3px] border-[#34A853] p-4 flex flex-col gap-3">
+                        <div className="text-[10px] font-bold text-[#34A853] font-press-start uppercase tracking-widest flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4" /> INTERVIEW SCHEDULED
+                        </div>
+                        <div className="text-xs font-bold text-black bg-white border-2 border-black p-3 leading-loose">
+                           {new Date(bookingData.currentBooking.startTime).toLocaleString("en-IN", {
+                              weekday: "short", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit"
+                           })}
+                           <br />
+                           Location: {bookingData.currentBooking.locationDetails} ({bookingData.currentBooking.locationType})
+                        </div>
+                        {cycleOpen && (
+                          <button type="button" onClick={() => setShowReschedule(true)} className="text-[10px] text-blue-600 font-bold hover:underline self-start uppercase tracking-wider">
+                            RESCHEDULE INTERVIEW
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {bookingData?.slots.length === 0 ? (
+                          <div className="text-[10px] font-bold text-red-600 uppercase font-press-start leading-loose bg-red-100 p-4 border-[3px] border-red-500">
+                            No available slots at the moment. Please check back later or contact the admins.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {bookingData?.slots.map(slot => (
+                              <div
+                                key={slot._id}
+                                onClick={() => setSelectedSlotId(slot._id)}
+                                className={`border-[3px] border-black p-4 cursor-pointer transition-transform hover:-translate-y-1 flex flex-col gap-2 ${selectedSlotId === slot._id ? 'bg-[#34A853] text-white shadow-[4px_4px_0px_0px_#000]' : 'bg-[#FFF2E6] text-black hover:bg-[#FFE4D6] shadow-[2px_2px_0px_0px_#000]'}`}
+                              >
+                                <div className="text-xs font-bold uppercase mb-1">
+                                  {new Date(slot.startTime).toLocaleString("en-IN", { weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                </div>
+                                <div className="text-[10px] font-bold opacity-90 uppercase border border-current px-2 py-1 self-start rounded">
+                                  {slot.locationType}
+                                </div>
+                                <div className="text-[10px] font-medium opacity-80 mt-1 truncate">
+                                  {slot.locationDetails}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {showReschedule && (
+                          <button type="button" onClick={() => setShowReschedule(false)} className="text-[10px] text-red-600 font-bold hover:underline self-start uppercase tracking-wider">
+                            CANCEL RESCHEDULE
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                    {stageConfig?.formFields.map((field) => (
+                      <div key={field.id} className={field.type === "textarea" ? "md:col-span-2" : ""}>
+                        <FieldRenderer
+                          field={field}
+                          value={responses[field.id]}
+                          onChange={(val) =>
+                            setResponses((prev) => ({ ...prev, [field.id]: val }))
+                          }
+                          disabled={existingSubmission !== null && !isEditing}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="mt-10 flex flex-col items-center gap-4 pb-2">
-                  {(!existingSubmission || isEditing) && cycleOpen && (
+                  {(!existingSubmission || isEditing || (stageNum === 3 && showReschedule)) && cycleOpen && (
                     <>
                       {/* Turnstile challenge — verified server-side on every submit */}
                       <div className="w-full bg-white border-[3px] border-[#C85A28] rounded-[8px] flex flex-col items-center py-3 gap-2">
@@ -897,19 +1072,19 @@ export default function StagePage({
 
                       <button
                         type="submit"
-                        disabled={submitting || !turnstileToken}
+                        disabled={submitting || bookingSubmitting || !turnstileToken || (stageNum === 3 && !selectedSlotId)}
                         onClick={playRetroSound}
                         className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ boxShadow: "3px 3px 0px 0px #000" }}
                       >
-                        {submitting ? "SUBMITTING..." : isEditing ? "SAVE CHANGES" : "SUBMIT"}
-                        {!submitting && <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent" />}
+                        {submitting || bookingSubmitting ? "SUBMITTING..." : (isEditing || showReschedule) ? "SAVE CHANGES" : "SUBMIT"}
+                        {!(submitting || bookingSubmitting) && <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent" />}
                       </button>
                     </>
                   )}
-                  {existingSubmission && !isEditing && (
+                  {existingSubmission && !isEditing && !(stageNum === 3 && showReschedule) && (
                     <div className="flex gap-4">
-                      {cycleOpen && existingSubmission.result === "pending" && (
+                      {cycleOpen && existingSubmission.result === "pending" && stageNum !== 3 && (
                         <button
                           type="button"
                           onClick={() => { playRetroSound(); setIsEditing(true); }}
@@ -919,19 +1094,11 @@ export default function StagePage({
                           EDIT
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => { playRetroSound(); router.push("/recruitments"); }}
-                        className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1"
-                        style={{ boxShadow: "3px 3px 0px 0px #000" }}
-                      >
-                        VIEW STATUS
-                      </button>
                     </div>
                   )}
                 </div>
 
-                {isEditing && (
+                {isEditing && stageNum !== 3 && (
                   <div className="mt-4 flex justify-center">
                     <button
                       type="button"
@@ -949,7 +1116,6 @@ export default function StagePage({
 
         </div>
       </div>
-
     </div>
   );
 }
