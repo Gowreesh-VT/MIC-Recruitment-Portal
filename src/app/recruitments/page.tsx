@@ -41,7 +41,7 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
   return (
     <div
       onClick={isDisabled ? undefined : onSelect}
-      className={`w-[380px] h-[270px] flex flex-col items-start p-1 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
+      className={`w-[385px] h-[275px] flex flex-col items-start p-1.5 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
         isDisabled
           ? "bg-[#FFB59F]"
           : isSelected
@@ -52,20 +52,20 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
     >
       {/* Card Header Tag */}
       <div className={`flex flex-col items-center py-2.5 relative self-stretch w-full rounded-[6px] border-b-4 border-solid border-black ${isSelected ? "bg-[#E29A2B]" : "bg-[#A93710]"}`}>
-        <div className="relative flex items-center justify-center w-fit text-white drop-shadow-[2px_2px_0px_#000] font-bold text-[13px] tracking-wider uppercase leading-none whitespace-nowrap">
+        <div className="relative flex items-center justify-center w-fit text-white drop-shadow-[2px_2px_0px_#000] font-bold text-[14px] tracking-wider uppercase leading-none whitespace-nowrap">
           {title}
         </div>
       </div>
 
       {/* Inner White Box */}
-      <div className={`flex-grow w-full p-3 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
-        <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-4" : ""}`}>
-          <p className={`text-[11.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
+      <div className={`flex-grow w-full p-2.5 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
+        <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-3" : ""}`}>
+          <p className={`text-[13.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
             {isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
           
           {isSelected && progressStatus && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-1">
               <span className="bg-[#E29A2B] text-black text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider">
                 STATUS
               </span>
