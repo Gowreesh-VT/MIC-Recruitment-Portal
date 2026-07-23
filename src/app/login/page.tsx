@@ -277,22 +277,7 @@ export default function LoginPage() {
           <RetroPipe left="1656px" top="-30px" height={430} isTop={true} />
           
 
-          {/* Angry Birds Elements */}
-          
-          {/* Scaled up Tower (Building) on the Right */}
-          <img 
-            src="/angry_bird_building.png?v=2" 
-            alt="Angry Bird Building" 
-            className="absolute top-[475px] left-[1900px] h-[450px] w-auto z-30 pointer-events-none select-none pixelated drop-shadow-md" 
-          />
-          
-          {/* Small Pipe on the Right to balance composition near slingshot (Removed as per request) */}
 
-          {/* Slingshot Composite on the Left */}
-          <div className="absolute top-[675px] left-[600px] w-[170px] h-[250px] z-30 pointer-events-none select-none drop-shadow-md">
-            {/* Base Slingshot */}
-            <img src="/angry_bird_catapult.png?v=2" className="absolute inset-0 w-full h-full pixelated" alt="Slingshot Base" />
-          </div>
 
           <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col select-none pointer-events-none">
             <div className="w-full h-5 bg-[#52AE26] border-t-4 border-b-4 border-black flex flex-col justify-between shrink-0">
