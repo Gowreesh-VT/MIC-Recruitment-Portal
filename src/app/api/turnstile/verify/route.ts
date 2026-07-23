@@ -34,15 +34,27 @@ export async function POST(req: NextRequest) {
   }
 
   if (token === "bypassed" || token === "disabled" || token === "skipped") {
-    return NextResponse.json({ success: true, skipped: true });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({ success: true, skipped: true });
+    }
+    return NextResponse.json(
+      { success: false, error: "Bypass tokens are not allowed." },
+      { status: 403 }
+    );
   }
 
   const secret = process.env.TURNSTILE_SECRET_KEY;
 
-  // If no secret is configured (e.g. local dev or deployment without secret key),
-  // skip verification rather than blocking all traffic.
+  // In production, missing secret key must fail closed with server configuration error
   if (!secret) {
-    console.warn("[Turnstile] TURNSTILE_SECRET_KEY not set — skipping verification.");
+    if (process.env.NODE_ENV === "production") {
+      console.error("[Turnstile] CRITICAL: TURNSTILE_SECRET_KEY is missing in production environment.");
+      return NextResponse.json(
+        { success: false, error: "Server verification configuration error." },
+        { status: 500 }
+      );
+    }
+    console.warn("[Turnstile] TURNSTILE_SECRET_KEY not set — skipping verification in development.");
     return NextResponse.json({ success: true, skipped: true });
   }
 

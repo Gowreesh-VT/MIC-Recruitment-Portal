@@ -68,14 +68,17 @@ export default function TurnstileWidget({
         hostname === "::1" ||
         hostname.endsWith(".local");
 
-      // If no site key is set on a non-localhost domain, Cloudflare dummy test keys fail.
-      // Auto-bypass Turnstile in production when keys are unconfigured.
-      if (!rawSiteKey && !isLocal) {
+      // In development mode, auto-bypass if site key is unconfigured on non-local domain
+      if (!rawSiteKey && !isLocal && process.env.NODE_ENV === "development") {
         console.warn(
-          "[Turnstile] NEXT_PUBLIC_TURNSTILE_SITE_KEY not set on deployed domain. Auto-bypassing challenge."
+          "[Turnstile] NEXT_PUBLIC_TURNSTILE_SITE_KEY not set. Auto-bypassing challenge in development mode."
         );
         setBypassed(true);
         onSuccess("bypassed");
+      } else if (!rawSiteKey && process.env.NODE_ENV === "production") {
+        console.error(
+          "[Turnstile] CRITICAL: NEXT_PUBLIC_TURNSTILE_SITE_KEY is missing in production environment."
+        );
       }
     }
   }, [rawSiteKey, onSuccess]);
@@ -165,16 +168,22 @@ export default function TurnstileWidget({
     <div className={`flex flex-col items-center gap-2 ${className ?? ""}`}>
       <div ref={containerRef} />
       {loadError && (
-        <button
-          type="button"
-          onClick={() => {
-            setBypassed(true);
-            onSuccess("bypassed");
-          }}
-          className="text-[9px] font-bold text-slate-800 underline uppercase tracking-wider hover:text-black cursor-pointer bg-amber-100 border border-amber-300 px-2 py-1 rounded"
-        >
-          Skip CAPTCHA Verification
-        </button>
+        process.env.NODE_ENV === "development" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setBypassed(true);
+              onSuccess("bypassed");
+            }}
+            className="text-[9px] font-bold text-slate-800 underline uppercase tracking-wider hover:text-black cursor-pointer bg-amber-100 border border-amber-300 px-2 py-1 rounded"
+          >
+            Skip CAPTCHA Verification (Dev Only)
+          </button>
+        ) : (
+          <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded">
+            Failed to load security verification. Please refresh or disable ad blockers.
+          </span>
+        )
       )}
     </div>
   );
