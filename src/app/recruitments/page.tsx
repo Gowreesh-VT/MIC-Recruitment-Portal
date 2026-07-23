@@ -9,6 +9,7 @@ import PreferenceConfirmationModal from "@/components/PreferenceConfirmationModa
 import { Loader2 } from "lucide-react";
 import posthog from "posthog-js";
 import RetroLoader from "@/components/RetroLoader";
+import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
 import { playRetroSound } from "@/lib/audio";
 
@@ -87,22 +88,40 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
 }
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
+  const bodyHeight = Math.max(0, height - 24);
+  const gradientStyle = {
+    background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)",
+  };
+
   return (
     <div
-      className="absolute select-none pointer-events-none z-10 w-[52px] pixelated"
-      style={{
-        left,
-        top,
-        height: `${height}px`,
-        transform: isTop ? "none" : "scaleY(-1)",
-        borderStyle: "solid",
-        borderWidth: "0 0 24px 0",
-        borderColor: "transparent",
-        borderImageSource: "url(/green_pipe.png)",
-        borderImageSlice: "0 0 64 0 fill",
-        borderImageRepeat: "stretch",
-      }}
-    />
+      className="absolute select-none pointer-events-none z-10 w-[52px] flex flex-col items-center"
+      style={{ left, top, height: `${height}px` }}
+    >
+      {isTop ? (
+        <>
+          <div
+            className="w-[46px] border-x-[3px] border-t-[3px] border-black box-border"
+            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
+          />
+          <div
+            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
+            style={gradientStyle}
+          />
+        </>
+      ) : (
+        <>
+          <div
+            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_3px_0_0_rgba(255,255,255,0.4)] flex-shrink-0"
+            style={gradientStyle}
+          />
+          <div
+            className="w-[46px] border-x-[3px] border-b-[3px] border-black box-border"
+            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
+          />
+        </>
+      )}
+    </div>
   );
 }
 
@@ -236,6 +255,7 @@ function MobileQuestsView({
   onQuestSelect,
   playSound,
   router,
+  isLoggedIn,
 }: {
   type: "tech" | "non-tech";
   quests: DepartmentData[];
@@ -244,6 +264,7 @@ function MobileQuestsView({
   onQuestSelect: (q: DepartmentData, type: "tech" | "non-tech", slug: string) => void;
   playSound: (t: "select" | "jump" | "open" | "close" | "die" | "point") => void;
   router: ReturnType<typeof useRouter>;
+  isLoggedIn?: boolean;
 }) {
   const title = type === "tech" ? "Technical Quests" : "Non Technical Quests";
   const marqueeText = "MICROSOFT INNOVATIONS CLUB";
@@ -271,19 +292,20 @@ function MobileQuestsView({
     <MobileBackground>
       {/* Top pipe (touches top of screen) */}
       <div className="relative z-10 flex flex-col items-center flex-shrink-0 mt-[-10px]">
-        <div
-          className="pixelated pointer-events-none"
-          style={{
-            width: "52px",
-            height: "80px",
-            borderStyle: "solid",
-            borderWidth: "0 0 24px 0",
-            borderColor: "transparent",
-            borderImageSource: "url(/green_pipe.png)",
-            borderImageSlice: "0 0 64 0 fill",
-            borderImageRepeat: "stretch",
-          }}
-        />
+        <div className="w-[52px] h-[80px] flex flex-col items-center pointer-events-none select-none">
+          <div
+            className="w-[46px] h-[56px] border-x-[3px] border-t-[3px] border-black box-border"
+            style={{
+              background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
+            }}
+          />
+          <div
+            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
+            style={{
+              background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
+            }}
+          />
+        </div>
         <img
           src="/flappy_bird.svg"
           alt="Flappy Bird"
@@ -299,13 +321,22 @@ function MobileQuestsView({
           className="pixelated w-[52px] h-[37px] animate-retro-float-small drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer pointer-events-auto"
           onClick={() => { playSound("select"); router.push("/"); }}
         />
-        <button
-          onClick={() => { playSound("open"); router.push("/faqs?from=/recruitments"); }}
-          className="bg-[#7CA922] text-black text-[9px] font-bold py-1.5 px-4 border-4 border-black uppercase tracking-wider pointer-events-auto"
-          style={{ boxShadow: "3px 3px 0px 0px #000" }}
-        >
-          FAQS
-        </button>
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <button
+            onClick={() => { playSound("open"); router.push("/faqs?from=/recruitments"); }}
+            className="bg-[#7CA922] text-black text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+            style={{ boxShadow: "3px 3px 0px 0px #000" }}
+          >
+            FAQS
+          </button>
+          <button
+            onClick={() => { playSound("open"); router.push(isLoggedIn ? "/profile" : "/login?callbackUrl=/recruitments"); }}
+            className="bg-[#1093EB] text-white text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+            style={{ boxShadow: "3px 3px 0px 0px #000" }}
+          >
+            {isLoggedIn ? "PROFILE" : "LOGIN"}
+          </button>
+        </div>
       </div>
 
       {/* Title */}
@@ -508,6 +539,9 @@ export default function RecruitmentsPage() {
   const updateGameStatus = (status: "idle" | "playing" | "dead") => {
     setGameStatus(status);
     gameStatusRef.current = status;
+    if (status === "playing") {
+      setIsScrollingLeft(false);
+    }
   };
 
   const resetGame = (startPlaying = false) => {
@@ -518,6 +552,7 @@ export default function RecruitmentsPage() {
     p.isDead = false;
     p.rotation = 0;
     p.time = 0;
+    setIsScrollingLeft(false);
     
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollLeft = 0;
@@ -536,7 +571,7 @@ export default function RecruitmentsPage() {
     
     if (startPlaying === true) {
       updateGameStatus("playing");
-      p.velocityY = -15; // Smooth instant upward jump arc in GPU physics loop
+      p.velocityY = -10; // Smooth light upward jump arc
       playRetroSound("jump");
     } else {
       updateGameStatus("idle");
@@ -557,7 +592,7 @@ export default function RecruitmentsPage() {
     }
     
     playRetroSound("jump");
-    p.velocityY = -15; // Smooth instant upward jump arc in GPU physics loop
+    p.velocityY = -10; // Smooth light upward jump arc
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -608,7 +643,9 @@ export default function RecruitmentsPage() {
       }
     }
 
-    if (currentScrollX < lastScrollXRef.current - 1) {
+    if (gameStatusRef.current === "playing") {
+      setIsScrollingLeft(false);
+    } else if (currentScrollX < lastScrollXRef.current - 1) {
       setIsScrollingLeft(true);
     } else if (currentScrollX > lastScrollXRef.current + 1) {
       setIsScrollingLeft(false);
@@ -740,7 +777,7 @@ export default function RecruitmentsPage() {
         if (!p.isDead) {
           if (gameStatusRef.current === "playing") {
             p.currentY += p.velocityY;
-            p.velocityY += 1.15; // Smooth gravity pull
+            p.velocityY += 0.65; // Lighter, floatier gravity pull
 
             const birdLeft = 240 + p.currentX;
             const birdRight = birdLeft + 72;
@@ -1038,6 +1075,7 @@ export default function RecruitmentsPage() {
           onQuestSelect={handleOpenPopup}
           playSound={playRetroSound}
           router={router}
+          isLoggedIn={isLoggedIn}
         />
         {/* Popup overlays — same as desktop */}
         {selectedDepartment && (
@@ -1331,7 +1369,7 @@ export default function RecruitmentsPage() {
               <img
                 src="/flappy_bird.svg"
                 alt="Flappy Bird"
-                className={`w-[72px] h-[72px] pixelated drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] transition-[transform,filter] duration-150 select-none pointer-events-none ${isScrollingLeft ? "scale-x-[-1]" : "scale-x-[1]"} ${isDead ? "grayscale brightness-50" : "hover:scale-110 active:scale-95"}`}
+                className={`w-[72px] h-[72px] pixelated drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] transition-[transform,filter] duration-150 select-none pointer-events-none ${(isScrollingLeft && gameStatus !== "playing") ? "scale-x-[-1]" : "scale-x-[1]"} ${isDead ? "grayscale brightness-50" : "hover:scale-110 active:scale-95"}`}
               />
             </div>
             {gameStatus === "idle" && (
