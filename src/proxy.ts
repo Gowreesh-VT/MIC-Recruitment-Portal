@@ -123,10 +123,6 @@ function getTokenCost(method: string, pathname: string): number {
 // ---------------------------------------------------------------------------
 // Route matchers
 // ---------------------------------------------------------------------------
-function isApplyRoute(pathname: string) {
-  return pathname.startsWith("/apply");
-}
-
 function isAdminRoute(pathname: string) {
   return pathname.startsWith("/admin");
 }

@@ -58,7 +58,7 @@ export function validateResponses(
         : z.union([phoneSchema, z.literal(""), z.null(), z.undefined()]).optional();
     } else if (isGithubField) {
       // GitHub: must be a valid URL pointing to github.com or *.github.io
-      let githubSchema = strSchema
+      const githubSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
         .url(`"${field.label}" must be a valid URL (e.g., https://github.com/username/repo).`)
         .refine(val => {
@@ -83,7 +83,7 @@ export function validateResponses(
         : z.union([githubSchema, githubArraySchema, z.literal(""), z.null(), z.undefined()]).optional();
     } else if (isLinkedinField) {
       // LinkedIn: must be a valid URL pointing to linkedin.com or lnkd.in
-      let linkedinSchema = strSchema
+      const linkedinSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
         .url(`"${field.label}" must be a valid URL (e.g., https://linkedin.com/in/username).`)
         .refine(val => {
@@ -105,7 +105,7 @@ export function validateResponses(
         : z.union([linkedinSchema, linkedinArraySchema, z.literal(""), z.null(), z.undefined()]).optional();
     } else if (field.type === "url" || field.type === "file") {
       // Generic URL or uploaded file URL field
-      let urlSchema = strSchema
+      const urlSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
         .url(`"${field.label}" must be a valid URL.`);
       const urlArraySchema = z.array(urlSchema);
@@ -118,7 +118,7 @@ export function validateResponses(
         ? z.union([strSchema, checkboxArraySchema])
         : z.union([strSchema, checkboxArraySchema, z.literal(""), z.null(), z.undefined()]).optional();
     } else if (field.type === "email") {
-      let emailSchema = strSchema
+      const emailSchema = strSchema
         .max(field.maxLength || 254, `"${field.label}" exceeds maximum length.`)
         .email(`"${field.label}" must be a valid email address.`);
       fieldSchema = field.required
