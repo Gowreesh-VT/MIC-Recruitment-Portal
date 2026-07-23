@@ -41,7 +41,7 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
   return (
     <div
       onClick={isDisabled ? undefined : onSelect}
-      className={`w-[371px] h-[262px] flex flex-col items-start p-1 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
+      className={`w-[380px] h-[270px] flex flex-col items-start p-1 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
         isDisabled
           ? "bg-[#FFB59F]"
           : isSelected
@@ -51,8 +51,8 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
       style={{ boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.15)" }}
     >
       {/* Card Header Tag */}
-      <div className={`flex flex-col items-center py-2 relative self-stretch w-full rounded-[6px] border-b-4 border-solid border-black ${isSelected ? "bg-[#E29A2B]" : "bg-[#A93710]"}`}>
-        <div className="relative flex items-center justify-center w-fit text-white drop-shadow-[2px_2px_0px_#000] font-bold text-[12px] tracking-wider uppercase leading-none whitespace-nowrap">
+      <div className={`flex flex-col items-center py-2.5 relative self-stretch w-full rounded-[6px] border-b-4 border-solid border-black ${isSelected ? "bg-[#E29A2B]" : "bg-[#A93710]"}`}>
+        <div className="relative flex items-center justify-center w-fit text-white drop-shadow-[2px_2px_0px_#000] font-bold text-[13px] tracking-wider uppercase leading-none whitespace-nowrap">
           {title}
         </div>
       </div>
@@ -60,16 +60,16 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
       {/* Inner White Box */}
       <div className={`flex-grow w-full p-3 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
         <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-4" : ""}`}>
-          <p className={`text-[10px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
+          <p className={`text-[11.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
             {isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
           
           {isSelected && progressStatus && (
             <div className="flex items-center gap-2 mt-2">
-              <span className="bg-[#E29A2B] text-black text-[9px] font-bold px-2 py-1 border-2 border-black uppercase tracking-wider">
+              <span className="bg-[#E29A2B] text-black text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider">
                 STATUS
               </span>
-              <span className="bg-[#52AE26] text-white text-[9px] font-bold px-2 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000]">
+              <span className="bg-[#52AE26] text-white text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000]">
                 {progressStatus.replace("-", " ")}
               </span>
             </div>
