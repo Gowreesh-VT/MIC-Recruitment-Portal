@@ -4,6 +4,8 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import InterviewSlot from "@/models/InterviewSlot";
 import { sendInterviewBookingConfirmation } from "@/lib/mailer";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import mongoose from "mongoose";
 
 export async function GET(req: NextRequest) {
   // Auth guard
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. Fetch user's application
-    const application = await Application.findOne({ userId: session.user.id, cycleId: "2026-27" });
+    const application = await Application.findOne({ userId: session.user.id, cycleId: ACTIVE_CYCLE_ID });
     if (!application) {
       return NextResponse.json({ success: false, error: "No application found." }, { status: 404 });
     }
@@ -63,32 +65,49 @@ export async function POST(req: NextRequest) {
     if (!slotId) {
       return NextResponse.json({ success: false, error: "Slot ID is required." }, { status: 400 });
     }
+    if (!mongoose.Types.ObjectId.isValid(slotId)) {
+      return NextResponse.json({ success: false, error: "Invalid slot ID." }, { status: 400 });
+    }
 
     // 1. Get application
-    const application = await Application.findOne({ userId: session.user.id, cycleId: "2026-27" });
+    const application = await Application.findOne({ userId: session.user.id, cycleId: ACTIVE_CYCLE_ID });
     if (!application) {
       return NextResponse.json({ success: false, error: "No application found." }, { status: 404 });
     }
 
     const deptSlug = application.activePreference === "first" ? application.firstPreference : application.secondPreference;
 
-    // 2. Check if new slot is available and valid
-    const targetSlot = await InterviewSlot.findById(slotId);
+    // 2. Atomically book the new slot to prevent double-booking race conditions
+    const targetSlot = await InterviewSlot.findOneAndUpdate(
+      {
+        _id: slotId,
+        status: "available",
+        deptSlug: { $in: [deptSlug, "all"] },
+      },
+      {
+        $set: {
+          status: "booked",
+          bookedBy: {
+            userId: session.user.id,
+            userEmail: session.user.email ?? application.userEmail,
+            userName: session.user.name ?? undefined,
+          },
+        },
+      },
+      { new: true }
+    );
+
     if (!targetSlot) {
-      return NextResponse.json({ success: false, error: "Slot not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Slot is no longer available or invalid for your department." },
+        { status: 400 }
+      );
     }
 
-    if (targetSlot.status !== "available") {
-      return NextResponse.json({ success: false, error: "Slot is no longer available." }, { status: 400 });
-    }
-
-    if (targetSlot.deptSlug !== "all" && targetSlot.deptSlug !== deptSlug) {
-      return NextResponse.json({ success: false, error: "This slot is not for your department." }, { status: 400 });
-    }
-
-    // 3. Check if candidate already has a booked slot for this preference and release it
+    // 3. Now that the new slot is successfully claimed, free up any previously booked slot
     const existingSlot = await InterviewSlot.findOne({
       "bookedBy.userId": session.user.id,
+      _id: { $ne: slotId },
       deptSlug: { $in: [deptSlug, "all"] },
       status: "booked",
     });
@@ -100,16 +119,7 @@ export async function POST(req: NextRequest) {
       await existingSlot.save();
     }
 
-    // 4. Book the new slot
-    targetSlot.status = "booked";
-    targetSlot.bookedBy = {
-      userId: session.user.id,
-      userEmail: session.user.email ?? application.userEmail,
-      userName: session.user.name ?? undefined,
-    };
-    await targetSlot.save();
-
-    // 5. Send confirmation email
+    // 4. Send confirmation email
     const timeStr = targetSlot.startTime.toLocaleString("en-IN", {
       dateStyle: "medium",
       timeStyle: "short",
@@ -119,8 +129,7 @@ export async function POST(req: NextRequest) {
       session.user.email ?? application.userEmail,
       timeStr,
       targetSlot.locationDetails,
-      targetSlot.locationType === "online",
-      targetSlot.meetingLink
+      targetSlot.locationType === "online"
     ).catch(console.error);
 
     return NextResponse.json({

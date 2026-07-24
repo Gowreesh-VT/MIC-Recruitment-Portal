@@ -11,6 +11,7 @@ import posthog from "posthog-js";
 import RetroLoader from "@/components/RetroLoader";
 import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
+import CountdownTimer from "@/components/CountdownTimer";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -256,6 +257,7 @@ function MobileQuestsView({
   playSound,
   router,
   isLoggedIn,
+  countdownSettings,
 }: {
   type: "tech" | "non-tech";
   quests: DepartmentData[];
@@ -265,6 +267,7 @@ function MobileQuestsView({
   playSound: (t: "select" | "jump" | "open" | "close" | "die" | "point") => void;
   router: ReturnType<typeof useRouter>;
   isLoggedIn?: boolean;
+  countdownSettings?: { enabled: boolean; target: string | null; title: string; } | null;
 }) {
   const title = type === "tech" ? "Technical Quests" : "Non Technical Quests";
   const marqueeText = "MICROSOFT INNOVATIONS CLUB";
@@ -345,6 +348,16 @@ function MobileQuestsView({
           {title}
         </h1>
       </div>
+
+      {/* Countdown Timer */}
+      {countdownSettings?.enabled && countdownSettings?.target && (
+        <div className="relative z-10 px-4 mt-2 flex-shrink-0">
+          <CountdownTimer
+            targetDate={countdownSettings.target}
+            title={countdownSettings.title}
+          />
+        </div>
+      )}
 
       {/* Quest signboards list */}
       <div className="relative z-10 flex flex-col justify-evenly flex-grow w-full py-4 min-h-[350px] overflow-x-hidden">
@@ -455,11 +468,15 @@ interface ApplicationStatus {
   firstPrefProgress: {
     status: "active" | "passed" | "rejected" | "pending";
     currentStage: number;
+    effectiveCurrentStage?: number;
+    stageMasked?: boolean;
     stages: StageProgress[];
   };
   secondPrefProgress: {
     status: "active" | "passed" | "rejected" | "pending";
     currentStage: number;
+    effectiveCurrentStage?: number;
+    stageMasked?: boolean;
     stages: StageProgress[];
   };
 }
@@ -620,6 +637,11 @@ export default function RecruitmentsPage() {
   const [nonTechQuests, setNonTechQuests] = useState<DepartmentData[]>([]);
   const [pageTitle, setPageTitle] = useState("Recruitments");
   const [pageSubtitle, setPageSubtitle] = useState("CHOOSE THE QUEST SUITS YOU THE MOST");
+  const [countdownSettings, setCountdownSettings] = useState<{
+    enabled: boolean;
+    target: string | null;
+    title: string;
+  } | null>(null);
 
   const birdPhysicsRef = useRef({
     currentX: 0,
@@ -690,6 +712,7 @@ export default function RecruitmentsPage() {
         setNonTechQuests(configData.nonTechQuests || []);
         setPageTitle(configData.title || "Recruitments");
         setPageSubtitle(configData.subtitle || "CHOOSE THE QUEST SUITS YOU THE MOST");
+        setCountdownSettings(configData.countdownSettings || null);
         setIsLoggedIn(!!statusData.user);
       } else {
         if (statusRes.status === 429 || configRes.status === 429) {
@@ -983,10 +1006,7 @@ export default function RecruitmentsPage() {
     if (isFirstPref || isSecondPref) {
       playRetroSound("select");
       const progress = isFirstPref ? appStatus.firstPrefProgress : appStatus.secondPrefProgress;
-      // Route to the last submitted stage (so they can view/edit it while awaiting review).
-      // currentStage is now admin-controlled, so we don't use it for routing.
-      const submittedStages = progress.stages.map((s) => s.stage);
-      const targetStage = submittedStages.length > 0 ? Math.max(...submittedStages) : progress.currentStage;
+      const targetStage = progress.effectiveCurrentStage ?? progress.currentStage ?? 1;
       posthog.capture("Quest Resume Clicked", { slug, stage: targetStage });
       router.push(`/apply/${slug}/stage-${targetStage}`);
       return;
@@ -1076,6 +1096,7 @@ export default function RecruitmentsPage() {
           playSound={playRetroSound}
           router={router}
           isLoggedIn={isLoggedIn}
+          countdownSettings={countdownSettings}
         />
         {/* Popup overlays — same as desktop */}
         {selectedDepartment && (
@@ -1193,6 +1214,23 @@ export default function RecruitmentsPage() {
           </p>
         </div>
       </div>
+
+      {/* Desktop Countdown Timer */}
+      {countdownSettings?.enabled && countdownSettings?.target && (
+        <div
+          className="fixed z-40 origin-top-left pointer-events-auto hidden md:block"
+          style={{
+            left: `${980 * scale}px`,
+            top: `${24 * scale}px`,
+            transform: `scale(${scale})`,
+          }}
+        >
+          <CountdownTimer
+            targetDate={countdownSettings.target}
+            title={countdownSettings.title}
+          />
+        </div>
+      )}
 
       {/* Fixed Logo */}
       <MicLogo />

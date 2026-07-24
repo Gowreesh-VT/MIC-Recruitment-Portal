@@ -5,8 +5,25 @@ import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug, PrefType } from "@/models/Application";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import { z } from "zod";
 
-const CYCLE_ID = "2026-27";
+const secondPrefSchema = z.object({
+  secondPreference: z.enum([
+    "development",
+    "competitive-coding",
+    "ui-ux",
+    "ai-ml",
+    "cyber-security",
+    "design",
+    "management",
+    "entrepreneurship",
+    "content-media",
+  ], { message: "Invalid department selection." }),
+  _trap: z.string().optional().nullable(),
+});
+
+const CYCLE_ID = ACTIVE_CYCLE_ID;
 
 const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
   development: "tech",
@@ -60,18 +77,18 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { secondPreference, _trap } = body;
+    const parseResult = secondPrefSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { success: false, error: parseResult.error.issues[0]?.message || "Validation failed." },
+        { status: 400 }
+      );
+    }
+    const { secondPreference, _trap } = parseResult.data;
 
     // Honeypot check
     if (_trap) {
       return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
-    }
-
-    if (!secondPreference) {
-      return NextResponse.json(
-        { success: false, error: "Second preference is required." },
-        { status: 400 }
-      );
     }
 
     if (application.firstPreference === secondPreference) {
