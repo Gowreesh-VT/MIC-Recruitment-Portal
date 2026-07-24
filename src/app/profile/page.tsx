@@ -3,7 +3,19 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signOut, SessionProvider } from "next-auth/react";
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, Clock, FileText, LogOut } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  FileText,
+  LogOut,
+  Edit2,
+  Save,
+  AlertCircle,
+  Check,
+} from "lucide-react";
 import { Press_Start_2P } from "next/font/google";
 import BackButton from "@/components/BackButton";
 import MobileBackground from "@/components/MobileBackground";
@@ -58,6 +70,20 @@ function ProfilePage() {
   const [appStatus, setAppStatus] = useState<ApplicationStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Edit Personal Details State
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    phone: "",
+    regNo: "",
+    year: "",
+    branch: "",
+    whyMic: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
@@ -70,6 +96,14 @@ function ProfilePage() {
         .then((data) => {
           if (data.success && data.application) {
             setAppStatus(data.application);
+            setEditForm({
+              fullName: data.application.fullName || "",
+              phone: data.application.phone || "",
+              regNo: data.application.regNo || "",
+              year: data.application.year || "",
+              branch: data.application.branch || "",
+              whyMic: data.application.whyMic || "",
+            });
           }
         })
         .finally(() => setLoading(false));
@@ -80,6 +114,68 @@ function ProfilePage() {
     signOut({ callbackUrl: "/" });
   };
 
+  const handleStartEdit = () => {
+    if (appStatus) {
+      setEditForm({
+        fullName: appStatus.fullName || "",
+        phone: appStatus.phone || "",
+        regNo: appStatus.regNo || "",
+        year: appStatus.year || "",
+        branch: appStatus.branch || "",
+        whyMic: appStatus.whyMic || "",
+      });
+    }
+    setSaveError("");
+    setSaveSuccess("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setSaveError("");
+  };
+
+  const handleFormChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    setEditForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (saveError) setSaveError("");
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveError("");
+    setSaveSuccess("");
+    setSaving(true);
+
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success && data.application) {
+        setAppStatus((prev) =>
+          prev ? { ...prev, ...data.application } : data.application
+        );
+        setIsEditing(false);
+        setSaveSuccess("Personal details updated successfully!");
+        setTimeout(() => setSaveSuccess(""), 4000);
+      } else {
+        setSaveError(data.error || "Failed to update details.");
+      }
+    } catch {
+      setSaveError("Network error. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading || status === "loading") {
     return (
       <div className={`${pressStart.variable} font-press-start`}>
@@ -87,8 +183,14 @@ function ProfilePage() {
         <div className="block md:hidden">
           <MobileBackground>
             <div className="flex-1 flex items-center justify-center pt-24 px-4">
-              <div className="bg-[#C8862A] border-4 border-black p-6 flex flex-col items-center justify-center rounded-sm max-w-xs w-full" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
-                <div className="text-white text-[12px] animate-retro-blink uppercase tracking-widest text-center" style={{ textShadow: "2px 2px 0 #000" }}>
+              <div
+                className="bg-[#C8862A] border-4 border-black p-6 flex flex-col items-center justify-center rounded-sm max-w-xs w-full"
+                style={{ boxShadow: "4px 4px 0px 0px #000" }}
+              >
+                <div
+                  className="text-white text-[12px] animate-retro-blink uppercase tracking-widest text-center"
+                  style={{ textShadow: "2px 2px 0 #000" }}
+                >
                   LOADING GEAR...
                 </div>
               </div>
@@ -97,7 +199,10 @@ function ProfilePage() {
         </div>
         {/* Desktop Loading */}
         <div className="hidden md:flex min-h-[100dvh] bg-[#1188EE] items-center justify-center">
-          <div className="bg-[#B87B21] border-4 border-black p-6 flex items-center justify-center" style={{ boxShadow: "6px 6px 0px 0px #000" }}>
+          <div
+            className="bg-[#B87B21] border-4 border-black p-6 flex items-center justify-center"
+            style={{ boxShadow: "6px 6px 0px 0px #000" }}
+          >
             <div className="text-white text-[14px] animate-retro-blink uppercase tracking-widest drop-shadow-[2px_2px_0px_#000]">
               LOADING GEAR...
             </div>
@@ -116,6 +221,15 @@ function ProfilePage() {
           appStatus={appStatus}
           router={router}
           onSignOut={handleSignOut}
+          isEditing={isEditing}
+          editForm={editForm}
+          saving={saving}
+          saveError={saveError}
+          saveSuccess={saveSuccess}
+          onStartEdit={handleStartEdit}
+          onCancelEdit={handleCancelEdit}
+          onFormChange={handleFormChange}
+          onSaveEdit={handleSaveEdit}
         />
       </div>
 
@@ -126,6 +240,15 @@ function ProfilePage() {
           appStatus={appStatus}
           router={router}
           onSignOut={handleSignOut}
+          isEditing={isEditing}
+          editForm={editForm}
+          saving={saving}
+          saveError={saveError}
+          saveSuccess={saveSuccess}
+          onStartEdit={handleStartEdit}
+          onCancelEdit={handleCancelEdit}
+          onFormChange={handleFormChange}
+          onSaveEdit={handleSaveEdit}
         />
       </div>
     </div>
@@ -140,11 +263,40 @@ function MobileProfileView({
   appStatus,
   router,
   onSignOut,
+  isEditing,
+  editForm,
+  saving,
+  saveError,
+  saveSuccess,
+  onStartEdit,
+  onCancelEdit,
+  onFormChange,
+  onSaveEdit,
 }: {
   session: any;
   appStatus: ApplicationStatus | null;
   router: any;
   onSignOut: () => void;
+  isEditing: boolean;
+  editForm: {
+    fullName: string;
+    phone: string;
+    regNo: string;
+    year: string;
+    branch: string;
+    whyMic: string;
+  };
+  saving: boolean;
+  saveError: string;
+  saveSuccess: string;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onFormChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => void;
+  onSaveEdit: (e: React.FormEvent) => void;
 }) {
   return (
     <MobileBackground>
@@ -176,9 +328,11 @@ function MobileProfileView({
 
       {/* Main Scroll Content */}
       <div className="relative z-10 p-4 space-y-5">
-        
         {/* Header / Overall Status Card */}
-        <div className="bg-[#FFE4D6] border-4 border-black p-4 relative rounded-sm" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+        <div
+          className="bg-[#FFE4D6] border-4 border-black p-4 relative rounded-sm"
+          style={{ boxShadow: "4px 4px 0px 0px #000" }}
+        >
           <div className="flex flex-col gap-2">
             <h1 className="text-[18px] font-bold text-black tracking-widest uppercase drop-shadow-[1px_1px_0px_#A93710]">
               PLAYER GEAR
@@ -188,14 +342,24 @@ function MobileProfileView({
             </p>
 
             {appStatus && (
-              <div className="mt-2 bg-white border-2 border-black p-3 flex items-center justify-between" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-black/70">OVERALL STATUS:</span>
-                <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border-2 border-black ${
-                  appStatus.overallStatus === "selected" ? "bg-[#72F418] text-black"
-                  : appStatus.overallStatus === "rejected" ? "bg-[#FF4444] text-white"
-                  : appStatus.overallStatus === "waitlisted" ? "bg-[#FBBF24] text-black"
-                  : "bg-[#1093EB] text-white"
-                }`}>
+              <div
+                className="mt-2 bg-white border-2 border-black p-3 flex items-center justify-between"
+                style={{ boxShadow: "2px 2px 0px 0px #000" }}
+              >
+                <span className="text-[9px] font-bold uppercase tracking-wider text-black/70">
+                  OVERALL STATUS:
+                </span>
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 border-2 border-black ${
+                    appStatus.overallStatus === "selected"
+                      ? "bg-[#72F418] text-black"
+                      : appStatus.overallStatus === "rejected"
+                      ? "bg-[#FF4444] text-white"
+                      : appStatus.overallStatus === "waitlisted"
+                      ? "bg-[#FBBF24] text-black"
+                      : "bg-[#1093EB] text-white"
+                  }`}
+                >
                   {appStatus.overallStatus.replace("-", " ")}
                 </span>
               </div>
@@ -205,7 +369,10 @@ function MobileProfileView({
 
         {!appStatus ? (
           /* Error / No application mobile card */
-          <div className="bg-[#FFE4D6] border-4 border-black p-6 text-center space-y-4 rounded-sm" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+          <div
+            className="bg-[#FFE4D6] border-4 border-black p-6 text-center space-y-4 rounded-sm"
+            style={{ boxShadow: "4px 4px 0px 0px #000" }}
+          >
             <div className="bg-[#A93710] text-white px-3 py-1.5 border-2 border-black text-[10px] uppercase font-bold inline-block">
               NO APPLICATION FOUND
             </div>
@@ -224,60 +391,251 @@ function MobileProfileView({
         ) : (
           <>
             {/* Personal Information Card */}
-            <div className="bg-[#FFE4D6] border-4 border-black p-4 space-y-4 rounded-sm" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
-              <div className="bg-[#1188EE] border-2 border-black py-2 px-3 flex items-center justify-center">
+            <div
+              className="bg-[#FFE4D6] border-4 border-black p-4 space-y-4 rounded-sm"
+              style={{ boxShadow: "4px 4px 0px 0px #000" }}
+            >
+              <div className="bg-[#1188EE] border-2 border-black py-2 px-3 flex items-center justify-between">
                 <span className="text-white text-[10px] font-bold tracking-widest uppercase drop-shadow-[1px_1px_0px_#000]">
-                  ░ PLAYER DATA ░
+                  {isEditing ? "░ EDIT PLAYER DATA ░" : "░ PLAYER DATA ░"}
                 </span>
-              </div>
-
-              <div className="space-y-3 font-sans">
-                <div>
-                  <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Full Name</p>
-                  <div className="text-[11px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                    {appStatus.fullName || "—"}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Phone</p>
-                    <div className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                      {appStatus.phone || "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Reg No</p>
-                    <div className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                      {appStatus.regNo || "—"}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Year</p>
-                    <div className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                      {appStatus.year || "—"}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Branch</p>
-                    <div className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                      {appStatus.branch || "—"}
-                    </div>
-                  </div>
-                </div>
-
-                {appStatus.whyMic && (
-                  <div>
-                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">Why MIC?</p>
-                    <div className="text-[11px] text-black border-2 border-black bg-white p-2.5 rounded-sm leading-normal max-h-32 overflow-y-auto" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                      {appStatus.whyMic}
-                    </div>
-                  </div>
+                {!isEditing ? (
+                  <button
+                    onClick={onStartEdit}
+                    className="bg-[#72F418] text-black text-[8px] font-bold py-1 px-2 border border-black uppercase tracking-wider flex items-center gap-1 cursor-pointer active:translate-y-0.5"
+                    style={{ boxShadow: "1px 1px 0px 0px #000" }}
+                  >
+                    <Edit2 className="h-2.5 w-2.5" /> EDIT
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onCancelEdit}
+                    disabled={saving}
+                    className="text-white text-[8px] font-bold uppercase underline"
+                  >
+                    CANCEL
+                  </button>
                 )}
               </div>
+
+              {saveSuccess && (
+                <div className="p-2.5 bg-emerald-100 border-2 border-emerald-500 rounded-sm text-emerald-800 text-[9px] font-sans font-bold flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-emerald-600 flex-shrink-0" />
+                  <span>{saveSuccess}</span>
+                </div>
+              )}
+
+              {saveError && (
+                <div className="p-2.5 bg-red-100 border-2 border-red-500 rounded-sm text-red-700 text-[9px] font-sans font-bold flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-red-600 flex-shrink-0" />
+                  <span>{saveError}</span>
+                </div>
+              )}
+
+              {isEditing ? (
+                <form onSubmit={onSaveEdit} className="space-y-3 font-sans">
+                  <div>
+                    <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      required
+                      value={editForm.fullName}
+                      onChange={onFormChange}
+                      className="w-full text-[11px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
+                      style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                        Phone *
+                      </label>
+                      <input
+                        type="text"
+                        name="phone"
+                        required
+                        value={editForm.phone}
+                        onChange={onFormChange}
+                        className="w-full text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                        Reg No *
+                      </label>
+                      <input
+                        type="text"
+                        name="regNo"
+                        required
+                        value={editForm.regNo}
+                        onChange={onFormChange}
+                        className="w-full text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                        Year *
+                      </label>
+                      <select
+                        name="year"
+                        required
+                        value={editForm.year}
+                        onChange={onFormChange}
+                        className="w-full text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        <option value="">Select</option>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                        Branch *
+                      </label>
+                      <input
+                        type="text"
+                        name="branch"
+                        required
+                        value={editForm.branch}
+                        onChange={onFormChange}
+                        className="w-full text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm focus:outline-none focus:ring-1 focus:ring-black"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
+                      Why MIC? *
+                    </label>
+                    <textarea
+                      name="whyMic"
+                      rows={3}
+                      required
+                      value={editForm.whyMic}
+                      onChange={onFormChange}
+                      className="w-full text-[11px] text-black border-2 border-black bg-white p-2.5 rounded-sm leading-normal resize-none focus:outline-none focus:ring-1 focus:ring-black"
+                      style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={onCancelEdit}
+                      disabled={saving}
+                      className="flex-1 bg-[#A93710] hover:bg-[#FF4444] text-white text-[9px] font-bold py-2 border-2 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5"
+                      style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="flex-1 bg-[#72F418] hover:bg-[#52AE26] text-black text-[9px] font-bold py-2 border-2 border-black uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer active:translate-y-0.5 disabled:opacity-50"
+                      style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Save className="h-3 w-3" />
+                      )}
+                      {saving ? "SAVING..." : "SAVE"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-3 font-sans">
+                  <div>
+                    <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                      Full Name
+                    </p>
+                    <div
+                      className="text-[11px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm"
+                      style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                    >
+                      {appStatus.fullName || "—"}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                        Phone
+                      </p>
+                      <div
+                        className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        {appStatus.phone || "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                        Reg No
+                      </p>
+                      <div
+                        className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        {appStatus.regNo || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                        Year
+                      </p>
+                      <div
+                        className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        {appStatus.year || "—"}
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                        Branch
+                      </p>
+                      <div
+                        className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        {appStatus.branch || "—"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {appStatus.whyMic && (
+                    <div>
+                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
+                        Why MIC?
+                      </p>
+                      <div
+                        className="text-[11px] text-black border-2 border-black bg-white p-2.5 rounded-sm leading-normal max-h-32 overflow-y-auto"
+                        style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                      >
+                        {appStatus.whyMic}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Preference 1 Timeline */}
@@ -317,21 +675,32 @@ function MobileTimelineCard({
   stages: StageProgress[];
 }) {
   return (
-    <div className="bg-[#FFE4D6] border-4 border-black p-4 space-y-4 rounded-sm" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+    <div
+      className="bg-[#FFE4D6] border-4 border-black p-4 space-y-4 rounded-sm"
+      style={{ boxShadow: "4px 4px 0px 0px #000" }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-black pb-3">
         <div>
-          <p className="text-[8px] font-bold text-black/60 uppercase tracking-widest">{title}</p>
+          <p className="text-[8px] font-bold text-black/60 uppercase tracking-widest">
+            {title}
+          </p>
           <h2 className="text-[13px] font-bold text-black uppercase tracking-wider drop-shadow-[1px_1px_0px_#fff]">
             {prefName.replace("-", " ")}
           </h2>
         </div>
-        <div className={`px-2 py-1 border-2 border-black text-[9px] uppercase font-bold tracking-wider ${
-          prefStatus === "active" ? "bg-[#1093EB] text-white"
-          : prefStatus === "passed" ? "bg-[#72F418] text-black"
-          : prefStatus === "rejected" ? "bg-[#FF4444] text-white"
-          : "bg-slate-300 text-black"
-        }`} style={{ boxShadow: "2px 2px 0px 0px #000" }}>
+        <div
+          className={`px-2 py-1 border-2 border-black text-[9px] uppercase font-bold tracking-wider ${
+            prefStatus === "active"
+              ? "bg-[#1093EB] text-white"
+              : prefStatus === "passed"
+              ? "bg-[#72F418] text-black"
+              : prefStatus === "rejected"
+              ? "bg-[#FF4444] text-white"
+              : "bg-slate-300 text-black"
+          }`}
+          style={{ boxShadow: "2px 2px 0px 0px #000" }}
+        >
           {prefStatus}
         </div>
       </div>
@@ -339,20 +708,32 @@ function MobileTimelineCard({
       {/* Stages List */}
       <div className="relative pl-5 border-l-4 border-black space-y-4 pt-1">
         {stages.length === 0 ? (
-          <p className="text-[9px] text-black/70 uppercase tracking-wider">No stages submitted yet.</p>
+          <p className="text-[9px] text-black/70 uppercase tracking-wider">
+            No stages submitted yet.
+          </p>
         ) : (
           stages.map((stage, idx) => (
             <div key={idx} className="relative">
               {/* Timeline Dot */}
-              <div className={`absolute -left-[27px] top-1.5 h-4 w-4 border-2 border-black ${
-                stage.result === "passed" ? "bg-[#72F418]"
-                : stage.result === "failed" ? "bg-[#FF4444]"
-                : "bg-[#FBBF24]"
-              }`} style={{ boxShadow: "1px 1px 0px 0px #000" }} />
+              <div
+                className={`absolute -left-[27px] top-1.5 h-4 w-4 border-2 border-black ${
+                  stage.result === "passed"
+                    ? "bg-[#72F418]"
+                    : stage.result === "failed"
+                    ? "bg-[#FF4444]"
+                    : "bg-[#FBBF24]"
+                }`}
+                style={{ boxShadow: "1px 1px 0px 0px #000" }}
+              />
 
-              <div className="bg-white border-2 border-black p-3 space-y-2" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
+              <div
+                className="bg-white border-2 border-black p-3 space-y-2"
+                style={{ boxShadow: "2px 2px 0px 0px #000" }}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-black uppercase">Stage {stage.stage}</span>
+                  <span className="text-[10px] font-bold text-black uppercase">
+                    Stage {stage.stage}
+                  </span>
                   <span className="text-[8px] text-black/60 font-semibold uppercase">
                     {new Date(stage.submittedAt).toLocaleDateString()}
                   </span>
@@ -362,24 +743,32 @@ function MobileTimelineCard({
                   {stage.result === "passed" ? (
                     <>
                       <CheckCircle2 className="h-4 w-4 text-[#52AE26]" />
-                      <span className="text-[9px] font-bold text-[#52AE26] uppercase">PASSED</span>
+                      <span className="text-[9px] font-bold text-[#52AE26] uppercase">
+                        PASSED
+                      </span>
                     </>
                   ) : stage.result === "failed" ? (
                     <>
                       <XCircle className="h-4 w-4 text-[#FF4444]" />
-                      <span className="text-[9px] font-bold text-[#FF4444] uppercase">NOT SELECTED</span>
+                      <span className="text-[9px] font-bold text-[#FF4444] uppercase">
+                        NOT SELECTED
+                      </span>
                     </>
                   ) : (
                     <>
                       <Clock className="h-4 w-4 text-[#D97706]" />
-                      <span className="text-[9px] font-bold text-[#D97706] uppercase">UNDER REVIEW</span>
+                      <span className="text-[9px] font-bold text-[#D97706] uppercase">
+                        UNDER REVIEW
+                      </span>
                     </>
                   )}
                 </div>
 
                 {stage.adminNote && (
                   <div className="mt-2 p-2 bg-[#FFF4E6] border border-black text-[9px] leading-normal font-sans">
-                    <p className="font-bold text-[#A93710] font-press-start text-[8px] uppercase mb-1">ADMIN NOTE:</p>
+                    <p className="font-bold text-[#A93710] font-press-start text-[8px] uppercase mb-1">
+                      ADMIN NOTE:
+                    </p>
                     <p className="text-black uppercase">{stage.adminNote}</p>
                   </div>
                 )}
@@ -393,35 +782,76 @@ function MobileTimelineCard({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * DESKTOP PROFILE VIEW (Original)
+ * DESKTOP PROFILE VIEW
  * ───────────────────────────────────────────────────────────────────────────── */
 function DesktopProfileView({
   session,
   appStatus,
   router,
   onSignOut,
+  isEditing,
+  editForm,
+  saving,
+  saveError,
+  saveSuccess,
+  onStartEdit,
+  onCancelEdit,
+  onFormChange,
+  onSaveEdit,
 }: {
   session: any;
   appStatus: ApplicationStatus | null;
   router: any;
   onSignOut: () => void;
+  isEditing: boolean;
+  editForm: {
+    fullName: string;
+    phone: string;
+    regNo: string;
+    year: string;
+    branch: string;
+    whyMic: string;
+  };
+  saving: boolean;
+  saveError: string;
+  saveSuccess: string;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onFormChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => void;
+  onSaveEdit: (e: React.FormEvent) => void;
 }) {
   if (!appStatus) {
     return (
       <div className="min-h-[100dvh] bg-[#1188EE] pb-20">
         <BackButton onClick={() => router.push("/recruitments")} />
         <div className="flex justify-end p-6 md:px-8 max-w-4xl mx-auto w-full">
-          <button onClick={onSignOut} className="flex items-center gap-2 bg-[#A93710] hover:bg-[#E29A2B] text-white px-4 py-2 border-4 border-black text-[10px] sm:text-[12px] uppercase tracking-widest transition-transform hover:-translate-y-1 active:translate-y-0" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+          <button
+            onClick={onSignOut}
+            className="flex items-center gap-2 bg-[#A93710] hover:bg-[#E29A2B] text-white px-4 py-2 border-4 border-black text-[10px] sm:text-[12px] uppercase tracking-widest transition-transform hover:-translate-y-1 active:translate-y-0"
+            style={{ boxShadow: "4px 4px 0px 0px #000" }}
+          >
             <LogOut className="h-4 w-4" /> SIGN OUT
           </button>
         </div>
         <div className="flex-1 flex items-center justify-center p-6 -mt-16">
-          <div className="bg-[#FFE4D6] border-4 border-black p-8 max-w-md w-full text-center space-y-6" style={{ boxShadow: "8px 8px 0px 0px #000" }}>
-            <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-12 mb-2 inline-block" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+          <div
+            className="bg-[#FFE4D6] border-4 border-black p-8 max-w-md w-full text-center space-y-6"
+            style={{ boxShadow: "8px 8px 0px 0px #000" }}
+          >
+            <div
+              className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-12 mb-2 inline-block"
+              style={{ boxShadow: "4px 4px 0px 0px #000" }}
+            >
               ERROR: NO APPLICATION
             </div>
             <FileText className="h-16 w-16 text-black mx-auto" />
-            <p className="text-[12px] leading-loose text-black uppercase tracking-wide">You haven&apos;t applied to any departments yet.</p>
+            <p className="text-[12px] leading-loose text-black uppercase tracking-wide">
+              You haven&apos;t applied to any departments yet.
+            </p>
             <button
               onClick={() => router.push("/recruitments")}
               className="mt-4 px-6 py-4 bg-[#1093EB] hover:bg-[#16B6F4] text-white border-4 border-black font-bold text-[12px] uppercase tracking-widest transition-transform hover:-translate-y-1 active:translate-y-0 w-full"
@@ -441,53 +871,95 @@ function DesktopProfileView({
     stages: StageProgress[]
   ) => {
     return (
-      <div className="bg-[#FFF4E6] border-4 border-black p-6 md:p-8 space-y-8" style={{ boxShadow: "6px 6px 0px 0px #000" }}>
+      <div
+        className="bg-[#FFF4E6] border-4 border-black p-6 md:p-8 space-y-8"
+        style={{ boxShadow: "6px 6px 0px 0px #000" }}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-4 border-black pb-4">
-          <h2 className="text-[16px] font-black text-black uppercase tracking-widest drop-shadow-[1px_1px_0px_#fff]">{prefName.replace("-", " ")}</h2>
-          <div className={`px-3 py-2 border-2 border-black text-[10px] uppercase font-bold tracking-widest ${
-            prefStatus === "active" ? "bg-[#FFF4E6] text-[#A93710]"
-            : prefStatus === "passed" ? "bg-[#34D399] text-black"
-            : prefStatus === "rejected" ? "bg-[#F87171] text-black"
-            : "bg-[#94A3B8] text-black"
-          }`} style={{ boxShadow: "3px 3px 0px 0px #000" }}>
+          <h2 className="text-[16px] font-black text-black uppercase tracking-widest drop-shadow-[1px_1px_0px_#fff]">
+            {prefName.replace("-", " ")}
+          </h2>
+          <div
+            className={`px-3 py-2 border-2 border-black text-[10px] uppercase font-bold tracking-widest ${
+              prefStatus === "active"
+                ? "bg-[#FFF4E6] text-[#A93710]"
+                : prefStatus === "passed"
+                ? "bg-[#34D399] text-black"
+                : prefStatus === "rejected"
+                ? "bg-[#F87171] text-black"
+                : "bg-[#94A3B8] text-black"
+            }`}
+            style={{ boxShadow: "3px 3px 0px 0px #000" }}
+          >
             {prefStatus}
           </div>
         </div>
 
         <div className="relative pl-6 border-l-4 border-black space-y-10 pt-2">
           {stages.length === 0 && (
-            <div className="text-[10px] text-black uppercase tracking-widest">No stages submitted yet.</div>
+            <div className="text-[10px] text-black uppercase tracking-widest">
+              No stages submitted yet.
+            </div>
           )}
           {stages.map((stage, idx) => (
             <div key={idx} className="relative">
-              <div className={`absolute -left-[37px] top-1 h-6 w-6 border-4 border-black ${
-                stage.result === "passed" ? "bg-[#34D399]"
-                : stage.result === "failed" ? "bg-[#F87171]"
-                : "bg-[#FBBF24]"
-              }`} style={{ boxShadow: "2px 2px 0px 0px #000" }} />
-              
-              <div className="bg-white border-4 border-black p-4" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+              <div
+                className={`absolute -left-[37px] top-1 h-6 w-6 border-4 border-black ${
+                  stage.result === "passed"
+                    ? "bg-[#34D399]"
+                    : stage.result === "failed"
+                    ? "bg-[#F87171]"
+                    : "bg-[#FBBF24]"
+                }`}
+                style={{ boxShadow: "2px 2px 0px 0px #000" }}
+              />
+
+              <div
+                className="bg-white border-4 border-black p-4"
+                style={{ boxShadow: "4px 4px 0px 0px #000" }}
+              >
                 <div className="flex flex-col gap-2 mb-4">
-                  <h3 className="text-[12px] font-bold text-black uppercase tracking-widest">Stage {stage.stage} Submitted</h3>
+                  <h3 className="text-[12px] font-bold text-black uppercase tracking-widest">
+                    Stage {stage.stage} Submitted
+                  </h3>
                   <span className="text-[10px] text-black/60 font-semibold uppercase tracking-widest">
                     {new Date(stage.submittedAt).toLocaleDateString()}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-3 mb-4 border-t-2 border-dashed border-black/20 pt-4">
                   {stage.result === "passed" ? (
-                    <><CheckCircle2 className="h-5 w-5 text-[#34D399]" /><span className="text-[10px] font-bold text-[#34D399] uppercase tracking-widest">Passed</span></>
+                    <>
+                      <CheckCircle2 className="h-5 w-5 text-[#34D399]" />
+                      <span className="text-[10px] font-bold text-[#34D399] uppercase tracking-widest">
+                        Passed
+                      </span>
+                    </>
                   ) : stage.result === "failed" ? (
-                    <><XCircle className="h-5 w-5 text-[#F87171]" /><span className="text-[10px] font-bold text-[#F87171] uppercase tracking-widest">Not Selected</span></>
+                    <>
+                      <XCircle className="h-5 w-5 text-[#F87171]" />
+                      <span className="text-[10px] font-bold text-[#F87171] uppercase tracking-widest">
+                        Not Selected
+                      </span>
+                    </>
                   ) : (
-                    <><Clock className="h-5 w-5 text-[#FBBF24]" /><span className="text-[10px] font-bold text-[#FBBF24] uppercase tracking-widest">Under Review</span></>
+                    <>
+                      <Clock className="h-5 w-5 text-[#FBBF24]" />
+                      <span className="text-[10px] font-bold text-[#FBBF24] uppercase tracking-widest">
+                        Under Review
+                      </span>
+                    </>
                   )}
                 </div>
 
                 {stage.adminNote && (
                   <div className="mt-4 p-4 bg-[#FFF4E6] border-2 border-black">
-                    <p className="text-[10px] text-[#A93710] font-bold uppercase tracking-widest mb-3">Feedback from Admin</p>
-                    <p className="text-[10px] text-black leading-loose uppercase font-sans">{stage.adminNote}</p>
+                    <p className="text-[10px] text-[#A93710] font-bold uppercase tracking-widest mb-3">
+                      Feedback from Admin
+                    </p>
+                    <p className="text-[10px] text-black leading-loose uppercase font-sans">
+                      {stage.adminNote}
+                    </p>
                   </div>
                 )}
               </div>
@@ -502,94 +974,313 @@ function DesktopProfileView({
     <div className="min-h-[100dvh] bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] flex flex-col pb-20">
       <BackButton onClick={() => router.push("/recruitments")} />
       <div className="flex justify-end p-6 md:px-8 max-w-[1200px] mx-auto w-full">
-        <button onClick={onSignOut} className="flex items-center gap-2 bg-[#A93710] hover:bg-[#E29A2B] text-white px-4 py-2 border-4 border-black text-[10px] sm:text-[12px] uppercase tracking-widest transition-transform hover:-translate-y-1 active:translate-y-0" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
+        <button
+          onClick={onSignOut}
+          className="flex items-center gap-2 bg-[#A93710] hover:bg-[#E29A2B] text-white px-4 py-2 border-4 border-black text-[10px] sm:text-[12px] uppercase tracking-widest transition-transform hover:-translate-y-1 active:translate-y-0"
+          style={{ boxShadow: "4px 4px 0px 0px #000" }}
+        >
           <LogOut className="h-4 w-4" /> SIGN OUT
         </button>
       </div>
       <div className="flex-1 max-w-[1200px] w-full mx-auto p-6 md:p-8 pt-0 space-y-10">
-        
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 bg-white border-4 border-black p-6 md:p-8 relative" style={{ boxShadow: "8px 8px 0px 0px #000" }}>
+        <div
+          className="flex flex-col md:flex-row md:items-start justify-between gap-6 bg-white border-4 border-black p-6 md:p-8 relative"
+          style={{ boxShadow: "8px 8px 0px 0px #000" }}
+        >
           <div className="absolute top-0 left-0 w-full h-2 bg-black/5" />
           <div className="space-y-4">
-            <button onClick={() => router.push("/recruitments")} className="text-[10px] sm:text-[12px] font-bold text-black hover:text-[#1093EB] flex items-center gap-2 mb-4 transition-colors uppercase tracking-widest">
+            <button
+              onClick={() => router.push("/recruitments")}
+              className="text-[10px] sm:text-[12px] font-bold text-black hover:text-[#1093EB] flex items-center gap-2 mb-4 transition-colors uppercase tracking-widest"
+            >
               <ArrowLeft className="h-4 w-4" /> BACK TO MAP
             </button>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-black tracking-widest uppercase drop-shadow-[2px_2px_0px_#A93710]">YOUR GEAR</h1>
-            <p className="text-[10px] sm:text-[12px] text-black/60 uppercase tracking-widest break-all font-sans">{session?.user?.email}</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-black tracking-widest uppercase drop-shadow-[2px_2px_0px_#A93710]">
+              YOUR GEAR
+            </h1>
+            <p className="text-[10px] sm:text-[12px] text-black/60 uppercase tracking-widest break-all font-sans">
+              {session?.user?.email}
+            </p>
           </div>
-          
-          <div className="bg-[#FFF4E6] border-4 border-black px-6 py-4 flex flex-col gap-2" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold text-black/60">OVERALL STATUS</p>
-            <p className={`text-[12px] sm:text-[14px] font-bold uppercase tracking-widest ${
-              appStatus.overallStatus === "selected" ? "text-[#34D399]"
-              : appStatus.overallStatus === "rejected" ? "text-[#F87171]"
-              : appStatus.overallStatus === "waitlisted" ? "text-[#FBBF24]"
-              : "text-black"
-            }`}>
+
+          <div
+            className="bg-[#FFF4E6] border-4 border-black px-6 py-4 flex flex-col gap-2"
+            style={{ boxShadow: "4px 4px 0px 0px #000" }}
+          >
+            <p className="text-[10px] uppercase tracking-widest font-bold text-black/60">
+              OVERALL STATUS
+            </p>
+            <p
+              className={`text-[12px] sm:text-[14px] font-bold uppercase tracking-widest ${
+                appStatus.overallStatus === "selected"
+                  ? "text-[#34D399]"
+                  : appStatus.overallStatus === "rejected"
+                  ? "text-[#F87171]"
+                  : appStatus.overallStatus === "waitlisted"
+                  ? "text-[#FBBF24]"
+                  : "text-black"
+              }`}
+            >
               {appStatus.overallStatus.replace("-", " ")}
             </p>
           </div>
         </div>
 
         {/* Personal Information */}
-        <div className="bg-white border-4 border-black p-6 md:p-8 space-y-6" style={{ boxShadow: "8px 8px 0px 0px #000" }}>
-          <h2 className="text-[14px] sm:text-[16px] font-black text-black uppercase tracking-widest border-b-4 border-black pb-4">
-            Personal Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-sans">
-            <div className="space-y-1">
-              <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Full Name</p>
-              <p className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                {appStatus.fullName || "—"}
-              </p>
+        <div
+          className="bg-white border-4 border-black p-6 md:p-8 space-y-6"
+          style={{ boxShadow: "8px 8px 0px 0px #000" }}
+        >
+          <div className="flex items-center justify-between border-b-4 border-black pb-4">
+            <h2 className="text-[14px] sm:text-[16px] font-black text-black uppercase tracking-widest">
+              {isEditing ? "Edit Personal Information" : "Personal Information"}
+            </h2>
+            {!isEditing ? (
+              <button
+                onClick={onStartEdit}
+                className="bg-[#1093EB] hover:bg-[#16B6F4] text-white text-[10px] font-bold px-3.5 py-2 border-2 border-black uppercase tracking-widest flex items-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                style={{ boxShadow: "2px 2px 0px 0px #000" }}
+              >
+                <Edit2 className="h-3.5 w-3.5" /> EDIT DETAILS
+              </button>
+            ) : (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onCancelEdit}
+                  disabled={saving}
+                  className="bg-[#A93710] hover:bg-[#FF4444] text-white text-[10px] font-bold px-4 py-2 border-2 border-black uppercase tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="button"
+                  onClick={onSaveEdit}
+                  disabled={saving}
+                  className="bg-[#72F418] hover:bg-[#52AE26] text-black text-[10px] font-bold px-4 py-2 border-2 border-black uppercase tracking-widest flex items-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer disabled:opacity-50"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  {saving ? "SAVING..." : "SAVE CHANGES"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {saveSuccess && (
+            <div className="p-3 bg-emerald-100 border-2 border-emerald-500 rounded text-emerald-800 text-xs font-sans font-bold flex items-center gap-2">
+              <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+              <span>{saveSuccess}</span>
             </div>
-            <div className="space-y-1">
-              <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Phone Number</p>
-              <p className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                {appStatus.phone || "—"}
-              </p>
+          )}
+
+          {saveError && (
+            <div className="p-3 bg-red-100 border-2 border-red-500 rounded text-red-700 text-xs font-sans font-bold flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+              <span>{saveError}</span>
             </div>
-            <div className="space-y-1">
-              <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Registration Number</p>
-              <p className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                {appStatus.regNo || "—"}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Year of Study</p>
-              <p className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                {appStatus.year || "—"}
-              </p>
-            </div>
-            <div className="space-y-1 md:col-span-2 lg:col-span-2">
-              <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Branch / Programme</p>
-              <p className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                {appStatus.branch || "—"}
-              </p>
-            </div>
-            {appStatus.whyMic ? (
+          )}
+
+          {isEditing ? (
+            <form onSubmit={onSaveEdit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-sans">
+              <div className="space-y-1">
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  required
+                  value={editForm.fullName}
+                  onChange={onFormChange}
+                  className="w-full text-sm font-bold text-black border-2 border-black bg-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Phone Number *
+                </label>
+                <input
+                  type="text"
+                  name="phone"
+                  required
+                  value={editForm.phone}
+                  onChange={onFormChange}
+                  className="w-full text-sm font-bold text-black border-2 border-black bg-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Registration Number *
+                </label>
+                <input
+                  type="text"
+                  name="regNo"
+                  required
+                  value={editForm.regNo}
+                  onChange={onFormChange}
+                  className="w-full text-sm font-bold text-black border-2 border-black bg-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Year of Study *
+                </label>
+                <select
+                  name="year"
+                  required
+                  value={editForm.year}
+                  onChange={onFormChange}
+                  className="w-full text-sm font-bold text-black border-2 border-black bg-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  <option value="">Select Year</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                </select>
+              </div>
+
+              <div className="space-y-1 md:col-span-2 lg:col-span-2">
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Branch / Programme *
+                </label>
+                <input
+                  type="text"
+                  name="branch"
+                  required
+                  value={editForm.branch}
+                  onChange={onFormChange}
+                  className="w-full text-sm font-bold text-black border-2 border-black bg-white p-3 rounded focus:outline-none focus:ring-2 focus:ring-black"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                />
+              </div>
+
               <div className="space-y-1 md:col-span-2 lg:col-span-3">
-                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">Why do you want to join MIC?</p>
-                <p className="text-sm text-black border-2 border-black bg-[#FFF4E6] p-3 rounded leading-relaxed" style={{ boxShadow: "2px 2px 0px 0px #000" }}>
-                  {appStatus.whyMic}
+                <label className="text-[9px] font-press-start text-black/60 uppercase tracking-wider block">
+                  Why do you want to join MIC? *
+                </label>
+                <textarea
+                  name="whyMic"
+                  rows={4}
+                  required
+                  value={editForm.whyMic}
+                  onChange={onFormChange}
+                  className="w-full text-sm text-black border-2 border-black bg-white p-3 rounded leading-relaxed focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                />
+              </div>
+            </form>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-sans">
+              <div className="space-y-1">
+                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                  Full Name
+                </p>
+                <p
+                  className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {appStatus.fullName || "—"}
                 </p>
               </div>
-            ) : null}
-          </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                  Phone Number
+                </p>
+                <p
+                  className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {appStatus.phone || "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                  Registration Number
+                </p>
+                <p
+                  className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {appStatus.regNo || "—"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                  Year of Study
+                </p>
+                <p
+                  className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {appStatus.year || "—"}
+                </p>
+              </div>
+              <div className="space-y-1 md:col-span-2 lg:col-span-2">
+                <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                  Branch / Programme
+                </p>
+                <p
+                  className="text-sm font-bold text-black border-2 border-black bg-[#FFF4E6] p-3 rounded"
+                  style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                >
+                  {appStatus.branch || "—"}
+                </p>
+              </div>
+              {appStatus.whyMic ? (
+                <div className="space-y-1 md:col-span-2 lg:col-span-3">
+                  <p className="text-[9px] font-press-start text-black/60 uppercase tracking-wider">
+                    Why do you want to join MIC?
+                  </p>
+                  <p
+                    className="text-sm text-black border-2 border-black bg-[#FFF4E6] p-3 rounded leading-relaxed"
+                    style={{ boxShadow: "2px 2px 0px 0px #000" }}
+                  >
+                    {appStatus.whyMic}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
 
         {/* Timelines */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
           <div className="space-y-6">
-            <h2 className="text-[14px] sm:text-[16px] font-black text-white uppercase tracking-widest drop-shadow-[2px_2px_0px_#000]">1st Preference</h2>
-            {renderTimeline(appStatus.firstPreference, appStatus.firstPrefProgress.status, appStatus.firstPrefProgress.stages)}
+            <h2 className="text-[14px] sm:text-[16px] font-black text-white uppercase tracking-widest drop-shadow-[2px_2px_0px_#000]">
+              1st Preference
+            </h2>
+            {renderTimeline(
+              appStatus.firstPreference,
+              appStatus.firstPrefProgress.status,
+              appStatus.firstPrefProgress.stages
+            )}
           </div>
-          
+
           {appStatus.secondPreference && appStatus.secondPrefProgress && (
             <div className="space-y-6">
-              <h2 className="text-[14px] sm:text-[16px] font-black text-white uppercase tracking-widest drop-shadow-[2px_2px_0px_#000]">2nd Preference</h2>
-              {renderTimeline(appStatus.secondPreference, appStatus.secondPrefProgress.status, appStatus.secondPrefProgress.stages)}
+              <h2 className="text-[14px] sm:text-[16px] font-black text-white uppercase tracking-widest drop-shadow-[2px_2px_0px_#000]">
+                2nd Preference
+              </h2>
+              {renderTimeline(
+                appStatus.secondPreference,
+                appStatus.secondPrefProgress.status,
+                appStatus.secondPrefProgress.stages
+              )}
             </div>
           )}
         </div>
