@@ -15,6 +15,9 @@ if (typeof window !== "undefined") {
       api_host: host,
       person_profiles: "identified_only",
       capture_pageview: false, // Captured manually on route changes to handle Next.js client router accurately
+      loaded: (ph) => {
+        ph.register({ app_name: "mic-recruitment-portal" });
+      },
     });
   } else {
     console.warn("PostHog project key (NEXT_PUBLIC_POSTHOG_KEY) is missing.");
