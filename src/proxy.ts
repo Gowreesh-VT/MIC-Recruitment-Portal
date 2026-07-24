@@ -83,6 +83,14 @@ if (ARCJET_KEY) {
       }),
     ],
   });
+} else if (process.env.NODE_ENV === "production") {
+  // M6: In production, a missing ARCJET_KEY disables all WAF / bot / rate-limit
+  // protection. Fail hard here so the misconfiguration is caught at deploy time
+  // rather than silently running unprotected.
+  throw new Error(
+    "[Arcjet] ARCJET_KEY must be set in production. " +
+    "Get a free key at https://app.arcjet.com and add it to your environment."
+  );
 } else {
   console.warn(
     "[Arcjet] ARCJET_KEY not set — WAF / bot / rate-limit protection DISABLED.\n" +

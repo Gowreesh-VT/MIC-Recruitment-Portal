@@ -30,7 +30,8 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
 
   // Prevent clickjacking
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  // Must match frame-ancestors 'none' in the CSP above — use DENY for consistency
+  { key: "X-Frame-Options", value: "DENY" },
 
   // Limit referrer to origin only when crossing origins
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
