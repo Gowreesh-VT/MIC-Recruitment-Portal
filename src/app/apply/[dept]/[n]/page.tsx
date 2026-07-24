@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
-import { Loader2, CheckCircle2, AlertTriangle, Send, Edit3, PlayCircle, Github, Link, FileText } from "lucide-react";
+import { Loader2, CheckCircle2, AlertTriangle, Send, Edit3, PlayCircle, Github, Link, FileText, Clock, Video } from "lucide-react";
 import type { FormField, StageConfig } from "@/models/Department";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import posthog from "posthog-js";
@@ -19,6 +19,15 @@ const pressStart = Press_Start_2P({
   variable: "--font-press-start-2p",
 });
 
+const getPanelRetroTag = (panelName?: string) => {
+  const name = panelName?.trim() || "Panel 1";
+  if (name.includes("1")) return "bg-emerald-100 text-emerald-900 border-emerald-400";
+  if (name.includes("2")) return "bg-sky-100 text-sky-900 border-sky-400";
+  if (name.includes("3")) return "bg-amber-100 text-amber-950 border-amber-400";
+  if (name.includes("4")) return "bg-purple-100 text-purple-950 border-purple-400";
+  return "bg-rose-100 text-rose-950 border-rose-400";
+};
+
 interface StageSubmission {
   stage: number;
   submittedAt: string;
@@ -29,6 +38,7 @@ interface StageSubmission {
 interface InterviewSlot {
   _id: string;
   adminEmail: string;
+  panelName?: string;
   deptSlug: string;
   startTime: string;
   endTime: string;
@@ -40,7 +50,6 @@ interface InterviewSlot {
     userEmail: string;
     userName?: string;
   };
-  meetingLink?: string;
 }
 
 interface ApplicationStatus {
@@ -50,52 +59,17 @@ interface ApplicationStatus {
   firstPrefProgress: {
     status: "active" | "passed" | "rejected" | "pending";
     currentStage: number;
+    effectiveCurrentStage?: number;
+    stageMasked?: boolean;
     stages: StageSubmission[];
   };
   secondPrefProgress?: {
     status: "active" | "passed" | "rejected" | "pending";
     currentStage: number;
+    effectiveCurrentStage?: number;
+    stageMasked?: boolean;
     stages: StageSubmission[];
   };
-}
-
-
-function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
-  const bodyHeight = Math.max(0, height - 24);
-  const gradientStyle = {
-    background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)",
-  };
-
-  return (
-    <div
-      className="absolute select-none pointer-events-none z-10 w-[52px] flex flex-col items-center"
-      style={{ left, top, height: `${height}px` }}
-    >
-      {isTop ? (
-        <>
-          <div
-            className="w-[46px] border-x-[3px] border-t-[3px] border-black box-border"
-            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
-          />
-          <div
-            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
-            style={gradientStyle}
-          />
-        </>
-      ) : (
-        <>
-          <div
-            className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_3px_0_0_rgba(255,255,255,0.4)] flex-shrink-0"
-            style={gradientStyle}
-          />
-          <div
-            className="w-[46px] border-x-[3px] border-b-[3px] border-black box-border"
-            style={{ height: `${bodyHeight}px`, ...gradientStyle }}
-          />
-        </>
-      )}
-    </div>
-  );
 }
 
 function RetroBackground({ scale }: { scale: number }) {
@@ -486,9 +460,11 @@ export default function StagePage({
   const [submitted, setSubmitted] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [application, setApplication] = useState<ApplicationStatus | null>(null);
+  const [applicantYear, setApplicantYear] = useState<string>("");
   // Turnstile — token verified server-side before each submission
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Booking states
   const [bookingData, setBookingData] = useState<{
@@ -500,6 +476,7 @@ export default function StagePage({
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState("");
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showSlotConfirmModal, setShowSlotConfirmModal] = useState(false);
 
   const loadBookingInfo = async () => {
     try {
@@ -593,6 +570,9 @@ export default function StagePage({
           const data = await stageRes.json();
           setStageConfig(data.stageConfig);
           fetchedStageConfig = data.stageConfig;
+          if (data.applicantYear) {
+            setApplicantYear(data.applicantYear);
+          }
           if (data.submission) {
             setExistingSubmission(data.submission);
             setResponses(data.submission.responses ?? {});
@@ -658,6 +638,32 @@ export default function StagePage({
     fetchStage();
   }, [dept, stageNum]);
 
+  const filterFieldsForCandidate = (fields: FormField[], selectedTrack: string, userYear: string) => {
+    return fields.filter((field) => {
+      // 1. Sub-domain / Track check
+      if (field.subDomain && field.subDomain !== "common" && field.subDomain !== "all") {
+        if (!selectedTrack || field.subDomain !== selectedTrack) {
+          return false;
+        }
+      }
+
+      // 2. Year check
+      if (field.targetYears && field.targetYears.length > 0 && !field.targetYears.includes("all")) {
+        if (userYear) {
+          const isFirstYearUser = userYear === "1st Year";
+          const matchesYear = field.targetYears.some((y) => {
+            if (isFirstYearUser && (y === "1st Year" || y === "1")) return true;
+            if (!isFirstYearUser && (y === "Senior Years" || y === "2nd Year" || y === "3rd Year" || y === "4th Year" || y === "2+" || y === "2,3,4")) return true;
+            return y === userYear;
+          });
+          if (!matchesYear) return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -670,17 +676,34 @@ export default function StagePage({
 
     // Client-side Zod validation — phone, GitHub, LinkedIn, email, required fields
     if (stageConfig) {
-      const validation = validateResponses(stageConfig.formFields, responses);
+      const selectedTrack = (responses.devTrack || responses.subDomain || "") as string;
+      const effectiveYear = applicantYear || "";
+      const activeFields = filterFieldsForCandidate(stageConfig.formFields, selectedTrack, effectiveYear);
+      const validation = validateResponses(activeFields, responses, { year: effectiveYear, subDomain: selectedTrack });
       if (validation.error) {
         setError(validation.error);
         return;
       }
     }
 
+    if (stageNum === 2 && !termsAccepted) {
+      setError("You must accept the terms and conditions before submitting your task.");
+      return;
+    }
+
     // Require a valid Turnstile token before submitting
     if (!turnstileToken) {
       setCaptchaError(true);
       setError("Please complete the CAPTCHA challenge first.");
+      return;
+    }
+
+    if (stageNum === 3) {
+      if (!selectedSlotId) {
+        setError("Please select an interview slot first.");
+        return;
+      }
+      setShowSlotConfirmModal(true);
       return;
     }
 
@@ -750,13 +773,13 @@ export default function StagePage({
           <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
             <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
               <span className="text-black text-[16px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
-                LOCKED
+                EVALUATION IN PROGRESS
               </span>
             </div>
             <div className="p-8 flex flex-col items-center">
               <div className="border-[3px] border-black bg-white p-8 relative w-full flex flex-col items-center gap-4">
-                <AlertTriangle className="w-10 h-10 text-amber-500" />
-                <h1 className="text-[10px] text-center font-bold text-[#A93710] leading-loose">STAGE {stageNum} IS LOCKED</h1>
+                <Clock className="w-10 h-10 text-amber-500 animate-pulse" />
+                <h1 className="text-[10px] text-center font-bold text-[#A93710] leading-loose">EVALUATION IN PROGRESS</h1>
                 <p className="text-[8px] text-center text-black leading-loose font-bold">{lockError}</p>
                 <button
                   onClick={() => { playRetroSound(); router.push("/recruitments"); }}
@@ -895,27 +918,25 @@ export default function StagePage({
           </div>
 
           {/* Progress Circles */}
-          {application && (
-            <div className="border-b-[3px] border-black bg-[#FFD4C0] py-2 flex justify-center shrink-0">
-              <StageProgressHeader
-                currentStage={
-                  application.firstPreference === dept
-                    ? application.firstPrefProgress.currentStage
-                    : application.secondPrefProgress?.currentStage ?? 1
-                }
-                stages={
-                  application.firstPreference === dept
-                    ? application.firstPrefProgress.stages
-                    : application.secondPrefProgress?.stages ?? []
-                }
-                status={
-                  application.firstPreference === dept
-                    ? application.firstPrefProgress.status
-                    : application.secondPrefProgress?.status ?? "active"
-                }
-              />
-            </div>
-          )}
+          {application && (() => {
+            const isFirst = application.firstPreference === dept;
+            const prefProgress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
+            const isMasked = prefProgress?.stageMasked ?? false;
+            const displayCurrentStage = prefProgress?.effectiveCurrentStage ?? prefProgress?.currentStage ?? 1;
+            const displayStages = isMasked
+              ? (prefProgress?.stages ?? []).map((s) => (s.stage >= displayCurrentStage ? { ...s, result: "pending" as const } : s))
+              : (prefProgress?.stages ?? []);
+
+            return (
+              <div className="border-b-[3px] border-black bg-[#FFD4C0] py-2 flex justify-center shrink-0">
+                <StageProgressHeader
+                  currentStage={displayCurrentStage}
+                  stages={displayStages}
+                  status={prefProgress?.status ?? "active"}
+                />
+              </div>
+            );
+          })()}
 
           {/* Form Body */}
           <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar flex-grow">
@@ -962,7 +983,7 @@ export default function StagePage({
                   </div>
                 )}
 
-                {existingSubmission && !isEditing && (
+                {existingSubmission && !isEditing && stageNum !== 3 && (
                    <div className="p-3 mb-6 bg-green-100 border-[3px] border-green-500 flex items-center gap-3 text-xs text-green-700 font-bold uppercase">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     SUBMITTED. {cycleOpen && existingSubmission.result === "pending" && "CLICK EDIT TO MODIFY."}
@@ -980,16 +1001,29 @@ export default function StagePage({
                         <Loader2 className="w-4 h-4 animate-spin" /> Fetching slots...
                       </div>
                     ) : bookingData?.currentBooking && !showReschedule ? (
-                      <div className="bg-[#E6F4EA] border-[3px] border-[#34A853] p-4 flex flex-col gap-3">
+                      <div className="bg-[#E6F4EA] border-[3px] border-[#34A853] p-5 flex flex-col gap-4">
                         <div className="text-[10px] font-bold text-[#34A853] font-press-start uppercase tracking-widest flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4" /> INTERVIEW SCHEDULED
                         </div>
-                        <div className="text-xs font-bold text-black bg-white border-2 border-black p-3 leading-loose">
-                           {new Date(bookingData.currentBooking.startTime).toLocaleString("en-IN", {
-                              weekday: "short", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit"
-                           })}
-                           <br />
-                           Location: {bookingData.currentBooking.locationDetails} ({bookingData.currentBooking.locationType})
+                        <div className="text-xs font-bold text-black bg-white border-2 border-black p-4 leading-relaxed space-y-2">
+                           <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                             <span>Date & Time:</span>
+                             <span className="font-mono text-slate-800">
+                               {new Date(bookingData.currentBooking.startTime).toLocaleString("en-IN", {
+                                  weekday: "short", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true
+                               })}
+                             </span>
+                           </div>
+                           <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                             <span>Panel Assigned:</span>
+                             <span className={`px-2 py-0.5 rounded border text-[11px] font-bold ${getPanelRetroTag(bookingData.currentBooking.panelName)}`}>
+                               {bookingData.currentBooking.panelName || "Panel 1"}
+                             </span>
+                           </div>
+                           <div className="flex items-center justify-between">
+                             <span>Location Format:</span>
+                             <span>{bookingData.currentBooking.locationDetails} ({bookingData.currentBooking.locationType})</span>
+                           </div>
                         </div>
                         {cycleOpen && (
                           <button type="button" onClick={() => setShowReschedule(true)} className="text-[10px] text-blue-600 font-bold hover:underline self-start uppercase tracking-wider">
@@ -1014,8 +1048,13 @@ export default function StagePage({
                                 <div className="text-xs font-bold uppercase mb-1">
                                   {new Date(slot.startTime).toLocaleString("en-IN", { weekday: 'short', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true })}
                                 </div>
-                                <div className="text-[10px] font-bold opacity-90 uppercase border border-current px-2 py-1 self-start rounded">
-                                  {slot.locationType}
+                                <div className="flex items-center gap-2">
+                                  <div className="text-[10px] font-bold opacity-90 uppercase border border-current px-2 py-0.5 self-start rounded">
+                                    {slot.locationType}
+                                  </div>
+                                  <div className={`text-[10px] font-bold uppercase border px-2 py-0.5 self-start rounded ${getPanelRetroTag(slot.panelName)}`}>
+                                    {slot.panelName || "Panel 1"}
+                                  </div>
                                 </div>
                                 <div className="text-[10px] font-medium opacity-80 mt-1 truncate">
                                   {slot.locationDetails}
@@ -1033,25 +1072,71 @@ export default function StagePage({
                     )}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
-                    {stageConfig?.formFields.map((field) => (
-                      <div key={field.id} className={field.type === "textarea" ? "md:col-span-2" : ""}>
-                        <FieldRenderer
-                          field={field}
-                          value={responses[field.id]}
-                          onChange={(val) =>
-                            setResponses((prev) => ({ ...prev, [field.id]: val }))
-                          }
-                          disabled={existingSubmission !== null && !isEditing}
-                        />
+                  (() => {
+                    const selectedTrack = (responses.devTrack || responses.subDomain || "") as string;
+                    const activeFormFields = filterFieldsForCandidate(
+                      stageConfig?.formFields || [],
+                      selectedTrack,
+                      applicantYear
+                    );
+
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                        {activeFormFields.map((field) => (
+                          <div key={field.id} className={field.type === "textarea" ? "md:col-span-2" : ""}>
+                            <FieldRenderer
+                              field={field}
+                              value={responses[field.id]}
+                              onChange={(val) =>
+                                setResponses((prev) => ({ ...prev, [field.id]: val }))
+                              }
+                              disabled={existingSubmission !== null && !isEditing}
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()
                 )}
 
                 <div className="mt-10 flex flex-col items-center gap-4 pb-2">
-                  {(!existingSubmission || isEditing || (stageNum === 3 && showReschedule)) && cycleOpen && (
+                  {((stageNum !== 3 && (!existingSubmission || isEditing)) || (stageNum === 3 && (!bookingData?.currentBooking || showReschedule))) && cycleOpen && (
                     <>
+                      {stageNum === 2 && (
+                        <div className="w-full bg-[#FFF2E6] border-[3px] border-black rounded-[8px] p-4 text-xs font-sans text-black flex items-start gap-3 shadow-[3px_3px_0px_0px_#000] mb-2">
+                          <input
+                            type="checkbox"
+                            id="termsAccepted"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-2 border-black text-[#A05522] focus:ring-[#A05522] accent-[#A05522] cursor-pointer shrink-0"
+                          />
+                          <label htmlFor="termsAccepted" className="cursor-pointer font-semibold leading-snug select-none">
+                            I confirm that the work submitted is solely my own and I accept all the{" "}
+                            <a
+                              href="/terms"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#A05522] underline hover:text-[#803E15] font-bold"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Terms & Conditions
+                            </a>{" "}
+                            and{" "}
+                            <a
+                              href="/privacy"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#A05522] underline hover:text-[#803E15] font-bold"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Privacy Policy
+                            </a>{" "}
+                            for this stage assessment. <span className="text-red-500">*</span>
+                          </label>
+                        </div>
+                      )}
+
                       {/* Turnstile challenge — verified server-side on every submit */}
                       <div className="w-full bg-white border-[3px] border-[#C85A28] rounded-[8px] flex flex-col items-center py-3 gap-2">
                         <span className="text-[9px] font-bold text-black uppercase tracking-widest">
@@ -1072,7 +1157,7 @@ export default function StagePage({
 
                       <button
                         type="submit"
-                        disabled={submitting || bookingSubmitting || !turnstileToken || (stageNum === 3 && !selectedSlotId)}
+                        disabled={submitting || bookingSubmitting || !turnstileToken || (stageNum === 2 && !termsAccepted) || (stageNum === 3 && !selectedSlotId)}
                         onClick={playRetroSound}
                         className="bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
                         style={{ boxShadow: "3px 3px 0px 0px #000" }}
@@ -1082,9 +1167,9 @@ export default function StagePage({
                       </button>
                     </>
                   )}
-                  {existingSubmission && !isEditing && !(stageNum === 3 && showReschedule) && (
+                  {existingSubmission && !isEditing && stageNum !== 3 && (
                     <div className="flex gap-4">
-                      {cycleOpen && existingSubmission.result === "pending" && stageNum !== 3 && (
+                      {cycleOpen && existingSubmission.result === "pending" && (
                         <button
                           type="button"
                           onClick={() => { playRetroSound(); setIsEditing(true); }}
@@ -1116,6 +1201,88 @@ export default function StagePage({
 
         </div>
       </div>
+
+      {showSlotConfirmModal && (() => {
+        const selectedSlot = bookingData?.slots.find((s) => s._id === selectedSlotId);
+        if (!selectedSlot) return null;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="w-full max-w-md bg-[#FFF2E6] border-[4px] border-black rounded-[12px] p-6 shadow-[8px_8px_0px_0px_#000] flex flex-col gap-4 text-black font-sans relative"
+              style={{ fontFamily: "var(--font-press-start-2p), monospace" }}
+            >
+              <div className="border-b-[3px] border-black pb-3">
+                <h2 className="text-[11px] font-bold text-[#A05522] uppercase tracking-wider flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> CONFIRM INTERVIEW BOOKING
+                </h2>
+              </div>
+
+              <div className="bg-white border-[3px] border-black p-4 text-xs font-sans font-bold leading-relaxed space-y-2.5">
+                <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                  <span className="text-slate-500 font-medium">Department:</span>
+                  <span className="uppercase text-black">{deptName || dept}</span>
+                </div>
+                <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                  <span className="text-slate-500 font-medium">Date & Time:</span>
+                  <span className="font-mono text-slate-900">
+                    {new Date(selectedSlot.startTime).toLocaleString("en-IN", {
+                      weekday: "short",
+                      month: "short",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b pb-2 border-slate-200">
+                  <span className="text-slate-500 font-medium">Assigned Panel:</span>
+                  <span className={`px-2 py-0.5 rounded border text-[11px] font-bold ${getPanelRetroTag(selectedSlot.panelName)}`}>
+                    {selectedSlot.panelName || "Panel 1"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">Location Format:</span>
+                  <span className="text-black">{selectedSlot.locationDetails} ({selectedSlot.locationType})</span>
+                </div>
+              </div>
+
+              <div className="bg-amber-100 border-[2px] border-amber-400 p-2.5 rounded-[6px] text-[9px] font-sans text-amber-900 font-semibold leading-relaxed">
+                ⚠ Are you sure you want to book this slot? Once confirmed, your slot will be reserved.
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSlotConfirmModal(false)}
+                  disabled={bookingSubmitting}
+                  className="px-4 py-2.5 text-[9px] font-bold font-press-start bg-slate-200 hover:bg-slate-300 text-black border-[2px] border-black rounded-[8px] shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-transform active:translate-y-0.5"
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setShowSlotConfirmModal(false);
+                    await handleBookSlot(selectedSlotId);
+                  }}
+                  disabled={bookingSubmitting}
+                  className="px-5 py-2.5 text-[9px] font-bold font-press-start bg-[#34A853] hover:bg-[#2d9248] text-white border-[2px] border-black rounded-[8px] shadow-[2px_2px_0px_0px_#000] cursor-pointer transition-transform active:translate-y-0.5 flex items-center gap-2"
+                >
+                  {bookingSubmitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> BOOKING...
+                    </>
+                  ) : (
+                    "CONFIRM BOOKING"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

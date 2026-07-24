@@ -6,8 +6,9 @@ import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug, PrefType } from "@/models/Application";
 import { applyInitSchema } from "@/lib/validation";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
-const CYCLE_ID = "2026-27";
+const CYCLE_ID = ACTIVE_CYCLE_ID;
 
 const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
   development: "tech",
@@ -32,7 +33,13 @@ export async function POST(req: NextRequest) {
 
     // Check recruitment is open
     const cycle = await RecruitmentCycle.findOne({ cycleId: CYCLE_ID });
-
+    const { isCycleOpen, isStageOpen } = await import("@/lib/cycle");
+    if (!isCycleOpen(cycle)) {
+      return NextResponse.json(
+        { success: false, error: "Recruitment is currently closed." },
+        { status: 403 }
+      );
+    }
 
     // Check existing application
     const existing = await Application.findOne({
@@ -80,7 +87,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { isStageOpen } = await import("@/lib/cycle");
     if (!isStageOpen(cycle, dept1, 1)) {
       return NextResponse.json(
         { success: false, error: "Stage 1 (Registration) is currently closed for this department." },

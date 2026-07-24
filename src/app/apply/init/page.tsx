@@ -75,7 +75,6 @@ function InitPageContent() {
   const [error, setError] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -97,7 +96,6 @@ function InitPageContent() {
         const res = await fetch("/api/apply/status");
         if (res.ok) {
           const data = await res.json();
-          setUser(data.user);
           if (data.user?.name) {
             setFormData(prev => ({ ...prev, fullName: data.user.name }));
           }

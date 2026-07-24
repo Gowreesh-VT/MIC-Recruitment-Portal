@@ -6,8 +6,9 @@ import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import { sendApplicationReceipt } from "@/lib/mailer";
 import { validateResponses } from "@/lib/validation";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
-const CYCLE_ID = "2026-27";
+const CYCLE_ID = ACTIVE_CYCLE_ID;
 
 interface RouteParams {
   params: Promise<{ dept: string; n: string }>;
@@ -18,6 +19,11 @@ interface RouteParams {
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { dept, n } = await params;
   const stageNum = parseInt(n, 10);
+
+  if (isNaN(stageNum) || stageNum < 1) {
+    return NextResponse.json({ success: false, error: "Invalid stage number." }, { status: 400 });
+  }
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
@@ -41,7 +47,11 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { isStageOpen } = await import("@/lib/cycle");
   if (!isStageOpen(cycle, department, stageNum)) {
     return NextResponse.json(
-      { success: false, error: `Stage ${stageNum} is currently closed for this department.` },
+      {
+        success: false,
+        stageClosed: true,
+        error: `Stage 1 evaluation is currently in progress. Stage ${stageNum} will open once evaluations conclude.`,
+      },
       { status: 403 }
     );
   }
@@ -66,6 +76,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     submission: stageSubmission ?? null,
     currentStage: progress.currentStage,
     status: progress.status,
+    applicantYear: application.year,
   });
 }
 
@@ -151,7 +162,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
 
     // Validate all required fields and strip unknown fields via Zod
-    const validationResult = validateResponses(stageConfig.formFields, responses ?? {});
+    const validationResult = validateResponses(stageConfig.formFields, responses ?? {}, { year: application.year });
     if (validationResult.error) {
       return NextResponse.json({ success: false, error: validationResult.error }, { status: 400 });
     }
@@ -241,11 +252,16 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (!application || !department) {
-      return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
+    const isFirst = application.firstPreference === dept;
+    const isSecond = application.secondPreference === dept;
+
+    if (!isFirst && !isSecond) {
+      return NextResponse.json(
+        { success: false, error: "This department is not in your preferences." },
+        { status: 403 }
+      );
     }
 
-    const isFirst = application.firstPreference === dept;
     const progress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
     const progressKey = isFirst ? "firstPrefProgress" : "secondPrefProgress";
 
