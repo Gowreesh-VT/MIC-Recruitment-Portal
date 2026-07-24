@@ -8,6 +8,9 @@ export interface IRecruitmentCycle extends Document {
   label: string;
   startAt?: Date;
   endAt?: Date;
+  countdownEnabled?: boolean;
+  countdownTarget?: Date;
+  countdownTitle?: string;
 }
 
 const RecruitmentCycleSchema = new Schema<IRecruitmentCycle>(
@@ -19,6 +22,9 @@ const RecruitmentCycleSchema = new Schema<IRecruitmentCycle>(
     label: { type: String, default: "MIC Recruitment 2026–27" },
     startAt: { type: Date },
     endAt: { type: Date },
+    countdownEnabled: { type: Boolean, default: false },
+    countdownTarget: { type: Date },
+    countdownTitle: { type: String, default: "Recruitment Countdown" },
   },
   { timestamps: true }
 );

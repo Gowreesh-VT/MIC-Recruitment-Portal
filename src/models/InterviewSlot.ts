@@ -2,18 +2,18 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IInterviewSlot extends Document {
   adminEmail: string;
+  panelName: string; // e.g. 'Panel 1', 'Panel 2', 'Panel 3'
   deptSlug: string; // 'all' or department slug (e.g. 'development')
   startTime: Date;
   endTime: Date;
   status: "available" | "booked" | "completed" | "cancelled";
   locationType: "offline" | "online";
-  locationDetails: string; // Room location (offline) or Google Meet link details (online)
+  locationDetails: string; // Room location or Online format details
   bookedBy?: {
     userId: string;
     userEmail: string;
     userName?: string;
   };
-  meetingLink?: string; // Stored specifically if online
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,6 +21,7 @@ export interface IInterviewSlot extends Document {
 const InterviewSlotSchema = new Schema<IInterviewSlot>(
   {
     adminEmail: { type: String, required: true },
+    panelName: { type: String, default: "Panel 1" },
     deptSlug: { type: String, required: true, index: true },
     startTime: { type: Date, required: true, index: true },
     endTime: { type: Date, required: true },
@@ -41,13 +42,12 @@ const InterviewSlotSchema = new Schema<IInterviewSlot>(
       userEmail: { type: String },
       userName: { type: String },
     },
-    meetingLink: { type: String },
   },
   { timestamps: true }
 );
 
-// Prevent an interviewer from having overlapping slots
-InterviewSlotSchema.index({ adminEmail: 1, startTime: 1 }, { unique: true });
+// Compound index allowing parallel panels for the same adminEmail and startTime
+InterviewSlotSchema.index({ adminEmail: 1, startTime: 1, panelName: 1 }, { unique: true });
 
 const InterviewSlot: Model<IInterviewSlot> =
   mongoose.models.InterviewSlot ||

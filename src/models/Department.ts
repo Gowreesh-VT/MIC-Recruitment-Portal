@@ -18,6 +18,8 @@ export interface FormField {
   required: boolean;
   maxLength?: number;
   helpText?: string;
+  subDomain?: string;
+  targetYears?: string[];
 }
 
 export interface StageConfig {
@@ -67,6 +69,8 @@ const FormFieldSchema = new Schema<FormField>(
     required: { type: Boolean, default: true },
     maxLength: Number,
     helpText: String,
+    subDomain: String,
+    targetYears: [String],
   },
   { _id: false }
 );
