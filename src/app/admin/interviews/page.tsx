@@ -3,10 +3,8 @@
 import React, { useEffect, useState } from "react";
 import {
   Calendar,
-  Clock,
   Plus,
   Trash2,
-  Users,
   Video,
   MapPin,
   CheckCircle2,
@@ -40,6 +38,7 @@ const DEPT_NAMES: Record<string, string> = {
 interface InterviewSlot {
   _id: string;
   adminEmail: string;
+  panelName?: string;
   deptSlug: string;
   startTime: string;
   endTime: string;
@@ -51,8 +50,16 @@ interface InterviewSlot {
     userEmail: string;
     userName?: string;
   };
-  meetingLink?: string;
 }
+
+const getPanelColorClass = (panelName?: string) => {
+  const name = panelName?.trim() || "Panel 1";
+  if (name.includes("1")) return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+  if (name.includes("2")) return "bg-sky-500/15 text-sky-300 border-sky-500/30";
+  if (name.includes("3")) return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+  if (name.includes("4")) return "bg-purple-500/15 text-purple-300 border-purple-500/30";
+  return "bg-rose-500/15 text-rose-300 border-rose-500/30";
+};
 
 export default function AdminInterviewsPage() {
   const [slots, setSlots] = useState<InterviewSlot[]>([]);
@@ -70,6 +77,7 @@ export default function AdminInterviewsPage() {
   const [creationMode, setCreationMode] = useState<"single" | "generate">("single");
   const [deptSlug, setDeptSlug] = useState("all");
   const [adminEmail, setAdminEmail] = useState("");
+  const [panelName, setPanelName] = useState("Panel 1");
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState(""); // used for single slot
@@ -78,9 +86,8 @@ export default function AdminInterviewsPage() {
   const [duration, setDuration] = useState("30"); // in minutes
   const [count, setCount] = useState("5"); // number of slots to generate
   
-  const [locationType, setLocationType] = useState<"offline" | "online">("offline");
-  const [locationDetails, setLocationDetails] = useState("MIC Lab");
-  const [meetingLink, setMeetingLink] = useState("");
+  const [locationType, setLocationType] = useState<"offline" | "online">("online");
+  const [locationDetails, setLocationDetails] = useState("Online");
 
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
@@ -139,12 +146,12 @@ export default function AdminInterviewsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             adminEmail,
+            panelName: panelName || "Panel 1",
             deptSlug,
             startTime: startDateTime.toISOString(),
             endTime: endDateTime.toISOString(),
             locationType,
             locationDetails,
-            meetingLink: locationType === "online" ? meetingLink : undefined,
           }),
         });
 
@@ -175,12 +182,12 @@ export default function AdminInterviewsPage() {
           const currentEnd = new Date(currentStart.getTime() + durMin * 60 * 1000);
           generatedList.push({
             adminEmail,
+            panelName: panelName || "Panel 1",
             deptSlug,
             startTime: currentStart.toISOString(),
             endTime: currentEnd.toISOString(),
             locationType,
             locationDetails,
-            meetingLink: locationType === "online" ? meetingLink : undefined,
           });
           currentStart = new Date(currentEnd); // set start of next slot to end of current
         }
@@ -193,31 +200,32 @@ export default function AdminInterviewsPage() {
 
         const data = await res.json();
         if (data.success) {
-          setFormSuccess(`Successfully generated ${data.count} interview slots!`);
+          setFormSuccess(`Successfully generated ${data.count} interview slots for ${panelName}!`);
           resetForm();
           loadSlots();
         } else {
           setFormError(data.error ?? "Failed to generate interview slots.");
         }
       }
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : "An error occurred.");
+    } catch {
+      setFormError("An unexpected error occurred while saving.");
     } finally {
       setSubmitting(false);
     }
   };
 
   const resetForm = () => {
-    // Keep adminEmail and location details for easy reuse, reset times
+    setAdminEmail("");
     setDate("");
     setStartTime("");
     setEndTime("");
   };
 
-  const handleDeleteSlot = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this interview slot? If candidate has booked, their booking will be cancelled.")) return;
+  const handleDeleteSlot = async (slotId: string) => {
+    if (!confirm("Are you sure you want to delete this interview slot?")) return;
+
     try {
-      const res = await fetch(`/api/admin/interviews/${id}`, {
+      const res = await fetch(`/api/admin/interviews/${slotId}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -226,24 +234,27 @@ export default function AdminInterviewsPage() {
       } else {
         alert(data.error || "Failed to delete slot.");
       }
-    } catch (err) {
-      alert("Failed to communicate with server.");
+    } catch {
+      alert("Failed to delete slot.");
     }
   };
 
-  // Derived state for filtering and pagination
-  const filteredSlots = slots.filter(slot => {
-    if (filterDept !== "all" && slot.deptSlug !== filterDept) return false;
-    if (filterStatus !== "all" && slot.status !== filterStatus) return false;
+  // Filter & Pagination Logic
+  const filteredSlots = slots.filter((s) => {
+    if (filterDept !== "all" && s.deptSlug !== filterDept) return false;
+    if (filterStatus !== "all" && s.status !== filterStatus) return false;
     if (filterDate) {
-      const slotDate = slot.startTime.split('T')[0];
-      if (slotDate !== filterDate) return false;
+      const slotDateStr = new Date(s.startTime).toISOString().split("T")[0];
+      if (slotDateStr !== filterDate) return false;
     }
     return true;
   });
 
   const totalPages = Math.ceil(filteredSlots.length / PAGE_SIZE) || 1;
-  const paginatedSlots = filteredSlots.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const paginatedSlots = filteredSlots.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -271,7 +282,7 @@ export default function AdminInterviewsPage() {
               Interview Management
             </h1>
             <p className="text-sm text-zinc-450 mt-1">
-              Create offline/online slots, generate slots in bulk, and review scheduled bookings.
+              Create offline/online slots for parallel panels and review candidate bookings.
             </p>
           </div>
           <Button
@@ -281,7 +292,7 @@ export default function AdminInterviewsPage() {
               setRefreshing(true);
               loadSlots();
             }}
-            className="h-10 w-10 text-zinc-400 hover:text-white"
+            className="h-10 w-10 text-zinc-400 hover:text-white cursor-pointer"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
           </Button>
@@ -297,7 +308,7 @@ export default function AdminInterviewsPage() {
                   Add Availability Slots
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Offer candidate slots for reviews and interviews.
+                  Offer candidate slots for parallel panels.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -339,44 +350,53 @@ export default function AdminInterviewsPage() {
                     </button>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Department</label>
-                    <Select value={deptSlug} onChange={(e) => setDeptSlug(e.target.value)}>
-                      {Object.entries(DEPT_NAMES).map(([slug, name]) => (
-                        <option key={slug} value={slug}>
-                          {name}
-                        </option>
-                      ))}
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Department</label>
+                      <Select value={deptSlug} onChange={(e) => setDeptSlug(e.target.value)}>
+                        {Object.entries(DEPT_NAMES).map(([slug, name]) => (
+                          <option key={slug} value={slug}>
+                            {name}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Panel Name</label>
+                      <Select value={panelName} onChange={(e) => setPanelName(e.target.value)}>
+                        <option value="Panel 1">Panel 1</option>
+                        <option value="Panel 2">Panel 2</option>
+                        <option value="Panel 3">Panel 3</option>
+                        <option value="Panel 4">Panel 4</option>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Interviewer Email</label>
                     <Input
                       type="email"
-                      required
-                      placeholder="interviewer@domain.com"
+                      placeholder="interviewer@vitstudent.ac.in"
                       value={adminEmail}
                       onChange={(e) => setAdminEmail(e.target.value)}
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Interview Date</label>
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Date</label>
                     <Input
                       type="date"
-                      required
                       value={date}
                       onChange={(e) => setDate(e.target.value)}
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Start Time</label>
                       <Input
                         type="time"
-                        required
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
                       />
@@ -393,7 +413,7 @@ export default function AdminInterviewsPage() {
                       </div>
                     ) : (
                       <div className="space-y-1.5">
-                        <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Slot Duration (Min)</label>
+                        <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Duration (Min)</label>
                         <Input
                           type="number"
                           value={duration}
@@ -405,45 +425,33 @@ export default function AdminInterviewsPage() {
 
                   {creationMode === "generate" && (
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Number of slots to generate</label>
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Number of Slots</label>
                       <Input
                         type="number"
+                        min="1"
+                        max="20"
                         value={count}
                         onChange={(e) => setCount(e.target.value)}
                       />
                     </div>
                   )}
 
-                  {/* Location Settings */}
-                  <div className="space-y-3 border-t border-zinc-900 pt-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Format</label>
-                      <Select
-                        value={locationType}
-                        onChange={(e) => setLocationType(e.target.value as "offline" | "online")}
-                      >
+                      <Select value={locationType} onChange={(e) => setLocationType(e.target.value as "offline" | "online")}>
+                        <option value="online">Online (WhatsApp Group)</option>
                         <option value="offline">Offline (In-Person)</option>
-                        <option value="online">Online (Google Meet)</option>
                       </Select>
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">
-                        {locationType === "online" ? "Google Meet Link" : "Location Details"}
-                      </label>
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold">Venue / Details</label>
                       <Input
                         type="text"
-                        required
-                        placeholder={locationType === "online" ? "https://meet.google.com/abc-defg-hij" : "MIC Lab, 4th Floor"}
-                        value={locationType === "online" ? meetingLink : locationDetails}
-                        onChange={(e) => {
-                          if (locationType === "online") {
-                            setMeetingLink(e.target.value);
-                            setLocationDetails(e.target.value); // keep in sync
-                          } else {
-                            setLocationDetails(e.target.value);
-                          }
-                        }}
+                        placeholder={locationType === "online" ? "Online" : "MIC Lab / Room 204"}
+                        value={locationDetails}
+                        onChange={(e) => setLocationDetails(e.target.value)}
                       />
                     </div>
                   </div>
@@ -474,7 +482,7 @@ export default function AdminInterviewsPage() {
                   Upcoming Slots
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  Browse, review, or cancel interview slots.
+                  Browse parallel panel slots and scheduled candidate bookings.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -515,7 +523,7 @@ export default function AdminInterviewsPage() {
                       <thead>
                         <tr className="border-y border-zinc-900 bg-zinc-950/60 text-zinc-400 font-bold">
                           <th className="p-4 w-[140px]">Date & Time</th>
-                          <th className="p-4">Department</th>
+                          <th className="p-4">Department & Panel</th>
                           <th className="p-4">Format & Info</th>
                           <th className="p-4">Interviewer / Booking</th>
                           <th className="p-4 w-[60px] text-center">Action</th>
@@ -536,10 +544,13 @@ export default function AdminInterviewsPage() {
                               <td className="p-4 text-zinc-450 font-mono font-bold whitespace-nowrap">
                                 {startStr}
                               </td>
-                              <td className="p-4 font-bold text-zinc-200">
-                                {DEPT_NAMES[slot.deptSlug] || slot.deptSlug}
+                              <td className="p-4 font-bold text-zinc-200 space-y-1">
+                                <div>{DEPT_NAMES[slot.deptSlug] || slot.deptSlug}</div>
+                                <Badge className={`border text-[9px] px-1.5 py-0.5 font-bold ${getPanelColorClass(slot.panelName)}`}>
+                                  {slot.panelName || "Panel 1"}
+                                </Badge>
                               </td>
-                              <td className="p-4 space-y-1">
+                              <td className="p-4 space-y-1 max-w-[200px]">
                                 <div className="flex items-center gap-1.5 text-zinc-300 font-bold">
                                   {slot.locationType === "online" ? (
                                     <>
@@ -608,7 +619,7 @@ export default function AdminInterviewsPage() {
                         size="sm"
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50"
+                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 cursor-pointer"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -620,7 +631,7 @@ export default function AdminInterviewsPage() {
                         size="sm"
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50"
+                        className="h-8 border-zinc-800 text-zinc-400 hover:text-white disabled:opacity-50 cursor-pointer"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>

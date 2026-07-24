@@ -13,12 +13,23 @@ import {
   FileText,
   MessageSquare,
   Award,
+  ExternalLink,
+  Copy,
+  Check,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  AlertDialog,
+} from "@/components/ui/dialog";
 
 interface PanelistScore {
   interviewerEmail: string;
@@ -106,35 +117,234 @@ function ResponseViewer({
   responses?: Record<string, unknown>;
   getFieldLabel: (fieldId: string) => string;
 }) {
+  const entries = Object.entries(responses);
+  if (entries.length === 0) {
+    return (
+      <div className="p-6 text-center text-zinc-500 text-xs border border-dashed border-zinc-800/80 rounded-xl bg-zinc-950/40">
+        No response details submitted for this stage.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {Object.entries(responses).map(([key, val]) => {
+      {entries.map(([key, val], idx) => {
         const valStr = Array.isArray(val) ? val.join(", ") : String(val ?? "—");
         const isUrl = valStr.startsWith("http://") || valStr.startsWith("https://");
-        
+
         return (
-          <div key={key} className="space-y-1.5">
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold text-left">
-              {getFieldLabel(key)}
-            </p>
-            <div className="text-sm text-zinc-200 bg-zinc-950 border border-zinc-900 rounded-xl p-4 leading-relaxed text-left">
+          <div key={key} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="h-5 w-5 rounded-md bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-bold flex items-center justify-center shrink-0">
+                {idx + 1}
+              </span>
+              <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider text-left">
+                {getFieldLabel(key)}
+              </p>
+            </div>
+            <div className="text-sm text-zinc-100 bg-zinc-900/70 border border-zinc-800/80 rounded-xl p-4 leading-relaxed text-left break-words">
               {isUrl ? (
                 <a
                   href={valStr}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-teal-400 hover:text-teal-350 underline font-bold"
+                  className="text-teal-400 hover:text-teal-350 underline font-bold inline-flex items-center gap-1.5 flex-wrap"
                 >
-                  {valStr}
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  <span>{valStr}</span>
                 </a>
               ) : (
-                <span className="whitespace-pre-wrap">{valStr}</span>
+                <p className="whitespace-pre-wrap font-sans text-zinc-200">{valStr}</p>
               )}
             </div>
           </div>
         );
       })}
     </div>
+  );
+}
+
+function SubmissionDetailModal({
+  isOpen,
+  onClose,
+  stepTitle,
+  deptName,
+  applicantName,
+  submission,
+  getFieldLabel,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  stepTitle: string;
+  deptName: string;
+  applicantName?: string;
+  submission: StageSubmission | null;
+  getFieldLabel: (fieldId: string) => string;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  if (!submission) return null;
+
+  const handleCopyAll = () => {
+    if (!submission?.responses) return;
+    const text = Object.entries(submission.responses)
+      .map(([k, v]) => `${getFieldLabel(k)}:\n${Array.isArray(v) ? v.join(", ") : String(v ?? "")}`)
+      .join("\n\n");
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl w-[92vw] max-h-[85vh] flex flex-col p-0 bg-zinc-950 border-zinc-800 shadow-2xl rounded-2xl overflow-hidden">
+        {/* Modal Header */}
+        <DialogHeader className="p-6 bg-zinc-900/70 border-b border-zinc-800 text-left flex flex-col gap-1.5 shrink-0 pr-12">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" className="text-[10px] font-extrabold uppercase tracking-wider bg-teal-500/10 text-teal-400 border border-teal-500/20">
+              {deptName}
+            </Badge>
+            {submission.submittedAt && (
+              <span className="text-[11px] font-medium text-zinc-500">
+                Submitted on {new Date(submission.submittedAt).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
+          <DialogTitle className="text-xl font-extrabold text-white mt-1">
+            {stepTitle}
+          </DialogTitle>
+          {applicantName && (
+            <DialogDescription className="text-xs text-zinc-400 font-medium">
+              Applicant: <span className="text-zinc-200 font-bold">{applicantName}</span>
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {/* Scrollable Content Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+          {/* Form Responses */}
+          <div>
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-zinc-400 mb-4 flex items-center gap-2">
+              <FileText className="h-4 w-4 text-teal-400" /> Form Responses
+            </h4>
+            <ResponseViewer responses={submission.responses} getFieldLabel={getFieldLabel} />
+          </div>
+
+          {/* Rubric Scorecard if present */}
+          {submission.scores && Object.keys(submission.scores).length > 0 && (
+            <div className="p-4 rounded-xl bg-teal-500/5 border border-teal-500/15 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4 text-teal-400 shrink-0" />
+                  <span className="text-xs text-teal-400 uppercase font-extrabold tracking-wider">
+                    Scorecard Results
+                  </span>
+                </div>
+                {(() => {
+                  const entries = Object.values(submission.scores);
+                  const total = entries.reduce((acc, curr) => acc + Number(curr), 0);
+                  const maxPossible = entries.length * 5;
+                  const pct = maxPossible > 0 ? Math.round((total / maxPossible) * 100) : 0;
+
+                  let grade = "Weak";
+                  let color = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+                  if (pct >= 85) { grade = "Excellent"; color = "bg-teal-500/20 text-teal-300 border-teal-500/30"; }
+                  else if (pct >= 70) { grade = "Strong"; color = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"; }
+                  else if (pct >= 50) { grade = "Average"; color = "bg-amber-500/20 text-amber-300 border-amber-500/30"; }
+
+                  return (
+                    <Badge variant="outline" className={`px-2.5 py-1 text-xs font-bold border ${color}`}>
+                      {grade} ({total}/{maxPossible} - {pct}%)
+                    </Badge>
+                  );
+                })()}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                {Object.entries(submission.scores).map(([metric, score]) => (
+                  <div key={metric} className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-xs">
+                    <span className="text-zinc-400 capitalize block text-[10px] font-semibold">{metric}</span>
+                    <span className="text-white font-extrabold text-sm">{score}/5</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Panelist Breakdown if present */}
+          {submission.panelistScores && submission.panelistScores.length > 0 && (
+            <div className="space-y-3 pt-2 border-t border-zinc-900">
+              <h4 className="text-xs text-zinc-400 font-extrabold uppercase tracking-wider">
+                Panelist Breakdown ({submission.panelistScores.length})
+              </h4>
+              <div className="space-y-2 font-mono">
+                {submission.panelistScores.map((ps, pIdx) => (
+                  <div key={pIdx} className="bg-zinc-900/60 p-3 border border-zinc-800/80 rounded-xl flex flex-col gap-2 text-xs text-zinc-300">
+                    <div className="flex justify-between items-center text-[11px]">
+                      <span className="text-teal-400 font-bold">{ps.interviewerEmail}</span>
+                      <span className="text-zinc-500 text-[10px]">
+                        {new Date(ps.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                      </span>
+                    </div>
+                    <div className="flex gap-3 flex-wrap">
+                      {Object.entries(ps.scores || {}).map(([metric, score]) => (
+                        <div key={metric}>
+                          <span className="text-zinc-500 capitalize">{metric}:</span> <strong className="text-white">{score as number}/5</strong>
+                        </div>
+                      ))}
+                    </div>
+                    {ps.note && (
+                      <p className="text-xs text-zinc-300 font-sans italic bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-900">
+                        “{ps.note}”
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reviewer Note if present */}
+          {submission.adminNote && (
+            <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/15 flex gap-3">
+              <MessageSquare className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="text-[10px] text-amber-400 uppercase font-extrabold tracking-wider block">
+                  Reviewer Evaluation Note
+                </span>
+                <p className="text-xs text-zinc-200 mt-1 leading-relaxed whitespace-pre-wrap">{submission.adminNote}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <DialogFooter className="p-4 bg-zinc-900/70 border-t border-zinc-800 flex items-center justify-between sm:justify-between shrink-0 gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCopyAll}
+            className="text-xs font-bold gap-1.5 text-zinc-300 border-zinc-800 hover:bg-zinc-800 hover:text-white cursor-pointer"
+          >
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-zinc-400" />}
+            {copied ? "Copied!" : "Copy Responses"}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={onClose}
+            className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs px-5 cursor-pointer"
+          >
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -160,6 +370,7 @@ function PrefPanel({
   totalStages,
   overallStatus,
   deptStages,
+  applicantName,
 }: {
   progress: PrefProgress;
   deptSlug: string;
@@ -169,6 +380,7 @@ function PrefPanel({
   totalStages: number;
   overallStatus: string;
   deptStages?: StageConfig[];
+  applicantName?: string;
 }) {
   const prefKey = label === "1st Preference" ? "first" : "second";
   const [note, setNote] = useState("");
@@ -184,24 +396,38 @@ function PrefPanel({
 
   const rubricList = DEPT_RUBRICS[deptSlug] || DEFAULT_RUBRIC;
   const [scores, setScores] = useState<Record<string, number>>({});
-  const [expandedStage, setExpandedStage] = useState<number | null>(null);
+  const [modalSubmission, setModalSubmission] = useState<{
+    stepTitle: string;
+    submission: StageSubmission;
+  } | null>(null);
+
+  const currentStageSubmission = progress.stages.find(
+    (s) => s.stage === progress.currentStage
+  );
 
   useEffect(() => {
     const initialScores: Record<string, number> = {};
     rubricList.forEach((metric) => {
       initialScores[metric.toLowerCase()] = 0;
     });
-    setScores(initialScores);
-  }, [deptSlug]);
 
-  const currentStageSubmission = progress.stages.find(
-    (s) => s.stage === progress.currentStage
-  );
+    if (currentStageSubmission) {
+      if (currentStageSubmission.adminNote) {
+        setNote(currentStageSubmission.adminNote);
+      }
+      if (currentStageSubmission.scores) {
+        Object.entries(currentStageSubmission.scores).forEach(([k, v]) => {
+          initialScores[k.toLowerCase()] = Number(v) || 0;
+        });
+      }
+    }
+    setScores(initialScores);
+  }, [deptSlug, currentStageSubmission]);
+
   const canAct =
     progress.status === "active" &&
     overallStatus === "in-progress" &&
-    currentStageSubmission &&
-    currentStageSubmission.result === "pending";
+    (!currentStageSubmission || currentStageSubmission.result === "pending");
 
   // Build timeline steps
   const timelineSteps = [];
@@ -212,7 +438,7 @@ function PrefPanel({
     title: "Application Started",
     description: "Candidate initiated application",
     state: "passed" as const,
-    date: null, // we don't have this date directly in PrefProgress easily without passing it down
+    date: null,
   });
 
   // Steps 1 to totalStages: Evaluation stages
@@ -297,9 +523,7 @@ function PrefPanel({
         {/* Interactive Vertical Timeline */}
         <div className="space-y-6 relative pl-4 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-900">
           {timelineSteps.map((step, idx) => {
-            const isLast = idx === timelineSteps.length - 1;
             const hasDetail = step.submission && step.stageNum > 0;
-            const isExpanded = expandedStage === step.stageNum;
 
             return (
               <div key={idx} className="relative pl-8 space-y-2">
@@ -329,8 +553,11 @@ function PrefPanel({
                 {/* Node label */}
                 <div
                   onClick={() => {
-                    if (hasDetail) {
-                      setExpandedStage(isExpanded ? null : step.stageNum);
+                    if (hasDetail && step.submission) {
+                      setModalSubmission({
+                        stepTitle: step.title,
+                        submission: step.submission,
+                      });
                     }
                   }}
                   className={`flex flex-col text-left transition-all ${
@@ -354,95 +581,28 @@ function PrefPanel({
                       </span>
                     )}
                     {hasDetail && (
-                      <span className="text-[9px] text-teal-400 font-bold group-hover:underline flex items-center gap-0.5">
-                        {isExpanded ? "Hide Details" : "View Details"}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (step.submission) {
+                            setModalSubmission({
+                              stepTitle: step.title,
+                              submission: step.submission,
+                            });
+                          }
+                        }}
+                        className="text-[10px] text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 px-2 py-0.5 rounded-md transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                      >
+                        <FileText className="h-3 w-3" />
+                        View Details
+                      </button>
                     )}
                   </div>
                   <span className="text-[10px] text-zinc-500 font-medium">
                     {step.description}
                   </span>
                 </div>
-
-                {/* Expanded Stage submission info */}
-                {isExpanded && step.submission && (
-                  <div className="border border-zinc-900 rounded-xl bg-zinc-950/40 p-4 space-y-4 mt-2 animate-pixel-slide-up">
-                    <ResponseViewer responses={step.submission.responses} getFieldLabel={getFieldLabel} />
-
-                    {step.submission.scores && Object.keys(step.submission.scores).length > 0 && (
-                      <div className="p-3.5 rounded-xl bg-teal-500/5 border border-teal-500/10 flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          <Award className="h-4 w-4 text-teal-400 shrink-0" />
-                          <span className="text-[10px] text-teal-450 uppercase font-extrabold tracking-wider">Scorecard Results</span>
-                        </div>
-                        <div className="flex gap-4 flex-wrap pt-1 border-b border-zinc-900 pb-2">
-                          {Object.entries(step.submission.scores).map(([metric, score]) => (
-                            <div key={metric} className="text-xs font-bold text-white">
-                              <span className="text-zinc-500 capitalize">{metric}:</span> {score}/5
-                            </div>
-                          ))}
-                        </div>
-                        {(() => {
-                          const entries = Object.values(step.submission.scores);
-                          const total = entries.reduce((acc, curr) => acc + Number(curr), 0);
-                          const maxPossible = entries.length * 5;
-                          const pct = maxPossible > 0 ? Math.round((total / maxPossible) * 100) : 0;
-                          
-                          let grade = "Weak";
-                          let color = "text-rose-455 font-bold";
-                          if (pct >= 85) { grade = "Excellent"; color = "text-teal-400 font-extrabold"; }
-                          else if (pct >= 70) { grade = "Strong"; color = "text-emerald-400 font-bold"; }
-                          else if (pct >= 50) { grade = "Average"; color = "text-amber-400 font-bold"; }
-
-                          return (
-                            <div className="flex justify-between items-center text-xs font-bold text-zinc-450 pt-1">
-                              <span>Total Score: <span className="text-white">{total}/{maxPossible} ({pct}%)</span></span>
-                              <span>Evaluation: <span className={color}>{grade}</span></span>
-                            </div>
-                          );
-                        })()}
-                        {/* Panelist Breakdown */}
-                        {step.submission.panelistScores && step.submission.panelistScores.length > 0 && (
-                          <div className="space-y-2 mt-2 pt-2 border-t border-zinc-900/60">
-                            <p className="text-[10px] text-zinc-550 font-extrabold uppercase tracking-wider">Panelist Breakdown</p>
-                            <div className="space-y-2 font-mono">
-                              {step.submission.panelistScores.map((ps: any, pIdx: number) => (
-                                <div key={pIdx} className="bg-zinc-950/60 p-2.5 border border-zinc-900 rounded-xl flex flex-col gap-1.5 text-[11px] text-zinc-350">
-                                  <div className="flex justify-between items-center text-[10px]">
-                                    <span className="text-teal-400 font-bold">{ps.interviewerEmail}</span>
-                                    <span className="text-zinc-650">{new Date(ps.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</span>
-                                  </div>
-                                  <div className="flex gap-3 flex-wrap">
-                                    {Object.entries(ps.scores || {}).map(([metric, score]) => (
-                                      <div key={metric}>
-                                        <span className="text-zinc-500 capitalize">{metric}:</span> <strong className="text-white">{score as number}/5</strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                  {ps.note && (
-                                    <p className="text-[10px] text-zinc-500 font-sans italic">“{ps.note}”</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {step.submission.adminNote && (
-                      <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 flex gap-3">
-                        <MessageSquare className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-[10px] text-amber-400 uppercase font-extrabold tracking-wider">
-                            Reviewer Note
-                          </span>
-                          <p className="text-xs text-zinc-300 mt-1">{step.submission.adminNote}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -451,9 +611,9 @@ function PrefPanel({
         {/* Action Panel */}
         {canAct && (
           <div className="border-t border-zinc-900 pt-6 space-y-4">
-              <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
-                Reviewing Stage {progress.currentStage} Submission
-              </Badge>
+            <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
+              Reviewing Stage {progress.currentStage} Submission
+            </Badge>
 
             <div className="space-y-1.5">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold block">
@@ -512,8 +672,9 @@ function PrefPanel({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  if (Object.values(scores).some((s) => s === 0)) {
-                    alert("Please grade all Rubric criteria (1-5) to save scores.");
+                  const hasAnyScore = Object.values(scores).some((s) => s > 0);
+                  if (!hasAnyScore && !note.trim()) {
+                    alert("Please select at least one score rubric criterion or enter evaluation notes before saving.");
                     return;
                   }
                   onActionTrigger(prefKey, "score", note, scores);
@@ -541,6 +702,17 @@ function PrefPanel({
             </div>
           </div>
         )}
+
+        {/* Response Detail Modal */}
+        <SubmissionDetailModal
+          isOpen={!!modalSubmission}
+          onClose={() => setModalSubmission(null)}
+          stepTitle={modalSubmission?.stepTitle ?? ""}
+          deptName={DEPT_NAMES[deptSlug] ?? deptSlug}
+          applicantName={applicantName}
+          submission={modalSubmission?.submission ?? null}
+          getFieldLabel={getFieldLabel}
+        />
       </CardContent>
     </Card>
   );
@@ -680,6 +852,8 @@ export default function ApplicantDetailPage({
     );
   }
 
+  const applicantDisplayName = application.fullName || application.userName || application.userEmail;
+
   return (
     <AdminLayout activePage="applications">
       <div className="p-8 space-y-6 max-w-7xl mx-auto w-full">
@@ -804,6 +978,7 @@ export default function ApplicantDetailPage({
             totalStages={dept1?.totalStages ?? 2}
             overallStatus={application.overallStatus}
             deptStages={dept1?.stages}
+            applicantName={applicantDisplayName}
           />
           {application.secondPreference ? (
             <PrefPanel
@@ -815,6 +990,7 @@ export default function ApplicantDetailPage({
               totalStages={dept2?.totalStages ?? 2}
               overallStatus={application.overallStatus}
               deptStages={dept2?.stages}
+              applicantName={applicantDisplayName}
             />
           ) : (
             <Card className="flex items-center justify-center p-8 border-dashed border-zinc-900">

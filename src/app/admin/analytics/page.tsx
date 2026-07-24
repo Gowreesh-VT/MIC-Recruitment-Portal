@@ -169,8 +169,8 @@ export default function AdvancedAnalyticsPage() {
   // Prep data for department comparisons
   const depts = Object.keys(DEPT_NAMES);
   const comparativeData = depts.map((d) => {
-    const firstCount = stats?.byDepartment.byFirst.find((item) => item._id === d)?.count ?? 0;
-    const secondCount = stats?.byDepartment.bySecond.find((item) => item._id === d)?.count ?? 0;
+    const firstCount = stats?.byDepartment?.byFirst?.find((item) => item._id === d)?.count ?? 0;
+    const secondCount = stats?.byDepartment?.bySecond?.find((item) => item._id === d)?.count ?? 0;
     return {
       name: DEPT_SHORT_NAMES[d] || d,
       "First Preference": firstCount,
@@ -182,13 +182,13 @@ export default function AdvancedAnalyticsPage() {
   const techDepts = ["development", "competitive-coding", "ui-ux", "ai-ml", "cyber-security"];
   const nonTechDepts = ["design", "management", "entrepreneurship", "content-media"];
 
-  const techCount = stats?.byDepartment.byFirst
+  const techCount = (stats?.byDepartment?.byFirst ?? [])
     .filter((d) => techDepts.includes(d._id))
-    .reduce((acc, curr) => acc + curr.count, 0) ?? 0;
+    .reduce((acc, curr) => acc + curr.count, 0);
 
-  const nonTechCount = stats?.byDepartment.byFirst
+  const nonTechCount = (stats?.byDepartment?.byFirst ?? [])
     .filter((d) => nonTechDepts.includes(d._id))
-    .reduce((acc, curr) => acc + curr.count, 0) ?? 0;
+    .reduce((acc, curr) => acc + curr.count, 0);
 
   const totalSplit = techCount + nonTechCount;
   const techPct = totalSplit > 0 ? Math.round((techCount / totalSplit) * 100) : 0;
@@ -206,7 +206,7 @@ export default function AdvancedAnalyticsPage() {
   }));
 
   const capacityList = (stats?.departmentsList ?? []).map((dept) => {
-    const acceptedCount = stats?.acceptedByDept.find((a) => a._id === dept.slug)?.count ?? 0;
+    const acceptedCount = stats?.acceptedByDept?.find((a) => a._id === dept.slug)?.count ?? 0;
     return {
       ...dept,
       acceptedCount,
@@ -498,7 +498,7 @@ export default function AdvancedAnalyticsPage() {
                   <Users className="h-4 w-4 text-teal-400" /> Active Stage Distribution
                 </h3>
                 <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-3">
-                  {deptStats.stagesFunnel.length === 0 ? (
+                  {!deptStats?.stagesFunnel || deptStats.stagesFunnel.length === 0 ? (
                     <p className="text-xs text-zinc-500 text-center py-2">No active candidates in review stages</p>
                   ) : (
                     deptStats.stagesFunnel.map((s) => (
@@ -519,7 +519,7 @@ export default function AdvancedAnalyticsPage() {
                   <Percent className="h-4 w-4 text-teal-400" /> Pool Year Distribution
                 </h3>
                 <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/60 space-y-3">
-                  {deptStats.yearDistribution.length === 0 ? (
+                  {!deptStats?.yearDistribution || deptStats.yearDistribution.length === 0 ? (
                     <p className="text-xs text-zinc-500 text-center py-2">No candidate pool data</p>
                   ) : (
                     deptStats.yearDistribution.map((y) => (

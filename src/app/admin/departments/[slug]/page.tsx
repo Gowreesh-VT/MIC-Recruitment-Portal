@@ -27,6 +27,8 @@ interface FormField {
   label: string;
   type: string;
   required: boolean;
+  subDomain?: string;
+  targetYears?: string[];
 }
 
 interface StageConfig {

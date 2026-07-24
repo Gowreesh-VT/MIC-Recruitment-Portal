@@ -38,6 +38,13 @@ export default function AdminSettingsPage() {
   const [endAt, setEndAt] = useState("");
   const [savingSchedule, setSavingSchedule] = useState(false);
   const [savedSchedule, setSavedSchedule] = useState(false);
+
+  // Countdown Timer state
+  const [countdownEnabled, setCountdownEnabled] = useState(false);
+  const [countdownTarget, setCountdownTarget] = useState("");
+  const [countdownTitle, setCountdownTitle] = useState("Recruitment Countdown");
+  const [savingCountdown, setSavingCountdown] = useState(false);
+  const [savedCountdown, setSavedCountdown] = useState(false);
   
   // AlertDialog state
   const [showCycleConfirm, setShowCycleConfirm] = useState(false);
@@ -60,6 +67,9 @@ export default function AdminSettingsPage() {
           setCycle(cycleData.cycle);
           setStartAt(formatToDatetimeLocal(cycleData.cycle.startAt));
           setEndAt(formatToDatetimeLocal(cycleData.cycle.endAt));
+          setCountdownEnabled(cycleData.cycle.countdownEnabled ?? false);
+          setCountdownTarget(formatToDatetimeLocal(cycleData.cycle.countdownTarget ?? cycleData.cycle.startAt));
+          setCountdownTitle(cycleData.cycle.countdownTitle ?? "Recruitment Countdown");
         }
 
         // Fetch recent administrative logs
@@ -122,6 +132,36 @@ export default function AdminSettingsPage() {
       alert("Failed to save schedule settings.");
     } finally {
       setSavingSchedule(false);
+    }
+  };
+
+  const handleSaveCountdown = async () => {
+    if (!cycle) return;
+    setSavingCountdown(true);
+    try {
+      const res = await fetch("/api/admin/cycle", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isOpen: cycle.isOpen,
+          countdownEnabled,
+          countdownTarget: countdownTarget ? new Date(countdownTarget).toISOString() : null,
+          countdownTitle: countdownTitle || "Recruitment Countdown",
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.cycle) {
+        setCycle(data.cycle);
+        setCountdownEnabled(data.cycle.countdownEnabled ?? false);
+        setCountdownTarget(formatToDatetimeLocal(data.cycle.countdownTarget));
+        setCountdownTitle(data.cycle.countdownTitle ?? "Recruitment Countdown");
+        setSavedCountdown(true);
+        setTimeout(() => setSavedCountdown(false), 2500);
+      }
+    } catch {
+      alert("Failed to save countdown settings.");
+    } finally {
+      setSavingCountdown(false);
     }
   };
 
@@ -225,6 +265,77 @@ export default function AdminSettingsPage() {
                     <Save className="h-4 w-4" />
                   )}
                   {savedSchedule ? "Schedule Saved!" : "Save Schedule"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Countdown Timer Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-400" />
+              Website Countdown Timer Configuration
+            </CardTitle>
+            <CardDescription>Configure target date, label, and visibility of the countdown timer on Home and Recruitments pages</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-0">
+            <div className="flex items-center justify-between flex-wrap gap-6 border-b border-zinc-900 pb-4">
+              <div>
+                <p className="text-sm font-bold text-zinc-200">Countdown Display Status</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {countdownEnabled
+                    ? "Countdown timer is active and visible on Home & Recruitments pages."
+                    : "Countdown timer is currently hidden from the public website."}
+                </p>
+              </div>
+              <Button
+                variant={countdownEnabled ? "emerald" : "outline"}
+                onClick={() => setCountdownEnabled(!countdownEnabled)}
+                className="px-6 font-bold h-10 cursor-pointer"
+              >
+                {countdownEnabled ? "ENABLED (Click to Hide)" : "DISABLED (Click to Enable)"}
+              </Button>
+            </div>
+
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-550 uppercase tracking-widest font-extrabold">Countdown Title / Header</label>
+                  <Input
+                    type="text"
+                    value={countdownTitle}
+                    onChange={(e) => setCountdownTitle(e.target.value)}
+                    placeholder="e.g. Recruitment Opens In / Applications Close In"
+                    className="text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-zinc-550 uppercase tracking-widest font-extrabold">Target End Date & Time</label>
+                  <Input
+                    type="datetime-local"
+                    value={countdownTarget}
+                    onChange={(e) => setCountdownTarget(e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveCountdown}
+                  disabled={savingCountdown}
+                  variant="emerald"
+                  className="font-bold text-sm h-10 min-w-36 gap-2 cursor-pointer"
+                >
+                  {savingCountdown ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : savedCountdown ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  {savedCountdown ? "Countdown Saved!" : "Save Countdown"}
                 </Button>
               </div>
             </div>
