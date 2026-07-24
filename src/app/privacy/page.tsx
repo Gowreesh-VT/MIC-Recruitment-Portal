@@ -3,15 +3,10 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import MicLogo from "@/components/MicLogo";
 import BackButton from "@/components/BackButton";
 import { playRetroSound } from "@/lib/audio";
+import { Database, Lock, Eye, ShieldAlert, UserCheck } from "lucide-react";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -19,27 +14,39 @@ const pressStart = Press_Start_2P({
   variable: "--font-press-start-2p",
 });
 
-export default function FaqsPage() {
+export default function PrivacyPage() {
   const router = useRouter();
 
-
-
-  const faqs = [
+  const sections = [
     {
-      q: "When will the Recruitments Start?",
-      a: "Recruitments officially kick off right after our club orientation session! Keep an eye on our official club announcements and social media channels for exact registration deadlines and interview schedules.",
+      icon: Database,
+      title: "1. INFORMATION WE COLLECT",
+      content:
+        "When you register and apply through the MIC Recruitment Portal, we collect essential applicant details including your full name, email address, phone number, registration number, academic year, branch, department preferences, and task submission responses.",
     },
     {
-      q: "What skills do I need to have in common?",
-      a: "Curiosity, consistency, and a passion to learn! Whether you are a beginner or an experienced coder/designer, we value proactive teamwork, creative problem-solving, and an eagerness to build impactful projects.",
+      icon: Eye,
+      title: "2. HOW WE USE YOUR DATA",
+      content:
+        "Your submitted data is used solely to evaluate your application, manage interview slot scheduling, assign reviewer panelists, and communicate recruitment decisions and club updates to you.",
     },
     {
-      q: "How many tasks will be assigned to us in a month?",
-      a: "Generally, members work on 1-2 practical team tasks or club projects per month. We ensure the workload remains flexible so you can easily balance coursework alongside club innovations and hackathons.",
+      icon: Lock,
+      title: "3. DATA SECURITY & PROTECTION",
+      content:
+        "We implement strict security measures to protect your personal information. Database access is restricted exclusively to authorized MIC recruitment administrators and interview panelists. Password authentication and session tokens are encrypted using Auth.js and secure protocols.",
     },
     {
-      q: "Can I explore both Tech and Non-Tech domains?",
-      a: "Yes! You are welcome to explore multiple pathways during recruitments. In the final stage, you will be assigned to the core domain where your skills and interest shine brightest.",
+      icon: ShieldAlert,
+      title: "4. DATA SHARING & THIRD PARTIES",
+      content:
+        "The Microsoft Innovations Club does not sell, rent, or trade applicant personal data with external third parties or advertisers. All submitted tasks and applicant records remain strictly internal to the club's recruitment operations.",
+    },
+    {
+      icon: UserCheck,
+      title: "5. APPLICANT RIGHTS & DATA RETENTION",
+      content:
+        "Applicant records are retained for the duration of the tenure recruitment cycle. Applicants have the right to request updates or deletion of their submitted personal profile data by reaching out to the MIC administrative leads.",
     },
   ];
 
@@ -83,7 +90,6 @@ export default function FaqsPage() {
 
       {/* ================= CITY BUILDINGS & BUSHES ALONG HORIZON ================= */}
       <div className="absolute bottom-[60px] md:bottom-[76px] left-0 w-full h-[280px] md:h-[360px] overflow-hidden pointer-events-none z-0 flex items-end">
-        {/* Continuous Large Background Cloud Silhouettes */}
         <div className="absolute bottom-0 left-0 flex w-[3000px] opacity-100">
           <img
             src="/pixel_cloud_large.svg"
@@ -96,7 +102,6 @@ export default function FaqsPage() {
             className="w-[1510px] h-[280px] md:h-[360px] object-cover object-top pixelated shrink-0"
           />
         </div>
-        {/* Continuous City Skyline */}
         <div className="absolute bottom-0 left-0 flex w-[3000px] opacity-80 z-1">
           {Array.from({ length: 14 }).map((_, idx) => (
             <img
@@ -107,7 +112,6 @@ export default function FaqsPage() {
             />
           ))}
         </div>
-        {/* Continuous Green Bushes right above soil */}
         <div className="absolute bottom-0 left-0 flex w-[3000px] z-1">
           <img
             src="/bushes_pixel.svg"
@@ -124,12 +128,10 @@ export default function FaqsPage() {
 
       {/* ================= SCROLLING SOIL GROUND PLATFORM ================= */}
       <div className="absolute bottom-0 left-0 w-full h-[60px] md:h-[76px] z-10 flex flex-col select-none pointer-events-none">
-        {/* Green Grass Trim */}
         <div className="w-full h-4 md:h-5 bg-[#52AE26] border-t-4 border-b-4 border-black flex flex-col justify-between shrink-0">
           <div className="w-full h-[3px] bg-[#72F418]" />
           <div className="w-full h-[3px] bg-[#3FA70E]" />
         </div>
-        {/* Soil Base with Marquee Text */}
         <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-center">
           <div className="flex whitespace-nowrap animate-marquee">
             <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
@@ -152,24 +154,14 @@ export default function FaqsPage() {
         </div>
       </div>
 
-      {/* ================= TOP LEFT LOGO ================= */}
+      {/* ================= NAVIGATION CONTROLS ================= */}
       <MicLogo />
-      
       <BackButton onClick={() => router.push("/recruitments")} />
 
-      {/* ================= TOP RIGHT CLOSE BUTTON (Close_icon.svg) ================= */}
       <button
         onClick={() => {
           playRetroSound("close");
-          let fallback = "/recruitments";
-          if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search);
-            const from = params.get("from");
-            if (from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/\\")) {
-              fallback = from;
-            }
-          }
-          router.push(fallback);
+          router.push("/recruitments");
         }}
         className="fixed top-6 right-6 md:right-10 z-50 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none"
         title="Close"
@@ -181,9 +173,8 @@ export default function FaqsPage() {
         />
       </button>
 
-      {/* ================= HANGING WOODEN SIGNBOARD (CENTERED) ================= */}
-      <div className="relative flex flex-col items-center w-full max-w-[760px] px-2 md:px-4 z-20 my-auto pb-12">
-        {/* Hanging Ropes/Chains from Top of Viewport down to board */}
+      {/* ================= HANGING WOODEN SIGNBOARD ================= */}
+      <div className="relative flex flex-col items-center w-full max-w-[800px] px-2 md:px-4 z-20 my-auto pb-12">
         <div
           className="absolute -top-[600px] left-[20%] w-[18px] h-[605px] pointer-events-none flex flex-col border-x-4 border-black bg-[#B87B21] z-0"
           style={{
@@ -199,15 +190,13 @@ export default function FaqsPage() {
           }}
         />
 
-        {/* Wooden Signboard Main Box */}
         <div
-          className="w-full bg-[#C4872B] border-4 border-black p-6 md:p-8 relative rounded-sm flex flex-col z-10"
+          className="w-full bg-[#C4872B] border-4 border-black p-5 md:p-8 relative rounded-sm flex flex-col z-10"
           style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.65)" }}
         >
-          {/* Authentic Retro Bevel Border Highlights & Shadows */}
           <div className="absolute inset-1 border-t-4 border-l-4 border-[#E5A039] border-b-4 border-r-4 border-[#9E6517] pointer-events-none" />
 
-          {/* 4 Silver Corner Screws/Nails */}
+          {/* Screws */}
           <div className="absolute top-3 left-3 w-3.5 h-3.5 rounded-full bg-[#D4D4D4] border-2 border-black shadow-inner flex items-center justify-center pointer-events-none z-10">
             <div className="w-1.5 h-0.5 bg-[#666] rotate-45" />
           </div>
@@ -221,28 +210,41 @@ export default function FaqsPage() {
             <div className="w-1.5 h-0.5 bg-[#666] rotate-45" />
           </div>
 
-          {/* Header Text: Have some questions? */}
           <h1 className="text-center font-press-start text-[#FFB59F] text-[18px] md:text-[22px] tracking-wider uppercase drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] mt-2 mb-6 z-10">
-            Have some questions?
+            PRIVACY POLICY
           </h1>
 
-          {/* Accordion FAQ Questions List (shadcn Accordion) */}
-          <Accordion
-            type="single"
-            collapsible
-            className="w-full flex flex-col z-10 max-h-[55vh] overflow-y-auto pr-1 retro-scrollbar"
-          >
-            {faqs.map((faq, idx) => (
-              <AccordionItem key={`faq-item-${idx}`} value={`item-${idx}`}>
-                <AccordionTrigger onPlaySound={() => playRetroSound("select")}>
-                  {faq.q}
-                </AccordionTrigger>
-                <AccordionContent>
-                  {faq.a}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          {/* Scrollable Privacy Policy Content Box */}
+          <div className="w-full flex flex-col z-10 max-h-[55vh] overflow-y-auto pr-2 custom-scrollbar space-y-4 font-sans text-black">
+            <div className="bg-[#FFF2E6] border-[3px] border-[#A05522] p-4 rounded-[8px]">
+              <h2 className="text-[10px] font-press-start font-bold text-[#A05522] uppercase tracking-wide mb-1">
+                ► DATA PRIVACY COMMITMENT
+              </h2>
+              <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                The Microsoft Innovations Club values your privacy. This policy outlines how applicant data is collected, stored, and protected throughout the recruitment process.
+              </p>
+            </div>
+
+            {sections.map((sec, idx) => {
+              const Icon = sec.icon;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white border-[3px] border-black p-4 rounded-[8px] space-y-2 shadow-[3px_3px_0px_0px_#000]"
+                >
+                  <div className="flex items-center gap-2 text-[#A05522]">
+                    <Icon className="w-4 h-4 shrink-0" />
+                    <h3 className="text-xs font-bold uppercase tracking-wider font-sans">
+                      {sec.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs leading-relaxed text-slate-800 font-medium pl-6">
+                    {sec.content}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </main>

@@ -6,6 +6,7 @@ import { Press_Start_2P } from "next/font/google";
 import RetroLoader from "@/components/RetroLoader";
 import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
+import CountdownTimer from "@/components/CountdownTimer";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -27,67 +28,12 @@ interface PageConfig {
     startAt?: string;
     endAt?: string;
   };
+  countdownSettings?: {
+    enabled: boolean;
+    target: string | null;
+    title: string;
+  };
 }
-
-interface CountdownProps {
-  targetDate: string;
-  onExpiry?: () => void;
-}
-
-const CountdownTimer: React.FC<CountdownProps> = ({ targetDate, onExpiry }) => {
-  const [timeLeft, setTimeLeft] = useState<{
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-  } | null>(null);
-
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const difference = new Date(targetDate).getTime() - new Date().getTime();
-      if (difference <= 0) {
-        setTimeLeft(null);
-        if (onExpiry) onExpiry();
-        return;
-      }
-      setTimeLeft({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60),
-      });
-    };
-
-    calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 1000);
-    return () => clearInterval(interval);
-  }, [targetDate, onExpiry]);
-
-  if (!timeLeft) return null;
-
-  return (
-    <div className="bg-[#FFE4D6]/90 border-4 border-black rounded-[6px] p-4 text-center space-y-2 font-bold w-full max-w-sm mx-auto shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)]">
-      <p className="text-[10px] text-[#A93710] uppercase tracking-widest font-extrabold">Recruitment Opens In</p>
-      <div className="flex gap-2 justify-center text-[13px] text-black">
-        <span className="bg-[#C85A28]/10 px-2 py-1 border-2 border-black rounded-[4px] font-extrabold">
-          {String(timeLeft.days).padStart(2, "0")}D
-        </span>
-        <span className="self-center font-extrabold">:</span>
-        <span className="bg-[#C85A28]/10 px-2 py-1 border-2 border-black rounded-[4px] font-extrabold">
-          {String(timeLeft.hours).padStart(2, "0")}H
-        </span>
-        <span className="self-center font-extrabold">:</span>
-        <span className="bg-[#C85A28]/10 px-2 py-1 border-2 border-black rounded-[4px] font-extrabold">
-          {String(timeLeft.minutes).padStart(2, "0")}M
-        </span>
-        <span className="self-center font-extrabold">:</span>
-        <span className="bg-[#C85A28]/10 px-2 py-1 border-2 border-black rounded-[4px] font-extrabold">
-          {String(timeLeft.seconds).padStart(2, "0")}S
-        </span>
-      </div>
-    </div>
-  );
-};
 
 function RetroPipe({ height, top, left, isTop }: { height: number; top: string; left: string; isTop: boolean }) {
   const bodyHeight = Math.max(0, height - 24);
@@ -123,29 +69,6 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
           />
         </>
       )}
-    </div>
-  );
-}
-
-// Short vertical pipe stub (used inline beside signs)
-function PipeStub({ marginLeft, marginRight }: { marginLeft?: string; marginRight?: string }) {
-  return (
-    <div
-      className="w-[52px] h-[52px] flex flex-col items-center pointer-events-none select-none flex-shrink-0"
-      style={{ marginLeft: marginLeft ?? "0", marginRight: marginRight ?? "0" }}
-    >
-      <div
-        className="w-[46px] h-[28px] border-x-[3px] border-t-[3px] border-black box-border"
-        style={{
-          background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
-        }}
-      />
-      <div
-        className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
-        style={{
-          background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
-        }}
-      />
     </div>
   );
 }
@@ -264,12 +187,12 @@ function MobileHomePage({
         </p>
       </div>
 
-      {/* Countdown Timer (if cycle not open yet) */}
-      {!cycleOpen && pageConfig?.cycle?.startAt && new Date(pageConfig.cycle.startAt) > new Date() && (
+      {/* Countdown Timer */}
+      {pageConfig?.countdownSettings?.enabled && pageConfig?.countdownSettings?.target && (
         <div className="relative z-10 px-4 mt-2 flex-shrink-0">
           <CountdownTimer
-            targetDate={pageConfig.cycle.startAt}
-            onExpiry={() => setCycleOpen(true)}
+            targetDate={pageConfig.countdownSettings.target}
+            title={pageConfig.countdownSettings.title}
           />
         </div>
       )}
@@ -404,11 +327,11 @@ function DesktopHomePage({
                   </div>
                 </div>
 
-                {!cycleOpen && pageConfig?.cycle?.startAt && new Date(pageConfig.cycle.startAt) > new Date() && (
+                {pageConfig?.countdownSettings?.enabled && pageConfig?.countdownSettings?.target && (
                   <div className="w-full mt-2">
                     <CountdownTimer
-                      targetDate={pageConfig.cycle.startAt}
-                      onExpiry={() => setCycleOpen(true)}
+                      targetDate={pageConfig.countdownSettings.target}
+                      title={pageConfig.countdownSettings.title}
                     />
                   </div>
                 )}
