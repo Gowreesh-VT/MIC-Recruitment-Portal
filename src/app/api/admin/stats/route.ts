@@ -4,6 +4,7 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import Department from "@/models/Department";
 import AuditLog from "@/models/AuditLog";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,12 @@ export async function GET() {
     acceptedByDept,
     auditLogs,
   ] = await Promise.all([
-    Application.countDocuments({ cycleId: "2026-27" }),
-    Application.countDocuments({ cycleId: "2026-27", overallStatus: "in-progress" }),
-    Application.countDocuments({ cycleId: "2026-27", overallStatus: "selected" }),
-    Application.countDocuments({ cycleId: "2026-27", overallStatus: "rejected" }),
+    Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID }),
+    Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "in-progress" }),
+    Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "selected" }),
+    Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "rejected" }),
     Application.aggregate([
-      { $match: { cycleId: "2026-27" } },
+      { $match: { cycleId: ACTIVE_CYCLE_ID } },
       {
         $facet: {
           byFirst: [
@@ -51,7 +52,7 @@ export async function GET() {
       },
     ]),
     Application.aggregate([
-      { $match: { cycleId: "2026-27" } },
+      { $match: { cycleId: ACTIVE_CYCLE_ID } },
       {
         $group: {
           _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
@@ -60,13 +61,13 @@ export async function GET() {
       },
       { $sort: { _id: 1 } },
     ]),
-    Application.find({ cycleId: "2026-27" })
+    Application.find({ cycleId: ACTIVE_CYCLE_ID })
       .sort({ updatedAt: -1 })
       .limit(10)
       .select("userEmail overallStatus firstPreference secondPreference updatedAt")
       .lean(),
     Application.aggregate([
-      { $match: { cycleId: "2026-27", overallStatus: "in-progress" } },
+      { $match: { cycleId: ACTIVE_CYCLE_ID, overallStatus: "in-progress" } },
       {
         $group: {
           _id: {
@@ -83,7 +84,7 @@ export async function GET() {
     ]),
     Department.find({}, "slug name isActive").lean(),
     Application.aggregate([
-      { $match: { cycleId: "2026-27", overallStatus: "selected" } },
+      { $match: { cycleId: ACTIVE_CYCLE_ID, overallStatus: "selected" } },
       {
         $group: {
           _id: {

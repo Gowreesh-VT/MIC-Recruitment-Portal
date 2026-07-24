@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 export async function GET(req: NextRequest) {
   // Auth guard
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
     await dbConnect();
 
     // Fetch all applications for the current cycle only
-    const applications = await Application.find({ cycleId: "2026-27" }).lean();
+    const applications = await Application.find({ cycleId: ACTIVE_CYCLE_ID }).lean();
 
     if (!applications || applications.length === 0) {
       return new NextResponse("No applications found.", { status: 404 });

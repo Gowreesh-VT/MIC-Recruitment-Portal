@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-const CYCLE_ID = "2026-27";
+const CYCLE_ID = ACTIVE_CYCLE_ID;
 
 export async function GET() {
   try {
@@ -13,6 +14,12 @@ export async function GET() {
     const { isCycleOpen } = await import("@/lib/cycle");
     const cycleOpen = isCycleOpen(cycle);
     const cycleLabel = cycle?.label ?? "MIC Recruitment 2026–27";
+
+    const countdownTarget = cycle?.countdownTarget
+      ? new Date(cycle.countdownTarget).toISOString()
+      : cycle?.startAt
+      ? new Date(cycle.startAt).toISOString()
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -25,6 +32,11 @@ export async function GET() {
       ],
       cycleOpen,
       cycle,
+      countdownSettings: {
+        enabled: cycle?.countdownEnabled ?? false,
+        target: countdownTarget,
+        title: cycle?.countdownTitle || "Recruitment Countdown",
+      },
       footerBlinkText: cycleOpen ? "[ PRESS BUTTON TO BEGIN ]" : "[ QUEST CLOSED ]",
       marqueeText: "MICROSOFT INNOVATIONS CLUB TENURE 2026-2027"
     });

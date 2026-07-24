@@ -5,6 +5,13 @@ import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 
+// M2: Simple in-memory per-admin cooldown — prevents repeated full DB dumps
+// in the event of admin credential compromise.
+// Note: this resets on server restart and doesn't work across multiple instances.
+// For a multi-instance setup, use Redis instead.
+const BACKUP_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
+const lastBackupTime = new Map<string, number>();
+
 export async function GET(req: NextRequest) {
   // Check admin privileges
   const session = await auth();
@@ -12,6 +19,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       { success: false, error: "Unauthorized." },
       { status: 403 }
+    );
+  }
+
+  // Rate-limit: one backup per admin per 10 minutes
+  const adminEmail = session.user.email ?? "unknown";
+  const last = lastBackupTime.get(adminEmail) ?? 0;
+  const now = Date.now();
+  if (now - last < BACKUP_COOLDOWN_MS) {
+    const retryAfterSec = Math.ceil((BACKUP_COOLDOWN_MS - (now - last)) / 1000);
+    return NextResponse.json(
+      {
+        success: false,
+        error: `Backup rate-limited. Please wait ${Math.ceil(retryAfterSec / 60)} minute(s) before triggering another backup.`,
+      },
+      { status: 429, headers: { "Retry-After": String(retryAfterSec) } }
     );
   }
 
@@ -23,6 +45,9 @@ export async function GET(req: NextRequest) {
       Department.find({}).lean(),
       RecruitmentCycle.find({}).lean(),
     ]);
+
+    // Record successful backup time only after data is fetched
+    lastBackupTime.set(adminEmail, now);
 
     const backupData = {
       applications,
@@ -48,3 +73,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+

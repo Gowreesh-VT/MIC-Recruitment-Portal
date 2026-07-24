@@ -44,27 +44,27 @@ export async function POST(req: NextRequest) {
       const createdSlots = await InterviewSlot.insertMany(
         validatedData.slots.map((slot) => ({
           adminEmail: slot.adminEmail,
+          panelName: slot.panelName || "Panel 1",
           deptSlug: slot.deptSlug,
           startTime: slot.startTime,
           endTime: slot.endTime,
           locationType: slot.locationType,
           locationDetails: slot.locationDetails,
-          meetingLink: slot.locationType === "online" ? slot.meetingLink : undefined,
           status: "available",
         }))
       );
       return NextResponse.json({ success: true, count: createdSlots.length });
     } else {
-      const { adminEmail, deptSlug, startTime, endTime, locationType, locationDetails, meetingLink } = validatedData;
+      const { adminEmail, panelName, deptSlug, startTime, endTime, locationType, locationDetails } = validatedData;
 
       const slot = await InterviewSlot.create({
         adminEmail,
+        panelName: panelName || "Panel 1",
         deptSlug,
         startTime,
         endTime,
         locationType,
         locationDetails,
-        meetingLink: locationType === "online" ? meetingLink : undefined,
         status: "available",
       });
 

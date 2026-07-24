@@ -3,8 +3,38 @@ import type { FormField } from "@/models/Department";
 
 export function validateResponses(
   formFields: FormField[],
-  responses: Record<string, unknown>
+  responses: Record<string, unknown>,
+  userContext?: { year?: string; subDomain?: string }
 ): { data?: Record<string, unknown>; error?: string } {
+  // Determine selected sub-domain from userContext or responses
+  const selectedTrack = (userContext?.subDomain || responses?.devTrack || responses?.subDomain || "") as string;
+  const userYear = (userContext?.year || "") as string;
+
+  // Filter formFields based on subDomain and targetYears if specified on fields
+  const activeFields = formFields.filter((field) => {
+    // 1. Sub-domain check
+    if (field.subDomain && field.subDomain !== "common" && field.subDomain !== "all") {
+      if (selectedTrack && field.subDomain !== selectedTrack) {
+        return false;
+      }
+    }
+
+    // 2. Year check
+    if (field.targetYears && field.targetYears.length > 0 && !field.targetYears.includes("all")) {
+      if (userYear) {
+        const isFirstYearUser = userYear === "1st Year";
+        const matchesYear = field.targetYears.some((y) => {
+          if (isFirstYearUser && (y === "1st Year" || y === "1")) return true;
+          if (!isFirstYearUser && (y === "Senior Years" || y === "2nd Year" || y === "3rd Year" || y === "4th Year" || y === "2+" || y === "2,3,4")) return true;
+          return y === userYear;
+        });
+        if (!matchesYear) return false;
+      }
+    }
+
+    return true;
+  });
+
   // Pre-process: trim strings, filter empty array values
   const cleanedResponses: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(responses ?? {})) {
@@ -23,7 +53,7 @@ export function validateResponses(
 
   const schemaShape: Record<string, z.ZodTypeAny> = {};
 
-  for (const field of formFields) {
+  for (const field of activeFields) {
     let fieldSchema: z.ZodTypeAny;
 
     // Base string schema — enforces min(1) only if required
@@ -168,18 +198,15 @@ export const emailBlastSchema = z.object({
 
 const singleSlotSchema = z.object({
   adminEmail: z.string().email("Invalid admin email address."),
+  panelName: z.string().optional().default("Panel 1"),
   deptSlug: z.string().min(1, "Department slug is required."),
   startTime: z.coerce.date(),
   endTime: z.coerce.date(),
   locationType: z.enum(["online", "offline"]),
   locationDetails: z.string().min(1, "Location details are required."),
-  meetingLink: z.string().url("Invalid meeting link.").optional().nullable(),
 }).refine(data => data.endTime > data.startTime, {
   message: "End time must be after start time.",
   path: ["endTime"],
-}).refine(data => data.locationType !== "online" || !!data.meetingLink, {
-  message: "Meeting link is required for online interviews.",
-  path: ["meetingLink"],
 });
 
 export const interviewSlotInputSchema = z.union([
@@ -212,10 +239,23 @@ export const applyInitSchema = z.object({
   _trap: z.string().optional().nullable(),
 });
 
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(1, "Full Name is required.").max(100, "Full Name must not exceed 100 characters."),
+  phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits with no spaces or special characters."),
+  regNo: z.string().min(1, "Registration Number is required.").max(50, "Registration Number must not exceed 50 characters."),
+  year: z.string().min(1, "Year of Study is required."),
+  branch: z.string().min(1, "Branch is required.").max(100, "Branch must not exceed 100 characters."),
+  whyMic: z.string().min(1, "Why MIC answer is required.").max(2000, "Why MIC answer must not exceed 2000 characters."),
+});
+
+
 export const cycleUpdateSchema = z.object({
   isOpen: z.boolean({ message: "isOpen must be a boolean value." }),
-  startAt: z.string().datetime({ message: "Invalid startAt date format." }).optional().nullable(),
-  endAt: z.string().datetime({ message: "Invalid endAt date format." }).optional().nullable(),
+  startAt: z.string().optional().nullable(),
+  endAt: z.string().optional().nullable(),
+  countdownEnabled: z.boolean().optional(),
+  countdownTarget: z.string().optional().nullable(),
+  countdownTitle: z.string().max(100).optional().nullable(),
 });
 
 export const formFieldSchema = z.object({
@@ -237,6 +277,8 @@ export const formFieldSchema = z.object({
   required: z.boolean().default(true),
   maxLength: z.number().optional(),
   helpText: z.string().optional(),
+  subDomain: z.string().optional(),
+  targetYears: z.array(z.string()).optional(),
 });
 
 export const stageConfigSchema = z.object({

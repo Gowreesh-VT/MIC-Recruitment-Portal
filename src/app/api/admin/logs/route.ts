@@ -3,6 +3,11 @@ import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import AuditLog from "@/models/AuditLog";
 
+// Escape special regex characters to prevent ReDoS
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
@@ -20,8 +25,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
-    const search = searchParams.get("q") || "";
+    const limit = Math.min(200, parseInt(searchParams.get("limit") || "50", 10));
+    const rawSearch = searchParams.get("q") || "";
+    const search = escapeRegex(rawSearch);
 
     const skip = (page - 1) * limit;
 

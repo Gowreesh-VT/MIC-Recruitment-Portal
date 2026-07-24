@@ -3,6 +3,11 @@ import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import EmailLog from "@/models/EmailLog";
 
+// Escape special regex characters to prevent ReDoS
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(req: NextRequest) {
   // Auth guard
   const session = await auth();
@@ -18,8 +23,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const search = searchParams.get("search") || "";
+    const limit = Math.min(100, parseInt(searchParams.get("limit") || "20", 10));
+    const rawSearch = searchParams.get("search") || "";
+    const search = escapeRegex(rawSearch);
     const status = searchParams.get("status") || "";
 
     const query: Record<string, unknown> = {};

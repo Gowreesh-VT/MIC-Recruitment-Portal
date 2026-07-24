@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import { cycleUpdateSchema } from "@/lib/validation";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function GET() {
   // ─────────────────────────────────────────────────────────────────────────
 
   await dbConnect();
-  const cycle = await RecruitmentCycle.findOne({ cycleId: "2026-27" }).lean();
+  const cycle = await RecruitmentCycle.findOne({ cycleId: ACTIVE_CYCLE_ID }).lean();
   return NextResponse.json({ success: true, cycle });
 }
 
@@ -42,11 +43,14 @@ export async function PUT(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { isOpen, startAt, endAt } = parseResult.data;
+  const { isOpen, startAt, endAt, countdownEnabled, countdownTarget, countdownTitle } = parseResult.data;
 
   const updateFields: any = { isOpen };
   if (startAt !== undefined) updateFields.startAt = startAt ? new Date(startAt) : null;
   if (endAt !== undefined) updateFields.endAt = endAt ? new Date(endAt) : null;
+  if (countdownEnabled !== undefined) updateFields.countdownEnabled = countdownEnabled;
+  if (countdownTarget !== undefined) updateFields.countdownTarget = countdownTarget ? new Date(countdownTarget) : null;
+  if (countdownTitle !== undefined) updateFields.countdownTitle = countdownTitle || "Recruitment Countdown";
 
   if (isOpen) {
     updateFields.openedAt = new Date();
@@ -55,7 +59,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const cycle = await RecruitmentCycle.findOneAndUpdate(
-    { cycleId: "2026-27" },
+    { cycleId: ACTIVE_CYCLE_ID },
     {
       $set: updateFields,
     },
@@ -67,7 +71,7 @@ export async function PUT(req: NextRequest) {
   await logAdminAction(
     session.user.email ?? "unknown",
     "cycle_toggle",
-    "2026-27",
+    ACTIVE_CYCLE_ID,
     `Recruitment is now ${isOpen ? "OPEN" : "CLOSED"}.`
   );
 

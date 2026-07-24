@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
       success: true,
       configured: false,
       status: "Missing SMTP credentials in environment variables.",
-      smtpEmail: smtpEmail || null,
     });
   }
 
@@ -46,7 +45,6 @@ export async function GET(req: NextRequest) {
       success: true,
       configured: true,
       status: "Connected successfully",
-      smtpEmail,
     });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "SMTP connection failed.";
@@ -54,7 +52,6 @@ export async function GET(req: NextRequest) {
       success: true,
       configured: true,
       status: `Failed: ${errorMsg}`,
-      smtpEmail,
     });
   }
 }

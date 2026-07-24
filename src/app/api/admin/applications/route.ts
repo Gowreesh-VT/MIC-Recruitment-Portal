@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import mongoose from "mongoose";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 // Whitelist of sortable fields to prevent unintended field exposure
 const ALLOWED_SORTS = new Set([
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
   // Whitelist the sort field — fall back to default if unknown
   const sort = ALLOWED_SORTS.has(rawSort) ? rawSort : "-createdAt";
 
-  const filter: Record<string, unknown> = { cycleId: "2026-27" };
+  const filter: Record<string, unknown> = { cycleId: ACTIVE_CYCLE_ID };
 
   if (dept) {
     filter.$or = [{ firstPreference: dept }, { secondPreference: dept }];

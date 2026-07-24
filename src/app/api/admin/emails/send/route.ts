@@ -5,6 +5,7 @@ import Application from "@/models/Application";
 import EmailLog from "@/models/EmailLog";
 import nodemailer from "nodemailer";
 import { emailBlastSchema } from "@/lib/validation";
+import { escapeHtml } from "@/lib/mailer";
 
 const DEPT_NAMES: Record<string, string> = {
   development: "Development",
@@ -64,18 +65,92 @@ function interpolate(text: string, data: { email: string; preference: string; st
 }
 
 function getHTMLWrapper(bodyContent: string) {
-  return `
-    <div style="font-family: monospace; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #000; color: #f1f5f9; border: 4px solid #14b8a6;">
-      <h2 style="color: #14b8a6; border-bottom: 2px solid #14b8a6; padding-bottom: 10px; margin-top: 0; text-transform: uppercase; letter-spacing: 2px;">MIC Recruitment</h2>
-      <div style="margin: 20px 0; line-height: 1.6; font-size: 14px; white-space: pre-wrap; color: #e2e8f0;">
-        ${bodyContent}
-      </div>
-      <div style="border-top: 1px solid #27272a; padding-top: 15px; font-size: 11px; color: #71717a; text-align: center;">
-        This is an official communication from Microsoft Innovations Club (MIC) Core Team.
-        <br/>Please do not reply directly to this automated email.
-      </div>
-    </div>
-  `;
+  // SECURITY: HTML-escape admin input to prevent injection into email HTML.
+  // Line-breaks are preserved by converting \n to <br> after escaping.
+  const safeBody = escapeHtml(bodyContent).replace(/\n/g, '<br>');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MIC Recruitment</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:'Courier New',Courier,monospace;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+         style="background-color:#0a0a0a;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0"
+               style="max-width:600px;width:100%;border-radius:2px;overflow:hidden;">
+
+          <!-- Top accent bar -->
+          <tr>
+            <td style="background-color:#14b8a6;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d0d0d;border-left:1px solid #1f2937;border-right:1px solid #1f2937;padding:24px 32px 20px 32px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td>
+                    <div style="font-size:18px;font-weight:bold;letter-spacing:6px;color:#14b8a6;text-transform:uppercase;line-height:1;">
+                      &#9889; MIC
+                    </div>
+                    <div style="font-size:9px;letter-spacing:4px;color:#4b5563;text-transform:uppercase;margin-top:5px;line-height:1;">
+                      MICROSOFT INNOVATIONS CLUB &bull; VIT VELLORE
+                    </div>
+                  </td>
+                  <td align="right" valign="middle">
+                    <span style="display:inline-block;background-color:#111827;border:1px solid #374151;border-radius:2px;color:#9ca3af;font-size:9px;letter-spacing:2px;padding:4px 10px;text-transform:uppercase;">
+                      RECRUITMENT&nbsp;2026&#8209;27
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#0d0d0d;border-left:1px solid #1f2937;border-right:1px solid #1f2937;padding:32px;">
+              <div style="font-size:14px;color:#d1d5db;line-height:1.9;">
+                ${safeBody}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="background-color:#0d0d0d;border-left:1px solid #1f2937;border-right:1px solid #1f2937;padding:0 32px;">
+              <div style="border-top:1px solid #1f2937;font-size:0;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#080808;border-left:1px solid #1f2937;border-right:1px solid #1f2937;padding:20px 32px;text-align:center;">
+              <p style="margin:0 0 6px 0;font-size:11px;color:#374151;letter-spacing:1px;text-transform:uppercase;">
+                Microsoft Innovations Club &mdash; Core Team
+              </p>
+              <p style="margin:0;font-size:10px;color:#1f2937;letter-spacing:1px;">
+                This is an automated email. Please do not reply directly.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Bottom accent bar -->
+          <tr>
+            <td style="background-color:#14b8a6;height:2px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 export async function POST(req: NextRequest) {
