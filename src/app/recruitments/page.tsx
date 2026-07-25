@@ -5,10 +5,9 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import DepartmentPopup, { DepartmentData } from "@/components/DepartmentPopup";
-import PreferenceConfirmationModal from "@/components/PreferenceConfirmationModal";
-import { Loader2 } from "lucide-react";
-import posthog from "posthog-js";
+import FinalPreferenceConfirmationModal from "@/components/FinalPreferenceConfirmationModal";
 import RetroLoader from "@/components/RetroLoader";
+import posthog from "posthog-js";
 import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
 import CountdownTimer from "@/components/CountdownTimer";
@@ -26,25 +25,32 @@ const ROLE_TO_SLUG: Record<string, string> = {
   "Content & Media": "content-media",
 };
 
+export function getDeptSlug(q: DepartmentData): string {
+  return q.slug || (q.role ? (ROLE_TO_SLUG[q.role] ?? q.role.toLowerCase().replace(/\s+/g, "-")) : "");
+}
+
 interface QuestCardProps {
   title: string;
   desc: string;
-  role: string;
   state: "available" | "selected" | "disabled";
   progressStatus?: string; // e.g. "in-progress", "passed", "pending"
   onSelect: () => void;
+  onSelectDisabled?: () => void; // called when a disabled card is clicked (drop & switch)
 }
 
-function QuestCard({ title, desc, role, state, progressStatus, onSelect }: QuestCardProps) {
+function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisabled }: QuestCardProps) {
   const isSelected = state === "selected";
   const isDisabled = state === "disabled";
+  const hasDisabledAction = isDisabled && !!onSelectDisabled;
 
   return (
     <div
-      onClick={isDisabled ? undefined : onSelect}
+      onClick={isDisabled ? (hasDisabledAction ? onSelectDisabled : undefined) : onSelect}
       className={`w-[385px] h-[275px] flex flex-col items-start p-1.5 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
-        isDisabled
+        isDisabled && !hasDisabledAction
           ? "bg-[#FFB59F]"
+          : isDisabled && hasDisabledAction
+          ? "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
           : isSelected
           ? "bg-white cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
           : "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
@@ -62,7 +68,7 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
       <div className={`flex-grow w-full p-2.5 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
         <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-3" : ""}`}>
           <p className={`text-[13.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
-            {isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
+            {isDisabled && hasDisabledAction ? "WANT TO SWITCH QUESTS? TAP TO DROP & CHOOSE THIS ONE" : isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
           
           {isSelected && progressStatus && (
@@ -70,7 +76,15 @@ function QuestCard({ title, desc, role, state, progressStatus, onSelect }: Quest
               <span className="bg-[#E29A2B] text-black text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider">
                 STATUS
               </span>
-              <span className="bg-[#52AE26] text-white text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000]">
+              <span className={`text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000] ${
+                progressStatus === "passed"
+                  ? "bg-[#52AE26] text-white"
+                  : progressStatus === "rejected"
+                  ? "bg-[#DC2626] text-white"
+                  : progressStatus === "active" || progressStatus === "in-progress"
+                  ? "bg-[#1093EB] text-white"
+                  : "bg-[#FBBF24] text-black"
+              }`}>
                 {progressStatus.replace("-", " ")}
               </span>
             </div>
@@ -126,32 +140,7 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
   );
 }
 
-function NormalArrow({ top, left, width = 50, height = 30 }: { top: string; left: string; width?: number; height?: number }) {
-  return (
-    <div
-      className="absolute z-20 select-none pointer-events-none flex items-center justify-center transition-transform hover:scale-105"
-      style={{ top, left, width: `${width}px`, height: `${height}px` }}
-    >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 64 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="drop-shadow-[3px_3px_0px_rgba(0,0,0,0.35)] overflow-visible"
-      >
-        {/* Clean, sleek, normal arrow icon (non-pixelated, smooth diagonal lines and arrowhead) */}
-        <path
-          d="M3 14H44V5L62 18L44 31V22H3V14Z"
-          fill="white"
-          stroke="black"
-          strokeWidth="3.5"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </div>
-  );
-}
+
 
 // ─── Mobile Helper: Separate Triangle + Pill Signboard ───
 function MobileQuestSign({
@@ -160,26 +149,31 @@ function MobileQuestSign({
   state,
   progressStatus,
   onClick,
+  onClickDisabled,
 }: {
   label: string;
   direction: "left" | "right";
   state: "available" | "selected" | "disabled";
   progressStatus?: string;
   onClick: () => void;
+  onClickDisabled?: () => void;
 }) {
   const isRight = direction === "right";
   const isSelected = state === "selected";
   const isDisabled = state === "disabled";
+  const hasDisabledAction = isDisabled && !!onClickDisabled;
   
   const bgColor = isDisabled ? "bg-[#9C7A3A]" : isSelected ? "bg-[#F0C050]" : "bg-[#E8A830]";
   const triangleFill = isDisabled ? "#9C7A3A" : isSelected ? "#F0C050" : "#E8A830";
 
   return (
     <button
-      onClick={isDisabled ? undefined : onClick}
+      onClick={isDisabled ? (hasDisabledAction ? onClickDisabled : undefined) : onClick}
       className={`relative flex items-center gap-1 select-none focus:outline-none flex-shrink-0 ${
-        isDisabled
+        isDisabled && !hasDisabledAction
           ? "opacity-60 cursor-not-allowed"
+          : isDisabled && hasDisabledAction
+          ? "opacity-80 cursor-pointer active:scale-95 transition-transform"
           : "cursor-pointer active:scale-95 transition-transform"
       }`}
       aria-label={label}
@@ -200,7 +194,15 @@ function MobileQuestSign({
         {/* Status badge */}
         {isSelected && progressStatus && (
           <div
-            className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[7px] font-bold uppercase tracking-wider text-[#72F418]"
+            className={`absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[7px] font-bold uppercase tracking-wider ${
+              progressStatus === "passed"
+                ? "text-[#72F418]"
+                : progressStatus === "rejected"
+                ? "text-[#FF4444]"
+                : progressStatus === "active" || progressStatus === "in-progress"
+                ? "text-[#1093EB]"
+                : "text-[#FBBF24]"
+            }`}
             style={{ textShadow: "1px 1px 0 #000" }}
           >
             {progressStatus.replace("-", " ")}
@@ -252,7 +254,6 @@ function MobileQuestsView({
   type,
   quests,
   appStatus,
-  onBack,
   onQuestSelect,
   playSound,
   router,
@@ -262,7 +263,6 @@ function MobileQuestsView({
   type: "tech" | "non-tech";
   quests: DepartmentData[];
   appStatus: ApplicationStatus | null;
-  onBack: () => void;
   onQuestSelect: (q: DepartmentData, type: "tech" | "non-tech", slug: string) => void;
   playSound: (t: "select" | "jump" | "open" | "close" | "die" | "point") => void;
   router: ReturnType<typeof useRouter>;
@@ -270,22 +270,12 @@ function MobileQuestsView({
   countdownSettings?: { enabled: boolean; target: string | null; title: string; } | null;
 }) {
   const title = type === "tech" ? "Technical Quests" : "Non Technical Quests";
-  const marqueeText = "MICROSOFT INNOVATIONS CLUB";
-
-  // Determine which pref type is already used so we know if all in this category are locked
-  const thisPrefType = type;
-  const allLocked =
-    (appStatus?.firstPrefType === thisPrefType && appStatus?.firstPreference !== undefined) ||
-    (appStatus?.secondPrefType === thisPrefType && appStatus?.secondPreference !== undefined);
-
-  const getSlug = (q: DepartmentData) =>
-    ROLE_TO_SLUG[q.role] ?? q.role.toLowerCase().replace(/\s+/g, "-");
 
   // Application status card info (first or second preference in this category)
   const appliedQuest =
-    quests.find((q) => getSlug(q) === appStatus?.firstPreference) ||
-    quests.find((q) => getSlug(q) === appStatus?.secondPreference);
-  const appliedSlug = appliedQuest ? getSlug(appliedQuest) : null;
+    quests.find((q) => getDeptSlug(q) === appStatus?.firstPreference) ||
+    quests.find((q) => getDeptSlug(q) === appStatus?.secondPreference);
+  const appliedSlug = appliedQuest ? getDeptSlug(appliedQuest) : null;
   const isFirstPref = appliedSlug && appStatus?.firstPreference === appliedSlug;
   const appliedStatus = isFirstPref
     ? appStatus?.firstPrefProgress.status
@@ -362,17 +352,17 @@ function MobileQuestsView({
       {/* Quest signboards list */}
       <div className="relative z-10 flex flex-col justify-evenly flex-grow w-full py-4 min-h-[350px] overflow-x-hidden">
         {quests.map((q, idx) => {
-          const slug = getSlug(q);
+          const slug = getDeptSlug(q);
           const isLeft = idx % 2 === 0; // even = left-pointing, odd = right-pointing
           let state: "available" | "selected" | "disabled" = "available";
           let progressStatus = undefined;
 
           if (appStatus?.firstPreference === slug) {
             state = "selected";
-            progressStatus = appStatus.firstPrefProgress.status;
+            progressStatus = appStatus.firstPrefProgress?.status;
           } else if (appStatus?.secondPreference === slug) {
             state = "selected";
-            progressStatus = appStatus.secondPrefProgress.status;
+            progressStatus = appStatus.secondPrefProgress?.status;
           } else if (
             (appStatus?.firstPrefType === type && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
             (appStatus?.secondPrefType === type && appStatus?.secondPreference && appStatus.secondPreference !== slug)
@@ -396,6 +386,7 @@ function MobileQuestsView({
                       state={state}
                       progressStatus={progressStatus}
                       onClick={() => onQuestSelect(q, type, slug)}
+                      onClickDisabled={state === "disabled" ? () => onQuestSelect(q, type, slug) : undefined}
                     />
                   </div>
                 </>
@@ -409,6 +400,7 @@ function MobileQuestsView({
                       state={state}
                       progressStatus={progressStatus}
                       onClick={() => onQuestSelect(q, type, slug)}
+                      onClickDisabled={state === "disabled" ? () => onQuestSelect(q, type, slug) : undefined}
                     />
                   </div>
                   <MobileEdgePipe side="right" />
@@ -461,6 +453,7 @@ interface StageProgress {
 
 interface ApplicationStatus {
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
+  isFinalSubmitted?: boolean;
   firstPreference: string;
   firstPrefType: "tech" | "non-tech";
   secondPreference?: string;
@@ -515,9 +508,9 @@ export default function RecruitmentsPage() {
   const mobileView = (searchParams.get("view") as "tech" | "non-tech" | null) ?? "tech";
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentData | null>(null);
   const [birdScore, setBirdScore] = useState(0);
-  const [birdFlap, setBirdFlap] = useState(false);
   const [isDead, setIsDead] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0);
+  const [mounted, setMounted] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const birdContainerRef = useRef<HTMLDivElement>(null);
@@ -525,7 +518,6 @@ export default function RecruitmentsPage() {
   const lastScrollXRef = useRef(0);
   const latestScrollXRef = useRef(0);
   const latestScaleRef = useRef(1);
-  const [scrollX, setScrollX] = useState(0);
   const [isScrollingLeft, setIsScrollingLeft] = useState(false);
 
   // Flappy Bird Game State
@@ -629,8 +621,18 @@ export default function RecruitmentsPage() {
   const [isLoadingApp, setIsLoadingApp] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isApplying, setIsApplying] = useState(false);
-  const [prefConfirmRole, setPrefConfirmRole] = useState<string | null>(null);
+  const [selectedDeptType, setSelectedDeptType] = useState<"tech" | "non-tech">("tech");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Drop & Switch Quest State
+  // dropQuestTarget holds info about the quest the user wants to switch TO
+  const [dropQuestTarget, setDropQuestTarget] = useState<{
+    quest: DepartmentData;
+    type: "tech" | "non-tech";
+    slug: string;
+    prefSlot: "first" | "second";
+    currentQuestTitle: string;
+  } | null>(null);
 
   // Backend design & dynamic configuration state
   const [techQuests, setTechQuests] = useState<DepartmentData[]>([]);
@@ -642,6 +644,9 @@ export default function RecruitmentsPage() {
     target: string | null;
     title: string;
   } | null>(null);
+
+  const [showFinalPrompt, setShowFinalPrompt] = useState(false);
+  const [isConfirmingFinal, setIsConfirmingFinal] = useState(false);
 
   const birdPhysicsRef = useRef({
     currentX: 0,
@@ -655,7 +660,6 @@ export default function RecruitmentsPage() {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const currentScrollX = e.currentTarget.scrollLeft;
     latestScrollXRef.current = currentScrollX;
-    setScrollX(currentScrollX);
 
     if (!isKeyScrollingRef.current) {
       targetScrollXRef.current = currentScrollX;
@@ -686,6 +690,7 @@ export default function RecruitmentsPage() {
         const cappedScale = Math.min(heightScale, widthScale, 1.2); // Cap scale to prevent heavy pixel stretch
         latestScaleRef.current = cappedScale;
         setScale(cappedScale);
+        setMounted(true);
       }
     };
     handleResize();
@@ -714,6 +719,14 @@ export default function RecruitmentsPage() {
         setPageSubtitle(configData.subtitle || "CHOOSE THE QUEST SUITS YOU THE MOST");
         setCountdownSettings(configData.countdownSettings || null);
         setIsLoggedIn(!!statusData.user);
+
+        if (
+          statusData.application?.firstPreference &&
+          statusData.application?.secondPreference &&
+          !statusData.application?.isFinalSubmitted
+        ) {
+          setShowFinalPrompt(true);
+        }
       } else {
         if (statusRes.status === 429 || configRes.status === 429) {
           setError("API RATE LIMIT EXCEEDED. PLEASE WAIT A MOMENT AND TRY AGAIN.");
@@ -728,6 +741,22 @@ export default function RecruitmentsPage() {
       setIsLoadingApp(false);
     }
   }, []);
+
+  const handleConfirmFinal = async () => {
+    setIsConfirmingFinal(true);
+    try {
+      const res = await fetch("/api/apply/confirm-final", { method: "POST" });
+      if (res.ok) {
+        playRetroSound("point");
+        setAppStatus((prev) => (prev ? { ...prev, isFinalSubmitted: true } : prev));
+        setShowFinalPrompt(false);
+      }
+    } catch (err) {
+      console.error("Failed to confirm final preferences:", err);
+    } finally {
+      setIsConfirmingFinal(false);
+    }
+  };
 
   // Fetch application status
   useEffect(() => {
@@ -1008,68 +1037,72 @@ export default function RecruitmentsPage() {
       const progress = isFirstPref ? appStatus.firstPrefProgress : appStatus.secondPrefProgress;
       const targetStage = progress.effectiveCurrentStage ?? progress.currentStage ?? 1;
       posthog.capture("Quest Resume Clicked", { slug, stage: targetStage });
-      router.push(`/apply/${slug}/stage-${targetStage}`);
+      router.push(`/apply/${slug}/quest-${targetStage}`);
       return;
     }
 
-    // Check if they are locked out of this type
-    if (appStatus?.firstPreference && appStatus.firstPrefType === type && !isFirstPref) {
+    // Check if this category already has a quest selected → show drop & switch modal
+    if (appStatus?.firstPrefType === type && appStatus?.firstPreference && !isFirstPref) {
+      // They want to switch their first preference
+      const currentTitle = techQuests.find(q => getDeptSlug(q) === appStatus.firstPreference)?.title ||
+        nonTechQuests.find(q => getDeptSlug(q) === appStatus.firstPreference)?.title ||
+        appStatus.firstPreference;
       playRetroSound("die");
-      return; // Disabled
+      setDropQuestTarget({ quest, type, slug, prefSlot: "first", currentQuestTitle: currentTitle });
+      return;
     }
-    if (appStatus?.secondPreference && appStatus.secondPrefType === type && !isSecondPref) {
+    if (appStatus?.secondPrefType === type && appStatus?.secondPreference && !isSecondPref) {
+      // They want to switch their second preference
+      const currentTitle = techQuests.find(q => getDeptSlug(q) === appStatus.secondPreference)?.title ||
+        nonTechQuests.find(q => getDeptSlug(q) === appStatus.secondPreference)?.title ||
+        appStatus.secondPreference;
       playRetroSound("die");
-      return; // Disabled
+      setDropQuestTarget({ quest, type, slug, prefSlot: "second", currentQuestTitle: currentTitle });
+      return;
     }
 
     playRetroSound("open");
+    setSelectedDeptType(type);
     setSelectedDepartment(quest);
   };
 
-  const handleApplyFromPopup = (role: string) => {
+  const handleDropAndContinue = () => {
+    if (!dropQuestTarget) return;
     if (!user || !isLoggedIn) {
       playRetroSound("select");
       router.push(`/login?callbackUrl=/recruitments`);
       return;
     }
     playRetroSound("open");
-    setPrefConfirmRole(role);
+
+    const { slug, prefSlot } = dropQuestTarget;
+    posthog.capture("Quest Switch Initiated", { from: dropQuestTarget.currentQuestTitle, to: slug, prefSlot });
+    setDropQuestTarget(null);
+    // Navigate directly to the new quest stage-1 form.
+    // Drop in database occurs ONLY when candidate clicks SUBMIT on stage-1.
+    router.push(`/apply/${slug}/quest-1`);
   };
 
-  const handleConfirmPreference = async (preference: 1 | 2) => {
-    if (!prefConfirmRole || isApplying) return;
-
-    setIsApplying(true);
-    playRetroSound("select");
-
-    const role = prefConfirmRole;
-    setPrefConfirmRole(null);
+  const handleApplyFromPopup = (role: string, type: "tech" | "non-tech") => {
+    if (!user || !isLoggedIn) {
+      playRetroSound("select");
+      router.push(`/login?callbackUrl=/recruitments`);
+      return;
+    }
+    playRetroSound("open");
     setSelectedDepartment(null);
 
-    try {
-      if (preference === 1) {
-        // Redirect to Personal Info form
-        posthog.capture("First Preference Selected", { department: role });
-        router.push(`/apply/init?role=${role}`);
-      } else {
-        // Init second preference
-        const res = await fetch("/api/apply/second-pref", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ secondPreference: role }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          posthog.capture("Second Preference Selected", { department: role });
-          router.push(`/apply/${role}/stage-1`);
-        } else {
-          alert(data.error);
-          setIsApplying(false);
-        }
-      }
-    } catch (err) {
-      alert("Something went wrong");
-      setIsApplying(false);
+    // If application record already exists in DB (personal details already saved), go straight to quest-1
+    const hasApplicationRecord = !!appStatus;
+
+    if (!hasApplicationRecord) {
+      // First preference application -> Go to Personal Details form (/apply/init)
+      posthog.capture("First Preference Selected", { department: role });
+      router.push(`/apply/init?role=${role}`);
+    } else {
+      // Personal details already saved in DB! Go directly to quest-1 stage form
+      posthog.capture("Preference Selected", { department: role });
+      router.push(`/apply/${role}/quest-1`);
     }
   };
 
@@ -1091,7 +1124,6 @@ export default function RecruitmentsPage() {
           type={mobileView}
           quests={mobileView === "tech" ? techQuests : nonTechQuests}
           appStatus={appStatus}
-          onBack={() => router.push("/")}
           onQuestSelect={handleOpenPopup}
           playSound={playRetroSound}
           router={router}
@@ -1102,6 +1134,7 @@ export default function RecruitmentsPage() {
         {selectedDepartment && (
           <DepartmentPopup
             department={selectedDepartment}
+            deptType={selectedDeptType}
             onClose={() => {
               playRetroSound("close");
               setSelectedDepartment(null);
@@ -1109,17 +1142,47 @@ export default function RecruitmentsPage() {
             onApply={handleApplyFromPopup}
           />
         )}
-        {prefConfirmRole && (
-          <PreferenceConfirmationModal
-            roleTitle={selectedDepartment?.title || prefConfirmRole}
-            firstPreference={appStatus?.firstPreference}
-            secondPreference={appStatus?.secondPreference}
-            onConfirm={handleConfirmPreference}
-            onCancel={() => {
-              playRetroSound("close");
-              setPrefConfirmRole(null);
-            }}
-          />
+        {/* Drop & Switch Quest Modal (Mobile) */}
+        {dropQuestTarget && (
+          <div className="fixed inset-0 z-[110] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div
+              className="bg-[#FFE4D6] border-4 border-black p-6 max-w-sm w-full relative flex flex-col items-center gap-5 text-center"
+              style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}
+            >
+              <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[10px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
+                ⚠ QUEST CONFLICT
+              </div>
+              <div className="text-[10px] text-black font-bold tracking-wide uppercase leading-loose">
+                Your quest{" "}
+                <span className="text-[#A93710] border-b-2 border-[#A93710]">
+                  {dropQuestTarget.currentQuestTitle}
+                </span>{" "}
+                has been selected already.
+              </div>
+              <div className="text-[9px] text-black/80 font-bold tracking-wide uppercase leading-loose border-2 border-dashed border-[#A93710] p-3 bg-white/50 w-full">
+                Drop that quest and continue with{" "}
+                <span className="text-[#1093EB]">{dropQuestTarget.quest.title}</span>?
+              </div>
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={handleDropAndContinue}
+                  disabled={isApplying}
+                  className="w-full bg-[#A93710] hover:bg-[#C44214] disabled:opacity-60 border-4 border-black py-3 px-3 text-[8px] font-bold text-white uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] leading-relaxed"
+                >
+                  {isApplying ? "SWITCHING..." : `DROP & CONTINUE WITH ${dropQuestTarget.quest.title.toUpperCase()}`}
+                </button>
+                <button
+                  onClick={() => {
+                    playRetroSound("close");
+                    setDropQuestTarget(null);
+                  }}
+                  className="w-full bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-2.5 px-3 text-[9px] font-bold text-black uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 shadow-[4px_4px_0px_0px_#000]"
+                >
+                  CANCEL
+                </button>
+              </div>
+            </div>
+          </div>
         )}
         {error && (
           <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
@@ -1152,11 +1215,22 @@ export default function RecruitmentsPage() {
       onScroll={handleScroll}
       onClick={handleContainerClick}
     >
-      {/* Floating Header Buttons (Fixed) */}
+      <RetroLoader isLoading={isLoadingApp} title="LOADING MAP" />
+      {/* Floating Header Buttons + Countdown Timer (Fixed Top Right) */}
       <div 
-        className="fixed top-6 right-6 z-50 flex items-center gap-4"
+        className="fixed top-4 right-6 z-50 flex items-center gap-4 pointer-events-auto"
         style={{ transform: `scale(${scale})`, transformOrigin: "top right" }}
       >
+        {countdownSettings?.enabled && countdownSettings?.target && (
+          <div className="hidden md:block font-sans">
+            <CountdownTimer
+              targetDate={countdownSettings.target}
+              title={countdownSettings.title}
+              className="!max-w-[270px] !mx-0"
+            />
+          </div>
+        )}
+
         <button
           onClick={() => {
             playRetroSound("open");
@@ -1194,17 +1268,18 @@ export default function RecruitmentsPage() {
         )}
       </div>
 
-      {/* Fixed Title Banner */}
+      {/* Fixed Title Banner (Left-aligned near logo) */}
       <div 
-        className="fixed z-40 origin-top-left pointer-events-none"
+        className="fixed z-40 origin-top-left pointer-events-none transition-opacity duration-150"
         style={{ 
-          left: `${320 * scale}px`, 
-          top: `${24 * scale}px`, 
-          transform: `scale(${scale})` 
+          left: `${230 * scale}px`, 
+          top: `${16 * scale}px`, 
+          transform: `scale(${scale})`,
+          opacity: mounted ? 1 : 0,
         }}
       >
         <div 
-          className="px-8 py-6 flex flex-col items-start justify-center pointer-events-auto" 
+          className="px-6 py-4 flex flex-col items-start justify-center pointer-events-auto" 
         >
           <h1 className="font-normal text-black text-[64px] tracking-[0] leading-[67px] uppercase whitespace-nowrap">
             {pageTitle}
@@ -1214,23 +1289,6 @@ export default function RecruitmentsPage() {
           </p>
         </div>
       </div>
-
-      {/* Desktop Countdown Timer */}
-      {countdownSettings?.enabled && countdownSettings?.target && (
-        <div
-          className="fixed z-40 origin-top-left pointer-events-auto hidden md:block"
-          style={{
-            left: `${980 * scale}px`,
-            top: `${24 * scale}px`,
-            transform: `scale(${scale})`,
-          }}
-        >
-          <CountdownTimer
-            targetDate={countdownSettings.target}
-            title={countdownSettings.title}
-          />
-        </div>
-      )}
 
       {/* Fixed Logo */}
       <MicLogo />
@@ -1258,8 +1316,6 @@ export default function RecruitmentsPage() {
         </div>
       )}
 
-      <RetroLoader isLoading={isLoadingApp} title="LOADING MAP" />
-
       {/* Sized container to calculate correct scroll boundaries post-scaling */}
       <div
         style={{
@@ -1267,6 +1323,8 @@ export default function RecruitmentsPage() {
           height: `${1024 * scale}px`,
           position: "relative",
           overflow: "hidden",
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 0.15s",
         }}
       >
         {/* Pixel-Perfect Figma Canvas Sized dynamically and scaled using CSS Transform */}
@@ -1410,11 +1468,6 @@ export default function RecruitmentsPage() {
                 className={`w-[72px] h-[72px] pixelated drop-shadow-[3px_3px_0px_rgba(0,0,0,0.3)] transition-[transform,filter] duration-150 select-none pointer-events-none ${(isScrollingLeft && gameStatus !== "playing") ? "scale-x-[-1]" : "scale-x-[1]"} ${isDead ? "grayscale brightness-50" : "hover:scale-110 active:scale-95"}`}
               />
             </div>
-            {gameStatus === "idle" && (
-              <div className="bg-black/80 text-[7px] text-white px-1.5 py-0.5 border border-black rounded-sm text-center -mt-2 animate-pulse whitespace-nowrap text-[8px] uppercase select-none pointer-events-none">
-                PRESS SPACE OR TAP TO PLAY
-              </div>
-            )}
           </div>
 
           {/* ================= TECH ROW ================= */}
@@ -1429,7 +1482,7 @@ export default function RecruitmentsPage() {
             }}
           >
             {/* Shadow shape */}
-            <div 
+            <div
               className="absolute bg-black"
               style={{
                 left: "6px",
@@ -1467,18 +1520,21 @@ export default function RecruitmentsPage() {
           {/* Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
           {techQuests.map((q, idx) => {
             const leftPositions = [350, 830, 1319, 1809, 2300];
-            const slug = ROLE_TO_SLUG[q.role] ?? q.role.toLowerCase().replace(/\s+/g, "-");
+            const slug = getDeptSlug(q);
             
             let state: "available" | "selected" | "disabled" = "available";
             let progressStatus = undefined;
 
             if (appStatus?.firstPreference === slug) {
               state = "selected";
-              progressStatus = appStatus.firstPrefProgress.status;
+              progressStatus = appStatus.firstPrefProgress?.status;
             } else if (appStatus?.secondPreference === slug) {
               state = "selected";
-              progressStatus = appStatus.secondPrefProgress.status;
-            } else if (appStatus?.firstPrefType === "tech" || appStatus?.secondPrefType === "tech") {
+              progressStatus = appStatus.secondPrefProgress?.status;
+            } else if (
+              (appStatus?.firstPrefType === "tech" && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
+              (appStatus?.secondPrefType === "tech" && appStatus?.secondPreference && appStatus.secondPreference !== slug)
+            ) {
               state = "disabled";
             }
 
@@ -1491,10 +1547,10 @@ export default function RecruitmentsPage() {
                 <QuestCard
                   title={q.title}
                   desc={q.desc || q.subtitle}
-                  role={q.role}
                   state={state}
                   progressStatus={progressStatus}
                   onSelect={() => handleOpenPopup(q, "tech", slug)}
+                  onSelectDisabled={state === "disabled" ? () => handleOpenPopup(q, "tech", slug) : undefined}
                 />
               </div>
             );
@@ -1550,18 +1606,21 @@ export default function RecruitmentsPage() {
           {/* Non-Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
           {nonTechQuests.map((q, idx) => {
             const leftPositions = [450, 993, 1481, 1970];
-            const slug = ROLE_TO_SLUG[q.role] ?? q.role.toLowerCase().replace(/\s+/g, "-");
+            const slug = getDeptSlug(q);
 
             let state: "available" | "selected" | "disabled" = "available";
             let progressStatus = undefined;
 
             if (appStatus?.firstPreference === slug) {
               state = "selected";
-              progressStatus = appStatus.firstPrefProgress.status;
+              progressStatus = appStatus.firstPrefProgress?.status;
             } else if (appStatus?.secondPreference === slug) {
               state = "selected";
-              progressStatus = appStatus.secondPrefProgress.status;
-            } else if (appStatus?.firstPrefType === "non-tech" || appStatus?.secondPrefType === "non-tech") {
+              progressStatus = appStatus.secondPrefProgress?.status;
+            } else if (
+              (appStatus?.firstPrefType === "non-tech" && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
+              (appStatus?.secondPrefType === "non-tech" && appStatus?.secondPreference && appStatus.secondPreference !== slug)
+            ) {
               state = "disabled";
             }
 
@@ -1574,10 +1633,10 @@ export default function RecruitmentsPage() {
                 <QuestCard
                   title={q.title}
                   desc={q.desc || q.subtitle}
-                  role={q.role}
                   state={state}
                   progressStatus={progressStatus}
                   onSelect={() => handleOpenPopup(q, "non-tech", slug)}
+                  onSelectDisabled={state === "disabled" ? () => handleOpenPopup(q, "non-tech", slug) : undefined}
                 />
               </div>
             );
@@ -1621,6 +1680,7 @@ export default function RecruitmentsPage() {
       {selectedDepartment && (
         <DepartmentPopup
           department={selectedDepartment}
+          deptType={selectedDeptType}
           onClose={() => {
             playRetroSound("close");
             setSelectedDepartment(null);
@@ -1629,17 +1689,53 @@ export default function RecruitmentsPage() {
         />
       )}
 
-      {prefConfirmRole && (
-        <PreferenceConfirmationModal
-          roleTitle={selectedDepartment?.title || prefConfirmRole}
-          firstPreference={appStatus?.firstPreference}
-          secondPreference={appStatus?.secondPreference}
-          onConfirm={handleConfirmPreference}
-          onCancel={() => {
-            playRetroSound("close");
-            setPrefConfirmRole(null);
-          }}
-        />
+      {/* ================= DROP & SWITCH QUEST MODAL ================= */}
+      {dropQuestTarget && (
+        <div className="fixed inset-0 z-[110] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-md w-full relative flex flex-col items-center gap-5 text-center"
+            style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}
+          >
+            {/* Header tag */}
+            <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[11px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
+              ⚠ QUEST CONFLICT
+            </div>
+
+            {/* Message */}
+            <div className="text-[11px] text-black font-bold tracking-wide uppercase leading-loose">
+              Your quest{" "}
+              <span className="text-[#A93710] border-b-2 border-[#A93710]">
+                {dropQuestTarget.currentQuestTitle}
+              </span>{" "}
+              has been selected already.
+            </div>
+
+            <div className="text-[10px] text-black/80 font-bold tracking-wide uppercase leading-loose border-2 border-dashed border-[#A93710] p-3 bg-white/50 w-full">
+              Drop that quest and continue with{" "}
+              <span className="text-[#1093EB]">{dropQuestTarget.quest.title}</span>?
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={handleDropAndContinue}
+                disabled={isApplying}
+                className="w-full bg-[#A93710] hover:bg-[#C44214] disabled:opacity-60 border-4 border-black py-3 px-4 text-[9px] font-bold text-white uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] leading-relaxed"
+              >
+                {isApplying ? "SWITCHING..." : `DROP ${dropQuestTarget.currentQuestTitle.toUpperCase()} & CONTINUE WITH ${dropQuestTarget.quest.title.toUpperCase()}`}
+              </button>
+              <button
+                onClick={() => {
+                  playRetroSound("close");
+                  setDropQuestTarget(null);
+                }}
+                className="w-full bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-2.5 px-4 text-[10px] font-bold text-black uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 shadow-[4px_4px_0px_0px_#000]"
+              >
+                CANCEL — KEEP {dropQuestTarget.currentQuestTitle.toUpperCase()}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ================= GAME OVER OVERLAY ================= */}
@@ -1675,6 +1771,29 @@ export default function RecruitmentsPage() {
           </div>
         </div>
       )}
+
+      {/* ================= FINAL PREFERENCE CONFIRMATION OVERLAY ================= */}
+      {showFinalPrompt && appStatus?.firstPreference && appStatus?.secondPreference && (() => {
+        const firstIsTech = appStatus.firstPrefType === "tech";
+        const techSlug = firstIsTech ? appStatus.firstPreference : appStatus.secondPreference;
+        const nonTechSlug = firstIsTech ? appStatus.secondPreference : appStatus.firstPreference;
+
+        const techQuest = techQuests.find((q) => getDeptSlug(q) === techSlug);
+        const nonTechQuest = nonTechQuests.find((q) => getDeptSlug(q) === nonTechSlug);
+
+        const techTitle = techQuest?.title || techSlug?.toUpperCase().replace("-", " ") || "TECH PREFERENCE";
+        const nonTechTitle = nonTechQuest?.title || nonTechSlug?.toUpperCase().replace("-", " ") || "NON-TECH PREFERENCE";
+
+        return (
+          <FinalPreferenceConfirmationModal
+            techPreferenceTitle={techTitle}
+            nonTechPreferenceTitle={nonTechTitle}
+            onConfirmFinal={handleConfirmFinal}
+            onCancel={() => setShowFinalPrompt(false)}
+            isSubmitting={isConfirmingFinal}
+          />
+        );
+      })()}
 
       {/* ================= INSTRUCTIONS POPUP OVERLAY ================= */}
       {showInstructions && (

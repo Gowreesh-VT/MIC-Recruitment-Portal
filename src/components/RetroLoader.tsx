@@ -73,7 +73,8 @@ export default function RetroLoader({
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState(STATUS_MESSAGES[0]);
   const [isVisible, setIsVisible] = useState(true);
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0);
+  const [mounted, setMounted] = useState(false);
   
   const progressRef = useRef(0);
   const loadedRef = useRef(false);
@@ -86,6 +87,7 @@ export default function RetroLoader({
         const widthScale = window.innerWidth / 1200;
         const cappedScale = Math.min(heightScale, widthScale, 1.2);
         setScale(cappedScale);
+        setMounted(true);
       }
     };
     handleResize();
@@ -95,36 +97,33 @@ export default function RetroLoader({
 
   useEffect(() => {
     loadedRef.current = !isLoading;
-  }, [isLoading]);
+    if (!isLoading) {
+      progressRef.current = 100;
+      setProgress(100);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        if (onComplete) onComplete();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, onComplete]);
 
-  // Progress bar logic
+  // Fast progress ticks while waiting for response
   useEffect(() => {
+    if (!isLoading) return;
+
     const interval = setInterval(() => {
       const current = progressRef.current;
-      if (loadedRef.current) {
-        if (current < 100) {
-          const next = Math.min(100, current + 15);
-          progressRef.current = next;
-          setProgress(next);
-        } else {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsVisible(false);
-            if (onComplete) onComplete();
-          }, 400);
-        }
-      } else {
-        if (current < 90) {
-          const next = current + Math.floor(Math.random() * 6) + 2;
-          const finalNext = Math.min(90, next);
-          progressRef.current = finalNext;
-          setProgress(finalNext);
-        }
+      if (current < 90) {
+        const next = current + Math.floor(Math.random() * 8) + 4;
+        const finalNext = Math.min(90, next);
+        progressRef.current = finalNext;
+        setProgress(finalNext);
       }
-    }, 120);
+    }, 50);
 
     return () => clearInterval(interval);
-  }, [onComplete]);
+  }, [isLoading]);
 
   // Status text based on progress
   useEffect(() => {
@@ -201,12 +200,13 @@ export default function RetroLoader({
 
       {/* ── DESKTOP LAYOUT (Original) ── */}
       <div
-        className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2"
+        className="hidden md:block absolute top-0 left-1/2 -translate-x-1/2 transition-opacity duration-150"
         style={{
           width: "2865px",
           height: "1024px",
           transform: `scale(${scale})`,
           transformOrigin: "top center",
+          opacity: mounted ? 1 : 0,
         }}
       >
         <div className="w-[2865px] h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden">
