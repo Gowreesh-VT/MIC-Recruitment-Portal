@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 
 export interface DepartmentData {
+  slug?: string;
   title: string;
   role: string;
   iconType: "uiux" | "dev" | "cc" | "aiml" | "cyber" | "design" | "mgmt" | "ep" | "media";
@@ -29,12 +30,14 @@ const ROLE_TO_SLUG: Record<string, string> = {
 
 interface DepartmentPopupProps {
   department: DepartmentData | null;
+  deptType: "tech" | "non-tech";
   onClose: () => void;
-  onApply: (role: string) => void;
+  onApply: (role: string, type: "tech" | "non-tech") => void;
 }
 
 export default function DepartmentPopup({
   department,
+  deptType,
   onClose,
   onApply,
 }: DepartmentPopupProps) {
@@ -235,7 +238,7 @@ export default function DepartmentPopup({
                 onClick={() => {
                   if (department.stage1Open === false) return;
                   const slug = ROLE_TO_SLUG[department.role] ?? department.role.toLowerCase().replace(/\s+/g, "-");
-                  onApply(slug);
+                  onApply(slug, deptType);
                 }}
                 className={`w-full sm:w-auto border-2 sm:border-4 border-black py-2.5 px-4 sm:py-3 sm:px-6 text-[9px] sm:text-[10px] font-bold text-black uppercase tracking-wider whitespace-nowrap transition-all ${
                   department.stage1Open === false 
