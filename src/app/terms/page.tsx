@@ -38,9 +38,9 @@ export default function TermsPage() {
     },
     {
       icon: AlertOctagon,
-      title: "4. CONFIDENTIALITY OF TASK MATERIAL",
+      title: "4. CONFIDENTIALITY OF RECRUITMENT MATERIAL",
       content:
-        "Task statements, problem sets, dataset files, and recruitment prompt assets provided during Stage 2 are intended exclusively for your evaluation. Distributing or sharing task materials publicly or with competing candidates during the recruitment process is disallowed.",
+        "Assessment statements, problem sets, and recruitment prompt assets provided during recruitment are intended exclusively for your evaluation. Distributing or sharing materials publicly or with competing candidates during the recruitment process is disallowed.",
     },
     {
       icon: CheckCircle2,

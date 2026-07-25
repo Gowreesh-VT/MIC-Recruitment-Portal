@@ -42,7 +42,9 @@ export async function PATCH(req: NextRequest) {
     application.phone = phone;
     application.regNo = regNo;
     application.year = year;
-    application.branch = branch;
+    if (branch !== undefined) {
+      application.branch = branch || "";
+    }
     application.whyMic = whyMic;
 
     await application.save();
@@ -52,7 +54,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "Personal details updated successfully.",
-      profile: { fullName, phone, regNo, year, branch, whyMic },
+      profile: { fullName, phone, regNo, year, branch: application.branch || "", whyMic },
     });
   } catch (err) {
     console.error("Error updating profile:", err);

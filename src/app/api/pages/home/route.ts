@@ -17,6 +17,8 @@ export async function GET() {
 
     const countdownTarget = cycle?.countdownTarget
       ? new Date(cycle.countdownTarget).toISOString()
+      : cycle?.endAt
+      ? new Date(cycle.endAt).toISOString()
       : cycle?.startAt
       ? new Date(cycle.startAt).toISOString()
       : null;

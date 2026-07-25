@@ -10,7 +10,6 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import MicLogo from "@/components/MicLogo";
-import BackButton from "@/components/BackButton";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -154,8 +153,6 @@ export default function FaqsPage() {
 
       {/* ================= TOP LEFT LOGO ================= */}
       <MicLogo />
-      
-      <BackButton onClick={() => router.push("/recruitments")} />
 
       {/* ================= TOP RIGHT CLOSE BUTTON (Close_icon.svg) ================= */}
       <button

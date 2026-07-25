@@ -40,7 +40,7 @@ interface ApplicationStatus {
   phone: string;
   regNo: string;
   year: string;
-  branch: string;
+  branch?: string;
   whyMic: string;
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
   firstPreference: string;
@@ -508,19 +508,6 @@ function MobileProfileView({
                         <option value="4th Year">4th Year</option>
                       </select>
                     </div>
-                    <div className="col-span-2">
-                      <label className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1 block">
-                        Branch *
-                      </label>
-                      <input
-                        type="text"
-                        name="branch"
-                        required
-                        value={editForm.branch}
-                        onChange={onFormChange}
-                        className="w-full text-[10px] font-bold text-black border-3 border-[#C85A28] focus:border-black bg-white p-2 rounded-sm focus:outline-none shadow-[2px_2px_0px_0px_#000]"
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -607,16 +594,6 @@ function MobileProfileView({
                         {appStatus.year || "—"}
                       </div>
                     </div>
-                    <div className="col-span-2">
-                      <p className="text-[8px] font-press-start text-black/70 uppercase tracking-wider mb-1">
-                        Branch
-                      </p>
-                      <div
-                        className="text-[10px] font-bold text-black border-2 border-black bg-white p-2 rounded-sm truncate shadow-[2px_2px_0px_0px_#000]"
-                      >
-                        {appStatus.branch || "—"}
-                      </div>
-                    </div>
                   </div>
 
                   {appStatus.whyMic && (
@@ -636,12 +613,14 @@ function MobileProfileView({
             </div>
 
             {/* Preference 1 Timeline */}
-            <MobileTimelineCard
-              title="1ST PREFERENCE"
-              prefName={appStatus.firstPreference}
-              prefStatus={appStatus.firstPrefProgress.status}
-              stages={appStatus.firstPrefProgress.stages}
-            />
+            {appStatus.firstPreference && appStatus.firstPrefProgress && (
+              <MobileTimelineCard
+                title="1ST PREFERENCE"
+                prefName={appStatus.firstPreference}
+                prefStatus={appStatus.firstPrefProgress.status}
+                stages={appStatus.firstPrefProgress.stages}
+              />
+            )}
 
             {/* Preference 2 Timeline (if present) */}
             {appStatus.secondPreference && appStatus.secondPrefProgress && (
@@ -714,7 +693,7 @@ function MobileTimelineCard({
                 className={`absolute -left-[27px] top-1.5 h-4 w-4 border-2 border-black shadow-[1px_1px_0px_0px_#000] ${
                   stage.result === "passed"
                     ? "bg-[#72F418]"
-                    : stage.result === "failed"
+                    : stage.result === "failed" || prefStatus === "rejected"
                     ? "bg-[#FF4444]"
                     : "bg-[#FBBF24]"
                 }`}
@@ -740,7 +719,7 @@ function MobileTimelineCard({
                         PASSED
                       </span>
                     </>
-                  ) : stage.result === "failed" ? (
+                  ) : stage.result === "failed" || prefStatus === "rejected" ? (
                     <>
                       <XCircle className="h-4 w-4 text-[#FF4444]" />
                       <span className="text-[9px] font-bold text-[#FF4444] uppercase">
@@ -1217,20 +1196,6 @@ function DesktopProfileView({
                       </select>
                     </div>
 
-                    <div className="space-y-1 md:col-span-2 lg:col-span-2">
-                      <label className="text-[9px] font-press-start text-black/70 uppercase tracking-wider block">
-                        Branch / Programme *
-                      </label>
-                      <input
-                        type="text"
-                        name="branch"
-                        required
-                        value={editForm.branch}
-                        onChange={onFormChange}
-                        className="w-full text-sm font-bold text-black border-3 border-[#C85A28] focus:border-black bg-white p-3 rounded focus:outline-none shadow-[2px_2px_0px_0px_#000]"
-                      />
-                    </div>
-
                     <div className="space-y-1 md:col-span-2 lg:col-span-3">
                       <label className="text-[9px] font-press-start text-black/70 uppercase tracking-wider block">
                         Why do you want to join MIC? *
@@ -1287,16 +1252,6 @@ function DesktopProfileView({
                         {appStatus.year || "—"}
                       </p>
                     </div>
-                    <div className="space-y-1 md:col-span-2 lg:col-span-2">
-                      <p className="text-[9px] font-press-start text-black/70 uppercase tracking-wider">
-                        Branch / Programme
-                      </p>
-                      <p
-                        className="text-sm font-bold text-black border-2 border-black bg-white p-3 rounded shadow-[2px_2px_0px_0px_#000]"
-                      >
-                        {appStatus.branch || "—"}
-                      </p>
-                    </div>
                     {appStatus.whyMic ? (
                       <div className="space-y-1 md:col-span-2 lg:col-span-3">
                         <p className="text-[9px] font-press-start text-black/70 uppercase tracking-wider">
@@ -1316,12 +1271,14 @@ function DesktopProfileView({
 
             {/* Timelines (1st Preference & 2nd Preference) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10">
-              <DesktopTimelineCard
-                title="1ST PREFERENCE QUEST LOG"
-                prefName={appStatus.firstPreference}
-                prefStatus={appStatus.firstPrefProgress.status}
-                stages={appStatus.firstPrefProgress.stages}
-              />
+              {appStatus.firstPreference && appStatus.firstPrefProgress && (
+                <DesktopTimelineCard
+                  title="1ST PREFERENCE QUEST LOG"
+                  prefName={appStatus.firstPreference}
+                  prefStatus={appStatus.firstPrefProgress.status}
+                  stages={appStatus.firstPrefProgress.stages}
+                />
+              )}
 
               {appStatus.secondPreference && appStatus.secondPrefProgress && (
                 <DesktopTimelineCard
@@ -1394,7 +1351,7 @@ function DesktopTimelineCard({
                   className={`absolute -left-[37px] top-1.5 h-6 w-6 border-3 border-black shadow-[2px_2px_0px_0px_#000] ${
                     stage.result === "passed"
                       ? "bg-[#72F418]"
-                      : stage.result === "failed"
+                      : stage.result === "failed" || prefStatus === "rejected"
                       ? "bg-[#FF4444]"
                       : "bg-[#FBBF24]"
                   }`}
@@ -1420,7 +1377,7 @@ function DesktopTimelineCard({
                           PASSED
                         </span>
                       </>
-                    ) : stage.result === "failed" ? (
+                    ) : stage.result === "failed" || prefStatus === "rejected" ? (
                       <>
                         <XCircle className="h-5 w-5 text-[#FF4444]" />
                         <span className="text-[11px] font-bold text-[#FF4444] uppercase tracking-widest">

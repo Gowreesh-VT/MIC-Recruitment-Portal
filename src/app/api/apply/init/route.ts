@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       phone,
       regNo,
       year,
-      branch,
+      branch: branch || "",
       whyMic,
       activePreference: "first",
       overallStatus: "in-progress",

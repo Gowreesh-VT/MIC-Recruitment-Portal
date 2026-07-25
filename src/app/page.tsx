@@ -244,6 +244,7 @@ function DesktopHomePage({
   setCycleOpen,
   isLoggedIn,
   scale,
+  mounted,
   playRetroSound,
 }: {
   pageConfig: PageConfig | null;
@@ -251,6 +252,7 @@ function DesktopHomePage({
   setCycleOpen: (v: boolean) => void;
   isLoggedIn: boolean;
   scale: number;
+  mounted: boolean;
   playRetroSound: (type: "select" | "open") => void;
 }) {
   const router = useRouter();
@@ -258,12 +260,13 @@ function DesktopHomePage({
   return (
     <div className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2"
+        className="absolute top-0 left-1/2 -translate-x-1/2 transition-opacity duration-150"
         style={{
           width: "2865px",
           height: "1024px",
           transform: `scale(${scale})`,
           transformOrigin: "top center",
+          opacity: mounted ? 1 : 0,
         }}
       >
         <div className="w-[2865px] h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden">
@@ -297,50 +300,62 @@ function DesktopHomePage({
           <RetroPipe left="900px" top="-5px" height={250} isTop={true} />
           <RetroPipe left="1900px" top="-5px" height={250} isTop={true} />
 
-          <div className="absolute z-40 animate-pixel-slide-up" style={{ top: "170px", left: "860px", width: "1132px" }}>
+          <div className="absolute z-40 animate-pixel-slide-up" style={{ top: "140px", left: "860px", width: "1132px" }}>
             <div
               className="bg-[#FFE4D6] rounded-[10px] border-[6px] border-black flex flex-col items-center p-4 relative"
               style={{ boxShadow: "16px 16px 0px 0px rgba(0,0,0,0.4)" }}
             >
-              <div className="w-full bg-[#C85A28] border-4 border-black rounded-[6px] py-6 flex items-center justify-center relative overflow-hidden">
+              {/* Header banner */}
+              <div className="w-full bg-[#C85A28] border-4 border-black rounded-[6px] py-5 flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] [background-size:10px_10px]" />
                 <span className="text-white text-[20px] font-bold tracking-widest relative z-10 drop-shadow-[3px_3px_0px_#000] uppercase">
                   {pageConfig?.title || "░ MIC RECRUITMENT 2026-27 ░"}
                 </span>
               </div>
 
-              <div className="w-full p-12 flex flex-col items-center gap-10 bg-[#FFDED6] mt-4 border-4 border-black rounded-[6px]">
-                <div className="text-center space-y-6">
-                  <h2 className="text-[18px] font-bold text-[#A93710] leading-loose drop-shadow-[2px_2px_0px_#fff] uppercase">
-                    {pageConfig?.welcomeTitle || "★ WELCOME TO THE QUEST ★"}
-                  </h2>
-                  <div className="text-[14px] text-black leading-loose font-bold flex flex-col gap-4 max-w-xl text-left mx-auto">
-                    {(pageConfig?.bulletPoints || [
-                      "9 DEPARTMENTS. 100 SEATS.",
-                      "ONLY THE BEST COMPLETE THE QUEST.",
-                      "ARE YOU READY, PLAYER?",
-                    ]).map((bullet, idx) => (
-                      <p key={idx} className="flex items-start gap-4 uppercase">
-                        <span className="text-[#C85A28] text-[18px]">▸</span> {bullet}
-                      </p>
-                    ))}
-                  </div>
+              {/* Body */}
+              <div className="w-full px-8 py-7 flex flex-col items-center gap-5 bg-[#FFDED6] mt-3 border-4 border-black rounded-[6px]">
+
+                {/* Welcome title */}
+                <h2 className="text-[17px] font-bold text-[#A93710] drop-shadow-[2px_2px_0px_#fff] uppercase tracking-widest text-center">
+                  {pageConfig?.welcomeTitle || "★ WELCOME TO THE QUEST ★"}
+                </h2>
+
+                {/* Bullet points */}
+                <div className="flex flex-col gap-2.5 w-full max-w-[700px]">
+                  {(pageConfig?.bulletPoints || [
+                    "9 DEPARTMENTS. 100 SEATS.",
+                    "ONLY THE BEST COMPLETE THE QUEST.",
+                    "ARE YOU READY, PLAYER?",
+                  ]).map((bullet, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 bg-[#FFE4D6] border-2 border-black rounded-[4px] px-4 py-2.5"
+                      style={{ boxShadow: "3px 3px 0px 0px rgba(0,0,0,0.18)" }}
+                    >
+                      <span className="text-[#C85A28] text-[16px] shrink-0">▸</span>
+                      <span className="text-[12px] text-black font-bold uppercase tracking-wide">{bullet}</span>
+                    </div>
+                  ))}
                 </div>
 
+                {/* Countdown Timer */}
                 {pageConfig?.countdownSettings?.enabled && pageConfig?.countdownSettings?.target && (
-                  <div className="w-full mt-2">
+                  <div className="w-full max-w-[700px] font-sans">
                     <CountdownTimer
                       targetDate={pageConfig.countdownSettings.target}
                       title={pageConfig.countdownSettings.title}
+                      className="!max-w-none !mx-0"
                     />
                   </div>
                 )}
 
-                <div className="flex w-full gap-8 mt-6">
+                {/* CTA Buttons */}
+                <div className="flex w-full max-w-[700px] gap-5 mt-1">
                   <button
                     onClick={() => { playRetroSound("open"); router.push("/recruitments"); }}
-                    className="flex-1 bg-white hover:bg-slate-100 text-black border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2"
-                    style={{ boxShadow: "6px 6px 0px 0px #000" }}
+                    className="flex-1 bg-white hover:bg-slate-50 text-black border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center"
+                    style={{ boxShadow: "5px 5px 0px 0px #000" }}
                   >
                     VIEW QUESTS
                   </button>
@@ -351,16 +366,16 @@ function DesktopHomePage({
                         playRetroSound("select");
                         router.push(isLoggedIn ? "/recruitments" : "/login");
                       }}
-                      className="flex-1 bg-[#52AE26] hover:bg-[#72F418] text-white border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-2 group"
-                      style={{ boxShadow: "6px 6px 0px 0px #000" }}
+                      className="flex-1 bg-[#52AE26] hover:bg-[#62BE36] text-white border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group"
+                      style={{ boxShadow: "5px 5px 0px 0px #000" }}
                     >
                       START QUEST <span className="group-hover:translate-x-1 transition-transform">►</span>
                     </button>
                   ) : (
                     <button
                       disabled
-                      className="flex-1 bg-slate-300 text-slate-500 border-4 border-black py-6 px-6 text-[14px] font-bold tracking-widest flex items-center justify-center gap-2 cursor-not-allowed opacity-80"
-                      style={{ boxShadow: "6px 6px 0px 0px #000" }}
+                      className="flex-1 bg-slate-300 text-slate-500 border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest flex items-center justify-center cursor-not-allowed opacity-80"
+                      style={{ boxShadow: "5px 5px 0px 0px #555" }}
                     >
                       QUEST CLOSED ✖
                     </button>
@@ -412,15 +427,22 @@ function DesktopHomePage({
 
       <MicLogo />
       <div
-        className="absolute top-8 right-8 z-30"
+        className="absolute top-8 right-8 z-30 flex items-center gap-3"
         style={{ transform: `scale(${scale})`, transformOrigin: "top right" }}
       >
         <button
           onClick={() => { playRetroSound("open"); router.push("/faqs?from=/"); }}
-          className="bg-[#7CA922] hover:bg-[#8CB932] text-black text-[11px] font-bold py-2 px-5 border-4 border-black cursor-pointer uppercase tracking-wider transition-transform active:translate-y-1"
+          className="bg-[#7CA922] hover:bg-[#8CB932] text-black text-[11px] font-bold py-2 px-5 border-4 border-black cursor-pointer uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-1"
           style={{ boxShadow: "4px 4px 0px 0px #000" }}
         >
           FAQS
+        </button>
+        <button
+          onClick={() => { playRetroSound("open"); router.push(isLoggedIn ? "/profile" : "/login?callbackUrl=/"); }}
+          className="bg-[#1093EB] hover:bg-[#20A3FB] text-white text-[11px] font-bold py-2 px-5 border-4 border-black cursor-pointer uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-1"
+          style={{ boxShadow: "4px 4px 0px 0px #000" }}
+        >
+          {isLoggedIn ? "PROFILE" : "LOGIN"}
         </button>
       </div>
     </div>
@@ -431,7 +453,8 @@ function DesktopHomePage({
 // Main Export
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Homepage() {
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const [cycleOpen, setCycleOpen] = useState(true);
   const [pageConfig, setPageConfig] = useState<PageConfig | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -462,6 +485,7 @@ export default function Homepage() {
         const widthScale = window.innerWidth / 1200;
         const cappedScale = Math.min(heightScale, widthScale, 1.2);
         setScale(cappedScale);
+        setMounted(true);
       }
     };
     handleResize();
@@ -473,7 +497,6 @@ export default function Homepage() {
 
   return (
     <div className={`${pressStart.variable} font-press-start`}>
-      <RetroLoader isLoading={isLoading} title="BOOTING THE QUEST" />
       {isMobile ? (
         <MobileHomePage
           pageConfig={pageConfig}
@@ -484,6 +507,7 @@ export default function Homepage() {
         />
       ) : (
         <DesktopHomePage
+          mounted={mounted}
           pageConfig={pageConfig}
           cycleOpen={cycleOpen}
           setCycleOpen={setCycleOpen}

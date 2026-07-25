@@ -27,7 +27,7 @@ export async function GET() {
       skills: d.skills ?? "",
       iconType: d.iconType ?? "dev",
       role: d.name,
-      stage1Open: d.stageToggles ? (d.stageToggles["1"] !== false) : true,
+      stage1Open: d.isActive ?? true,
     }));
 
     const techQuests = formattedQuests.filter((q) => q.type === "tech");
@@ -35,6 +35,8 @@ export async function GET() {
 
     const countdownTarget = cycle?.countdownTarget
       ? new Date(cycle.countdownTarget).toISOString()
+      : cycle?.endAt
+      ? new Date(cycle.endAt).toISOString()
       : cycle?.startAt
       ? new Date(cycle.startAt).toISOString()
       : null;

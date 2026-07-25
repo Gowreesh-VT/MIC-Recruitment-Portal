@@ -6,7 +6,6 @@ import { Press_Start_2P } from "next/font/google";
 import { Loader2, AlertTriangle, Send } from "lucide-react";
 import TurnstileWidget from "@/components/TurnstileWidget";
 import posthog from "posthog-js";
-import BackButton from "@/components/BackButton";
 import RetroLoader from "@/components/RetroLoader";
 import { playRetroSound } from "@/lib/audio";
 
@@ -81,7 +80,6 @@ function InitPageContent() {
     phone: "",
     regNo: "",
     year: "",
-    branch: "",
     whyMic: "",
   });
 
@@ -90,12 +88,16 @@ function InitPageContent() {
       router.push("/recruitments");
     }
     
-    // Auto-fill from Google Account
     const fetchStatus = async () => {
       try {
         const res = await fetch("/api/apply/status");
         if (res.ok) {
           const data = await res.json();
+          if (data.application) {
+            // Personal details already saved in DB! Redirect directly to quest-1
+            router.push(`/apply/${role}/quest-1`);
+            return;
+          }
           if (data.user?.name) {
             setFormData(prev => ({ ...prev, fullName: data.user.name }));
           }
@@ -167,7 +169,7 @@ function InitPageContent() {
 
       if (res.ok && data.success) {
         posthog.capture("Init Application Submitted", { role });
-        router.push(`/apply/${role}/stage-1`);
+        router.push(`/apply/${role}/quest-1`);
       } else {
         setError(data.error ?? "Failed to initialize application.");
       }
@@ -180,17 +182,11 @@ function InitPageContent() {
 
   if (!role) return null;
 
-  if (showLoader) {
-    return <RetroLoader isLoading={false} onComplete={() => setShowLoader(false)} title="LOADING QUEST..." />;
-  }
-
   const base = "w-full bg-white border-[3px] border-[#C85A28] rounded-[8px] px-4 py-3 text-sm text-black font-sans placeholder:text-slate-400 focus:outline-none focus:ring-0 focus:border-black transition-colors";
 
   return (
     <div className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden bg-[#DD9955] relative flex justify-center items-center`}>
       <RetroBackground scale={scale} />
-
-      <BackButton onClick={() => { router.push("/recruitments"); }} />
 
       <div className="relative z-40 w-full max-w-[1000px] px-4 md:px-16" style={{ marginTop: "40px" }}>
         
@@ -300,22 +296,6 @@ function InitPageContent() {
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
-                  </div>
-
-                  {/* Branch */}
-                  <div className="flex flex-col gap-2">
-                    <div className="text-[11px] font-bold text-black uppercase leading-snug">
-                      Branch / Programme <span className="text-red-500">*</span>
-                    </div>
-                    <input
-                      name="branch"
-                      type="text"
-                      required
-                      placeholder="e.g. B.Tech CSE"
-                      value={formData.branch}
-                      onChange={handleChange}
-                      className={base}
-                    />
                   </div>
 
                   {/* Why MIC */}

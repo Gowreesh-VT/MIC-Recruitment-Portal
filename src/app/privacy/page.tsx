@@ -22,13 +22,13 @@ export default function PrivacyPage() {
       icon: Database,
       title: "1. INFORMATION WE COLLECT",
       content:
-        "When you register and apply through the MIC Recruitment Portal, we collect essential applicant details including your full name, email address, phone number, registration number, academic year, branch, department preferences, and task submission responses.",
+        "When you register and apply through the MIC Recruitment Portal, we collect essential applicant details including your full name, email address, phone number, registration number, academic year, department preferences, and task submission responses.",
     },
     {
       icon: Eye,
       title: "2. HOW WE USE YOUR DATA",
       content:
-        "Your submitted data is used solely to evaluate your application, manage interview slot scheduling, assign reviewer panelists, and communicate recruitment decisions and club updates to you.",
+        "Your submitted data is used solely to evaluate your application, assign reviewer panelists, and communicate recruitment decisions and club updates to you.",
     },
     {
       icon: Lock,

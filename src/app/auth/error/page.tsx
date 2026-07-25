@@ -193,10 +193,7 @@ function ErrorContent() {
 
           <div className="w-full p-6 md:p-8 flex flex-col items-center gap-6 bg-[#FFDED6] mt-2 border-4 border-black rounded-[6px]">
             
-            {/* Flappy Bird Icon */}
-            <div className="w-16 h-16 bg-white border-4 border-black flex items-center justify-center p-1.5 shadow-[4px_4px_0px_#000] hover:animate-retro-shake">
-              <img src="/flappy_bird.svg" alt="Bird" className="pixelated object-contain w-full h-full animate-retro-float-small" />
-            </div>
+
 
             <div className="text-center space-y-4 w-full">
               <h2 className="text-[12px] font-bold text-[#A93710] leading-loose drop-shadow-[1px_1px_0px_#fff] uppercase">
