@@ -4,6 +4,9 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
+import { sendFinalPreferencesConfirmation } from "@/lib/mailer";
+import Department from "@/models/Department";
+
 const CYCLE_ID = ACTIVE_CYCLE_ID;
 
 export async function POST() {
@@ -32,6 +35,20 @@ export async function POST() {
 
     application.isFinalSubmitted = true;
     await application.save();
+
+    // Send confirmation email in background
+    if (application.firstPreference && application.secondPreference) {
+      Promise.all([
+        Department.findOne({ slug: application.firstPreference }).lean(),
+        Department.findOne({ slug: application.secondPreference }).lean(),
+      ]).then(([dept1, dept2]) => {
+        const firstIsTech = application.firstPrefType === "tech";
+        const techName = (firstIsTech ? dept1?.name : dept2?.name) || "Technical";
+        const nonTechName = (firstIsTech ? dept2?.name : dept1?.name) || "Non-Technical";
+
+        sendFinalPreferencesConfirmation(application.userEmail, techName, nonTechName).catch(console.error);
+      }).catch(console.error);
+    }
 
     return NextResponse.json({
       success: true,

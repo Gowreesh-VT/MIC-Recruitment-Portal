@@ -237,6 +237,7 @@ export const cycleUpdateSchema = z.object({
   countdownEnabled: z.boolean().optional(),
   countdownTarget: z.string().optional().nullable(),
   countdownTitle: z.string().max(100).optional().nullable(),
+  emailNotificationsEnabled: z.boolean().optional(),
 });
 
 export const formFieldSchema = z.object({

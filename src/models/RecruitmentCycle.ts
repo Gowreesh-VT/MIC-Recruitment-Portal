@@ -11,6 +11,7 @@ export interface IRecruitmentCycle extends Document {
   countdownEnabled?: boolean;
   countdownTarget?: Date;
   countdownTitle?: string;
+  emailNotificationsEnabled?: boolean;
 }
 
 const RecruitmentCycleSchema = new Schema<IRecruitmentCycle>(
@@ -25,6 +26,7 @@ const RecruitmentCycleSchema = new Schema<IRecruitmentCycle>(
     countdownEnabled: { type: Boolean, default: false },
     countdownTarget: { type: Date },
     countdownTitle: { type: String, default: "Recruitment Countdown" },
+    emailNotificationsEnabled: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

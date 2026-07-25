@@ -1,4 +1,7 @@
 import nodemailer from 'nodemailer';
+import { dbConnect } from "@/lib/mongodb";
+import RecruitmentCycle from "@/models/RecruitmentCycle";
+import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 /**
  * Escape HTML special characters to prevent XSS when embedding
@@ -86,10 +89,10 @@ function buildEmailHtml({
                   <td>
                     <!-- Wordmark -->
                     <div style="font-size:18px;font-weight:bold;letter-spacing:6px;color:${heroColor};text-transform:uppercase;line-height:1;">
-                      &#9889; MIC
+                      MIC
                     </div>
                     <div style="font-size:9px;letter-spacing:4px;color:#4b5563;text-transform:uppercase;margin-top:5px;line-height:1;">
-                      MICROSOFT INNOVATIONS CLUB &bull; VIT VELLORE
+                      MICROSOFT INNOVATIONS CLUB &bull; VIT CHENNAI
                     </div>
                   </td>
                   <td align="right" valign="middle">
@@ -216,112 +219,63 @@ function ctaButton(text: string, href: string, accentColor: string): string {
   </table>`;
 }
 
-/** Admin notes callout box */
-function notesBlock(notes: string): string {
-  return `
-  <div style="margin:20px 0;padding:16px 18px;background-color:#111827;border-left:3px solid #f59e0b;border-radius:0 2px 2px 0;">
-    <div style="font-size:9px;letter-spacing:2px;color:#f59e0b;text-transform:uppercase;margin-bottom:8px;font-weight:bold;">
-      &#9998; Admin Notes
-    </div>
-    <div style="font-size:13px;color:#d1d5db;line-height:1.7;">
-      ${escapeHtml(notes).replace(/\n/g, '<br>')}
-    </div>
-  </div>`;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Email: Application Receipt
+// Email: Final Preferences Confirmation
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function sendApplicationReceipt(userEmail: string, deptName: string) {
+export async function sendFinalPreferencesConfirmation(
+  userEmail: string,
+  techPrefName: string,
+  nonTechPrefName: string
+) {
   if (!smtpEmail || !smtpPassword) {
-    console.warn(`[MAILER] Skipping receipt for ${userEmail}. SMTP credentials are not set.`);
+    console.warn(`[MAILER] Skipping final preferences email for ${userEmail}. SMTP credentials not set.`);
     return;
   }
 
-  const ACCENT = '#f97316'; // orange — matches the "quest accepted" energy
+  try {
+    await dbConnect();
+    const cycle = await RecruitmentCycle.findOne({ cycleId: ACTIVE_CYCLE_ID }).lean();
+    if (cycle && cycle.emailNotificationsEnabled === false) {
+      console.log(`[MAILER] Email delivery is disabled in Admin Settings. Skipping final preferences email for ${userEmail}.`);
+      return;
+    }
+  } catch (dbErr) {
+    console.error('[MAILER] Error checking recruitment cycle email settings:', dbErr);
+  }
+
+  const ACCENT = '#1093EB'; // Blue retro accent
 
   const body = [
     para('Hello Challenger,'),
-    para(`Your application for the <strong style="color:#f97316;">${escapeHtml(deptName)}</strong> department has been successfully submitted. You have taken the first step on your quest to join MIC!`),
+    para('Your final recruitment preferences have been successfully confirmed and locked for evaluation. Here is a summary of your chosen quest pathways:'),
     infoCard(
-      infoRow('Department', deptName, ACCENT) +
-      infoRow('Status', 'Under Review', ACCENT) +
-      infoRow('Stage', 'Stage 1 — Submitted', ACCENT),
+      infoRow('Tech Preference', techPrefName, ACCENT) +
+      infoRow('Non-Tech Preference', nonTechPrefName, ACCENT) +
+      infoRow('Application Status', 'Finalized & Locked', ACCENT),
       ACCENT
     ),
-    para("Our core team will review your submission. Keep an eye on the recruitment portal for status updates. We'll notify you when there's news."),
-    ctaButton('CHECK PORTAL STATUS', 'https://mic.vitstudent.ac.in/recruitments', ACCENT),
-    para('Good luck &mdash; may your stats be impressive!', '#6b7280'),
+    para('Editing for your application is now closed. Our domain evaluation boards are reviewing your responses and code. Stay tuned for results!'),
+    ctaButton('VIEW APPLICATION STATUS', 'https://recruitments.microsoftinnovations.club/recruitments', ACCENT),
+    para('Best of luck on your recruitment journey &mdash; MIC Core Team', '#6b7280'),
   ].join('');
 
   try {
     await transporter.sendMail({
       from: `"MIC Recruitment" <${smtpEmail}>`,
       to: userEmail,
-      subject: `&#9889; Quest Accepted: ${deptName} Application Received!`,
+      subject: '⚡ Quest Locked: Final Recruitment Preferences Confirmed!',
       html: buildEmailHtml({
         heroColor: ACCENT,
-        heroIcon: '&#10003;',
-        heroLabel: 'Quest Accepted',
-        heroTitle: 'Application Received',
-        heroSubtitle: `${deptName} Department`,
+        heroIcon: '⚡',
+        heroLabel: 'Preferences Finalized',
+        heroTitle: 'Quest Locked',
+        heroSubtitle: 'Final Preferences Confirmed',
         body,
       }),
     });
   } catch (error) {
-    console.error('[MAILER] Failed to send receipt:', error);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Email: Stage Update (Passed / Advanced)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export async function sendStageUpdate(userEmail: string, status: string, notes?: string) {
-  if (!smtpEmail || !smtpPassword) {
-    console.warn(`[MAILER] Skipping status update for ${userEmail}. SMTP credentials are not set.`);
-    return;
-  }
-
-  const isAccepted = status === 'passed';
-  if (!isAccepted) {
-    console.log(`[MAILER] Rejection/failed email blocked for ${userEmail} as per settings.`);
-    return;
-  }
-
-  const ACCENT = '#10b981'; // emerald green
-
-  const body = [
-    para('Congratulations, Challenger!'),
-    para("You have successfully cleared this stage of the MIC recruitment process. Your skills have been acknowledged by the core team &mdash; this is a major achievement!"),
-    infoCard(
-      infoRow('Result', '&#10003; Stage Passed', ACCENT) +
-      infoRow('Next Step', 'Check portal for Stage details', ACCENT),
-      ACCENT
-    ),
-    notes ? notesBlock(notes) : '',
-    para('Log in to the portal to view the requirements for the next stage. Stay sharp and keep pushing!'),
-    ctaButton('VIEW NEXT STAGE', 'https://mic.vitstudent.ac.in/recruitments', ACCENT),
-    para('See you at the next level &mdash; MIC Core Team', '#6b7280'),
-  ].join('');
-
-  try {
-    await transporter.sendMail({
-      from: `"MIC Recruitment" <${smtpEmail}>`,
-      to: userEmail,
-      subject: '&#9651; LEVEL UP! You cleared a recruitment stage',
-      html: buildEmailHtml({
-        heroColor: ACCENT,
-        heroIcon: '&#9651;',
-        heroLabel: 'Stage Cleared',
-        heroTitle: 'LEVEL UP!',
-        heroSubtitle: 'Quest Advanced',
-        body,
-      }),
-    });
-  } catch (error) {
-    console.error('[MAILER] Failed to send stage update:', error);
+    console.error('[MAILER] Failed to send final preferences confirmation email:', error);
   }
 }
 

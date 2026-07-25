@@ -4,7 +4,7 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
-import { sendApplicationReceipt } from "@/lib/mailer";
+import { sendFinalPreferencesConfirmation } from "@/lib/mailer";
 import { validateResponses } from "@/lib/validation";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
@@ -327,11 +327,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           $push: { [`${progressKey}.stages`]: submission },
         }
       );
-
-      // Send email receipt on initial application submission (stage 1)
-      if (stageNum === 1) {
-        sendApplicationReceipt(application.userEmail, department.name).catch(console.error);
-      }
     }
 
     if (finalSubmit) {
@@ -339,6 +334,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         { userId: session.user.id, cycleId: CYCLE_ID },
         { $set: { isFinalSubmitted: true } }
       );
+
+      if (application.firstPreference && application.secondPreference) {
+        Promise.all([
+          Department.findOne({ slug: application.firstPreference }).lean(),
+          Department.findOne({ slug: application.secondPreference }).lean(),
+        ]).then(([dept1, dept2]) => {
+          const firstIsTech = application.firstPrefType === "tech";
+          const techName = (firstIsTech ? dept1?.name : dept2?.name) || "Technical";
+          const nonTechName = (firstIsTech ? dept2?.name : dept1?.name) || "Non-Technical";
+
+          sendFinalPreferencesConfirmation(application.userEmail, techName, nonTechName).catch(console.error);
+        }).catch(console.error);
+      }
     }
 
     return NextResponse.json({
