@@ -26,7 +26,6 @@ export interface StageConfig {
   stage: number;
   title: string;
   description: string;
-  taskPdf?: string;
   formFields: FormField[];
 }
 
@@ -34,7 +33,6 @@ export interface IDepartment extends Document {
   slug: string;
   name: string;
   type: "tech" | "non-tech";
-  totalStages: number;
   stages: StageConfig[];
   isActive: boolean;
   desc?: string;
@@ -42,7 +40,6 @@ export interface IDepartment extends Document {
   description?: string;
   skills?: string;
   iconType?: string;
-  stageToggles?: Record<string, boolean>;
 }
 
 const FormFieldSchema = new Schema<FormField>(
@@ -80,7 +77,6 @@ const StageConfigSchema = new Schema<StageConfig>(
     stage: { type: Number, required: true },
     title: { type: String, required: true },
     description: { type: String, required: true },
-    taskPdf: String,
     formFields: { type: [FormFieldSchema], default: [] },
   },
   { _id: false }
@@ -91,7 +87,6 @@ const DepartmentSchema = new Schema<IDepartment>(
     slug: { type: String, required: true, unique: true, trim: true },
     name: { type: String, required: true, trim: true },
     type: { type: String, enum: ["tech", "non-tech"], required: true },
-    totalStages: { type: Number, default: 2 },
     stages: { type: [StageConfigSchema], default: [] },
     isActive: { type: Boolean, default: true },
     desc: String,
@@ -99,11 +94,6 @@ const DepartmentSchema = new Schema<IDepartment>(
     description: String,
     skills: String,
     iconType: String,
-    stageToggles: {
-      type: Map,
-      of: Boolean,
-      default: { "1": true, "2": true, "3": true, "4": true, "5": true },
-    },
   },
   { timestamps: true }
 );

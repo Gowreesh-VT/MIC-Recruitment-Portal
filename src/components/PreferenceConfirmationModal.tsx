@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 
 interface PreferenceConfirmationModalProps {
   roleTitle: string;
+  deptType: "tech" | "non-tech";
   firstPreference?: string;
   secondPreference?: string;
   onConfirm: (preference: 1 | 2) => void;
@@ -12,6 +13,7 @@ interface PreferenceConfirmationModalProps {
 
 export default function PreferenceConfirmationModal({
   roleTitle,
+  deptType,
   firstPreference,
   secondPreference,
   onConfirm,
@@ -29,6 +31,9 @@ export default function PreferenceConfirmationModal({
 
   const hasFirstPref = !!firstPreference;
   const targetPref: 1 | 2 = hasFirstPref ? 2 : 1;
+
+  const prefLabel =
+    deptType === "tech" ? "Tech Preference" : "Non-Tech Preference";
 
   return (
     <div
@@ -61,7 +66,8 @@ export default function PreferenceConfirmationModal({
             {roleTitle}
           </p>
           <p className="text-[10px] text-black font-bold uppercase tracking-wider leading-relaxed my-2">
-            as your <span className="underline">{targetPref === 1 ? "1st" : "2nd"} Preference</span>?
+            as your{" "}
+            <span className="underline">{prefLabel}</span>?
           </p>
         </div>
 
