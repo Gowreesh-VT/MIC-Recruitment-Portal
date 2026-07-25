@@ -5,11 +5,9 @@ const ContentSecurityPolicy = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://*.posthog.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
-  // Google user profile pictures + Turnstile challenge static assets
   "img-src 'self' data: blob: https://lh3.googleusercontent.com https://challenges.cloudflare.com",
-  // Turnstile challenge iframe is served from challenges.cloudflare.com
   "frame-src 'self' https://challenges.cloudflare.com",
-  "connect-src 'self' https://challenges.cloudflare.com https://*.posthog.com https://*.amazonaws.com",
+  "connect-src 'self' wss: https://challenges.cloudflare.com https://*.posthog.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
