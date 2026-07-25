@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest) {
   }
   const { isOpen, startAt, endAt, countdownEnabled, countdownTarget, countdownTitle } = parseResult.data;
 
-  const updateFields: any = { isOpen };
+  const updateFields: Record<string, unknown> = { isOpen };
   if (startAt !== undefined) updateFields.startAt = startAt ? new Date(startAt) : null;
   if (endAt !== undefined) updateFields.endAt = endAt ? new Date(endAt) : null;
   if (countdownEnabled !== undefined) updateFields.countdownEnabled = countdownEnabled;
@@ -64,15 +64,6 @@ export async function PUT(req: NextRequest) {
       $set: updateFields,
     },
     { new: true, upsert: true }
-  );
-
-  // Log action
-  const { logAdminAction } = await import("@/lib/logger");
-  await logAdminAction(
-    session.user.email ?? "unknown",
-    "cycle_toggle",
-    ACTIVE_CYCLE_ID,
-    `Recruitment is now ${isOpen ? "OPEN" : "CLOSED"}.`
   );
 
   return NextResponse.json({

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
@@ -12,7 +12,7 @@ import RecruitmentCycle from "@/models/RecruitmentCycle";
 const BACKUP_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes
 const lastBackupTime = new Map<string, number>();
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Check admin privileges
   const session = await auth();
   if (!session?.user || (session.user as { role?: string }).role !== "admin") {

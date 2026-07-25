@@ -3,7 +3,6 @@ import { sendStageUpdate } from "@/lib/mailer";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
-import Department from "@/models/Department";
 
 export async function POST(req: NextRequest) {
   // ── Auth guard ────────────────────────────────────────────────────────────
@@ -42,20 +41,12 @@ export async function POST(req: NextRequest) {
     for (const app of applications) {
       const preference = app.activePreference;
       const progressKey = preference === "first" ? "firstPrefProgress" : "secondPrefProgress";
-      const deptSlug = preference === "first" ? app.firstPreference : app.secondPreference;
 
-      const department = await Department.findOne({ slug: deptSlug });
       const progress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
 
       const currentStageIdx = progress.stages.findIndex((s) => s.stage === progress.currentStage);
 
       if (action === "advance") {
-        const currentStage = progress.currentStage;
-        const totalStages = department?.totalStages ?? 3;
-        const isLastStage = currentStage >= totalStages;
-        const nextStage = currentStage + 1;
-        const nextIsLastStage = nextStage === totalStages;
-
         if (currentStageIdx !== -1) {
           if (preference === "first") {
             app.firstPrefProgress.stages[currentStageIdx].result = "passed";
@@ -70,29 +61,16 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        if (isLastStage) {
-          // Final stage passed → select the candidate
-          const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
-          targetProgress.status = "passed";
-          app.overallStatus = "selected";
-          if (preference === "first" && app.secondPreference) {
-            app.secondPrefProgress.status = "rejected";
-          }
-        } else {
-          // Advance to next stage
-          const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
-          targetProgress.currentStage = nextStage;
-          targetProgress.status = "active";
-          app.overallStatus = "in-progress";
-
-          // If the next stage is the final (interview) stage, auto-create a pending entry
-          if (nextIsLastStage) {
-            targetProgress.stages.push({
-              stage: nextStage,
-              submittedAt: new Date(),
-              responses: {},
-              result: "pending",
-            } as any);
+        // Mark preference as passed → select candidate
+        const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
+        targetProgress.status = "passed";
+        app.overallStatus = "selected";
+        if (preference === "first" && app.secondPreference) {
+          app.secondPrefProgress.status = "rejected";
+          if (app.secondPrefProgress.stages) {
+            app.secondPrefProgress.stages.forEach((s) => {
+              if (s.result === "pending") s.result = "failed";
+            });
           }
         }
       } else {
@@ -113,6 +91,11 @@ export async function POST(req: NextRequest) {
 
         if (preference === "first") {
           app.firstPrefProgress.status = "rejected";
+          if (app.firstPrefProgress.stages) {
+            app.firstPrefProgress.stages.forEach((s) => {
+              if (s.result === "pending") s.result = "failed";
+            });
+          }
           if (app.secondPreference && (app.secondPreference as string) !== "") {
             app.activePreference = "second";
             app.secondPrefProgress.status = "active";
@@ -122,6 +105,11 @@ export async function POST(req: NextRequest) {
           }
         } else {
           app.secondPrefProgress.status = "rejected";
+          if (app.secondPrefProgress.stages) {
+            app.secondPrefProgress.stages.forEach((s) => {
+              if (s.result === "pending") s.result = "failed";
+            });
+          }
           if (app.firstPrefProgress.status === "rejected") {
             app.overallStatus = "rejected";
           }
@@ -137,15 +125,6 @@ export async function POST(req: NextRequest) {
         sendStageUpdate(app.userEmail, "passed", note).catch(console.error);
       }
     }
-
-    // Log the bulk admin action
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      action === "advance" ? "bulk_advance" : "bulk_reject",
-      `${applications.length} applicants`,
-      `Bulk processed ${action} action for: ${processedEmails.join(", ")}`
-    );
 
     return NextResponse.json({
       success: true,

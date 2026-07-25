@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import Department from "@/models/Department";
-import AuditLog from "@/models/AuditLog";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +31,6 @@ export async function GET() {
     byStage,
     departmentsList,
     acceptedByDept,
-    auditLogs,
   ] = await Promise.all([
     Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID }),
     Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "in-progress" }),
@@ -98,10 +96,6 @@ export async function GET() {
         },
       },
     ]),
-    AuditLog.find()
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .lean(),
   ]);
 
   return NextResponse.json({
@@ -118,7 +112,6 @@ export async function GET() {
       byStage,
       departmentsList,
       acceptedByDept,
-      auditLogs,
     },
   });
 }

@@ -10,9 +10,6 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
 // GET — full application details
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { id } = await params;
@@ -45,47 +42,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     ...application,
     userName: user ? user.name : "",
   };
-
-  // Convert private S3 submission URLs to Presigned GET URLs
-  try {
-    const s3Client = new S3Client({
-      region: process.env.AWS_REGION || "ap-south-1",
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-      },
-    });
-    const bucketName = process.env.AWS_S3_BUCKET_NAME || "";
-    const s3Prefix = `https://${bucketName}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/submissions/`;
-
-    const processResponses = async (responses: Record<string, unknown>) => {
-      if (!responses) return;
-      for (const key of Object.keys(responses)) {
-        const val = responses[key];
-        if (typeof val === "string" && val.startsWith(s3Prefix)) {
-          const objectKey = val.split(".amazonaws.com/")[1];
-          if (objectKey) {
-            const command = new GetObjectCommand({ Bucket: bucketName, Key: objectKey });
-            const presignedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-            responses[key] = presignedUrl;
-          }
-        }
-      }
-    };
-
-    if (enrichedApplication.firstPrefProgress?.stages) {
-      for (const stage of enrichedApplication.firstPrefProgress.stages) {
-        await processResponses(stage.responses as Record<string, unknown>);
-      }
-    }
-    if (enrichedApplication.secondPrefProgress?.stages) {
-      for (const stage of enrichedApplication.secondPrefProgress.stages) {
-        await processResponses(stage.responses as Record<string, unknown>);
-      }
-    }
-  } catch (err) {
-    console.error("Failed to generate presigned GET URLs:", err);
-  }
 
   // Enrich with dept names
   const [dept1, dept2] = await Promise.all([
@@ -130,14 +86,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     application.overallStatus = "waitlisted";
     await application.save();
 
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      "candidate_waitlist",
-      application.userEmail,
-      `Waitlisted applicant from active preference.`
-    );
-
     return NextResponse.json({ success: true, message: "Applicant waitlisted successfully." });
   }
 
@@ -150,14 +98,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     }
     await application.save();
 
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      "stage_select",
-      application.userEmail,
-      `Directly selected candidate for ${preference} preference.`
-    );
-
     return NextResponse.json({ success: true, message: "Applicant selected successfully." });
   }
 
@@ -167,7 +107,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPreference
       : application.secondPreference;
 
-  const department = await Department.findOne({ slug: deptSlug });
   const progress =
     preference === "first"
       ? application.firstPrefProgress
@@ -184,7 +123,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       submittedAt: new Date(),
       responses: {},
       result: "pending",
-    } as any);
+    });
     currentStageIdx = progress.stages.length - 1;
   }
 
@@ -209,8 +148,15 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       }
     });
 
+    interface PanelistScoreEntry {
+      interviewerEmail?: string;
+      scores?: Map<string, number> | Record<string, number>;
+      note?: string;
+      createdAt?: Date;
+    }
+
     const existingIdx = stage.panelistScores.findIndex(
-      (ps: any) => ps.interviewerEmail === interviewerEmail
+      (ps: PanelistScoreEntry) => ps.interviewerEmail === interviewerEmail
     );
 
     if (existingIdx !== -1) {
@@ -230,10 +176,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const scoreSums: Record<string, number> = {};
     const scoreCounts: Record<string, number> = {};
 
-    stage.panelistScores.forEach((ps: any) => {
+    stage.panelistScores.forEach((ps: PanelistScoreEntry) => {
       if (!ps || !ps.scores) return;
 
-      let entries: [string, any][] = [];
+      let entries: [string, unknown][] = [];
       if (ps.scores instanceof Map) {
         entries = Array.from(ps.scores.entries());
       } else if (typeof ps.scores === "object" && ps.scores !== null) {
@@ -267,24 +213,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     application.markModified(`${progressKey}.stages`);
     await application.save();
 
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      "stage_score",
-      application.userEmail,
-      `Submitted panelist scores for ${preference} preference stage ${progress.currentStage}.`
-    );
-
     return NextResponse.json({ success: true, message: "Scores updated successfully.", application });
   }
 
   if (action === "advance") {
-    const currentStage = progress.currentStage;
-    const totalStages = department?.totalStages ?? 3;
-    const isLastStage = currentStage >= totalStages;
-    const nextStage = currentStage + 1;
-    const nextIsLastStage = nextStage === totalStages;
-
     // Mark current stage as passed
     (preference === "first"
       ? application.firstPrefProgress
@@ -297,70 +229,43 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
 
-    if (isLastStage) {
-      // Final stage passed → select the candidate
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).status = "passed";
-      application.overallStatus = "selected";
-
-      if (preference === "first" && application.secondPreference) {
-        application.secondPrefProgress.status = "rejected";
-      }
-    } else {
-      // Advance to next stage
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).currentStage = nextStage;
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).status = "active";
-      application.overallStatus = "in-progress";
-
-      // If the next stage is the final (interview) stage, auto-create a pending entry
-      // so the applicant can book a slot without needing to submit a form
-      if (nextIsLastStage) {
-        (preference === "first"
-          ? application.firstPrefProgress
-          : application.secondPrefProgress).stages.push({
-            stage: nextStage,
-            submittedAt: new Date(),
-            responses: {},
-            result: "pending",
-          } as any);
-      }
-    }
-
-    // Log advance action
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      isLastStage ? "stage_select" : "stage_advance",
-      application.userEmail,
-      `Advanced ${preference} preference (${deptSlug}) to ${isLastStage ? "Selected" : "Stage " + (currentStage + 1)}.`
-    );
-  } else {
-    // reject
-    if (currentStageIdx !== -1) {
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).stages[currentStageIdx].result = "failed";
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).stages[currentStageIdx].reviewedBy =
-        session?.user?.email ?? "admin";
-      (preference === "first"
-        ? application.firstPrefProgress
-        : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
-      if (note) {
-        (preference === "first"
-          ? application.firstPrefProgress
-          : application.secondPrefProgress).stages[currentStageIdx].adminNote = note;
-      }
-    }
+    // Mark preference as passed → select candidate
     (preference === "first"
       ? application.firstPrefProgress
-      : application.secondPrefProgress).status = "rejected";
+      : application.secondPrefProgress).status = "passed";
+    application.overallStatus = "selected";
+
+    if (preference === "first" && application.secondPreference) {
+      application.secondPrefProgress.status = "rejected";
+      if (application.secondPrefProgress.stages) {
+        application.secondPrefProgress.stages.forEach((s) => {
+          if (s.result === "pending") s.result = "failed";
+        });
+      }
+    }
+  } else {
+    // reject
+    const targetProgress = preference === "first"
+      ? application.firstPrefProgress
+      : application.secondPrefProgress;
+
+    if (currentStageIdx !== -1) {
+      targetProgress.stages[currentStageIdx].result = "failed";
+      targetProgress.stages[currentStageIdx].reviewedBy =
+        session?.user?.email ?? "admin";
+      targetProgress.stages[currentStageIdx].reviewedAt = new Date();
+      if (note) {
+        targetProgress.stages[currentStageIdx].adminNote = note;
+      }
+    }
+    targetProgress.status = "rejected";
+
+    // Mark any remaining pending stages in this preference as failed
+    if (targetProgress.stages) {
+      targetProgress.stages.forEach((s) => {
+        if (s.result === "pending") s.result = "failed";
+      });
+    }
 
     // If rejected from first preference, activate second (if they have one)
     if (preference === "first") {
@@ -377,15 +282,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         application.overallStatus = "rejected";
       }
     }
-
-    // Log reject action
-    const { logAdminAction } = await import("@/lib/logger");
-    await logAdminAction(
-      session.user.email ?? "unknown",
-      "candidate_reject",
-      application.userEmail,
-      `Rejected from ${preference} preference (${deptSlug}).`
-    );
   }
 
   application.markModified(progressKey);

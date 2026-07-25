@@ -182,7 +182,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       stats: {
         slug: dept,
         name: DEPT_NAMES[dept] || dept,
-        totalStages: 3,
         totalApplicants,
         firstPrefCount,
         secondPrefCount,
@@ -195,7 +194,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         avgScores,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Failed to fetch stats." },
       { status: 500 }
