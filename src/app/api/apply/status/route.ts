@@ -45,16 +45,28 @@ export async function GET() {
     application.secondPreference ? Department.findOne({ slug: application.secondPreference }).lean() : null,
   ]);
 
+  interface StageSubmissionItem {
+    submittedAt?: Date | string;
+    responses?: Record<string, unknown>;
+    stage?: number;
+  }
+
+  interface PreferenceProgress {
+    currentStage?: number;
+    stages?: StageSubmissionItem[];
+    [key: string]: unknown;
+  }
+
   // Mask stage progress if the current stage is not yet open by admin
-  const processProgress = (progress: any, dept: any) => {
+  const processProgress = (progress: PreferenceProgress | undefined | null, dept: unknown) => {
     if (!progress) return progress;
     let effectiveStage = progress.currentStage ?? 1;
     let stageMasked = false;
 
     if (effectiveStage > 1 && !isStageOpen(cycle, dept, effectiveStage)) {
       const submittedStages = (progress.stages || [])
-        .filter((s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0))
-        .map((s: any) => s.stage);
+        .filter((s) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0))
+        .map((s) => s.stage ?? 1);
 
       const maxSubmitted = submittedStages.length > 0 ? Math.max(...submittedStages) : 1;
       effectiveStage = Math.max(1, Math.min(maxSubmitted, effectiveStage - 1));
@@ -68,10 +80,24 @@ export async function GET() {
     };
   };
 
+  const hasFirstPrefSubmission = (application.firstPrefProgress?.stages || []).some(
+    (s: StageSubmissionItem) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+  );
+
+  const hasSecondPrefSubmission = (application.secondPrefProgress?.stages || []).some(
+    (s: StageSubmissionItem) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+  );
+
   const processedApplication = {
     ...application,
-    firstPrefProgress: processProgress(application.firstPrefProgress, dept1),
-    secondPrefProgress: processProgress(application.secondPrefProgress, dept2),
+    isFinalSubmitted: application.isFinalSubmitted ?? false,
+    firstPreference: hasFirstPrefSubmission ? application.firstPreference : undefined,
+    firstPrefType: hasFirstPrefSubmission ? application.firstPrefType : undefined,
+    firstPrefProgress: hasFirstPrefSubmission ? processProgress(application.firstPrefProgress, dept1) : undefined,
+
+    secondPreference: hasSecondPrefSubmission ? application.secondPreference : undefined,
+    secondPrefType: hasSecondPrefSubmission ? application.secondPrefType : undefined,
+    secondPrefProgress: hasSecondPrefSubmission ? processProgress(application.secondPrefProgress, dept2) : undefined,
   };
 
   return NextResponse.json({
