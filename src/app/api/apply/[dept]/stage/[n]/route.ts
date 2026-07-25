@@ -15,7 +15,6 @@ interface RouteParams {
 }
 
 
-// GET — fetch current user's status
 export async function GET(_req: NextRequest, { params }: RouteParams) {
   const { dept, n } = await params;
   const stageNum = parseInt(n, 10);
@@ -57,13 +56,65 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
 
   // Determine which preference this dept belongs to
-  const isFirst = application.firstPreference === dept;
-  const progress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
+  let isFirst = application.firstPreference === dept;
+  let isSecond = application.secondPreference === dept;
 
-  if (stageNum > progress.currentStage) {
+  const DEPT_TYPE_MAP: Record<string, "tech" | "non-tech"> = {
+    development: "tech",
+    "competitive-coding": "tech",
+    "ui-ux": "tech",
+    "ai-ml": "tech",
+    "cyber-security": "tech",
+    design: "non-tech",
+    management: "non-tech",
+    entrepreneurship: "non-tech",
+    "content-media": "non-tech",
+  };
+
+  const hasFirstPrefSubmission = (application.firstPrefProgress?.stages || []).some(
+    (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+  );
+
+  const hasSecondPrefSubmission = (application.secondPrefProgress?.stages || []).some(
+    (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+  );
+
+  if (!isFirst && !isSecond) {
+    const deptType = DEPT_TYPE_MAP[dept];
+
+    const canBeFirstPref =
+      stageNum === 1 &&
+      deptType &&
+      deptType === application.firstPrefType;
+
+    const canBeSecondPref =
+      stageNum === 1 &&
+      application.firstPreference !== dept &&
+      deptType &&
+      deptType !== application.firstPrefType;
+
+    if (!canBeFirstPref && !canBeSecondPref) {
+      return NextResponse.json({ success: false, error: "This department is not in your preferences." }, { status: 403 });
+    }
+  }
+
+  const progress = isFirst
+    ? application.firstPrefProgress
+    : isSecond
+    ? application.secondPrefProgress
+    : { currentStage: 1, status: "active" as const, stages: [] };
+
+  if (progress.status === "rejected") {
     return NextResponse.json(
-      { success: false, error: "This stage is locked. Please wait for the recruitment team to review your previous stages." },
+      { success: false, error: "Your application for this department has been rejected." },
       { status: 403 }
+    );
+  }
+
+  if (stageNum > 1) {
+    return NextResponse.json(
+      { success: false, error: "Invalid quest stage." },
+      { status: 404 }
     );
   }
 
@@ -77,6 +128,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     currentStage: progress.currentStage,
     status: progress.status,
     applicantYear: application.year,
+    isFinalSubmitted: application.isFinalSubmitted ?? false,
   });
 }
 
@@ -118,25 +170,95 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const isFirst = application.firstPreference === dept;
-    const isSecond = application.secondPreference === dept;
+    let isFirst = application.firstPreference === dept;
+    let isSecond = application.secondPreference === dept;
+
+    const DEPT_TYPE_MAP: Record<string, "tech" | "non-tech"> = {
+      development: "tech",
+      "competitive-coding": "tech",
+      "ui-ux": "tech",
+      "ai-ml": "tech",
+      "cyber-security": "tech",
+      design: "non-tech",
+      management: "non-tech",
+      entrepreneurship: "non-tech",
+      "content-media": "non-tech",
+    };
+
+    const hasFirstPrefSubmission = (application.firstPrefProgress?.stages || []).some(
+      (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+    );
+
+    const hasSecondPrefSubmission = (application.secondPrefProgress?.stages || []).some(
+      (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
+    );
 
     if (!isFirst && !isSecond) {
-      return NextResponse.json(
-        { success: false, error: "This department is not in your preferences." },
-        { status: 403 }
-      );
+      const deptType = DEPT_TYPE_MAP[dept];
+
+      const canBeFirstPref =
+        stageNum === 1 &&
+        deptType &&
+        deptType === application.firstPrefType;
+
+      const canBeSecondPref =
+        stageNum === 1 &&
+        application.firstPreference !== dept &&
+        deptType &&
+        deptType !== application.firstPrefType;
+
+      if (canBeFirstPref) {
+        // Drop previous 1st preference and switch to this department ONLY upon actual stage 1 submission
+        application.firstPreference = dept as any;
+        application.firstPrefType = deptType;
+        application.firstPrefProgress = {
+          currentStage: 1,
+          status: "active",
+          stages: [],
+        };
+        await application.save();
+        isFirst = true;
+      } else if (canBeSecondPref) {
+        // Drop previous 2nd preference (if any) and switch to this department ONLY upon actual stage 1 submission
+        application.secondPreference = dept as any;
+        application.secondPrefType = deptType;
+        application.secondPrefProgress = {
+          currentStage: 1,
+          status: "active",
+          stages: [],
+        };
+        await application.save();
+        isSecond = true;
+      } else {
+        return NextResponse.json(
+          { success: false, error: "This department is not in your preferences." },
+          { status: 403 }
+        );
+      }
     }
 
     const progress = isFirst
       ? application.firstPrefProgress
       : application.secondPrefProgress;
 
-    // Must submit stages in order
-    if (stageNum > progress.currentStage) {
+    if (progress.status === "rejected") {
       return NextResponse.json(
-        { success: false, error: `You must complete Stage ${progress.currentStage} first.` },
-        { status: 400 }
+        { success: false, error: "Your application for this department has been rejected." },
+        { status: 403 }
+      );
+    }
+
+    if (progress.status === "passed") {
+      return NextResponse.json(
+        { success: false, error: "Your application for this department has already been passed/selected." },
+        { status: 403 }
+      );
+    }
+
+    if (stageNum > 1) {
+      return NextResponse.json(
+        { success: false, error: "Invalid quest stage." },
+        { status: 404 }
       );
     }
 
@@ -149,13 +271,20 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    if (application.isFinalSubmitted) {
+      return NextResponse.json(
+        { success: false, error: "Your preferences and application have been finalized and locked. Editing is no longer allowed." },
+        { status: 403 }
+      );
+    }
+
     const stageConfig = department.stages.find((s) => s.stage === stageNum);
     if (!stageConfig) {
       return NextResponse.json({ success: false, error: "Stage configuration not found." }, { status: 404 });
     }
 
     const body = await req.json();
-    const { responses, _trap } = body;
+    const { responses, _trap, finalSubmit } = body;
 
     if (_trap) {
       return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
@@ -195,7 +324,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       await Application.updateOne(
         { userId: session.user.id, cycleId: CYCLE_ID },
         {
-          $push: { [`${progressKey}.stages`]: submission }
+          $push: { [`${progressKey}.stages`]: submission },
         }
       );
 
@@ -203,6 +332,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       if (stageNum === 1) {
         sendApplicationReceipt(application.userEmail, department.name).catch(console.error);
       }
+    }
+
+    if (finalSubmit) {
+      await Application.updateOne(
+        { userId: session.user.id, cycleId: CYCLE_ID },
+        { $set: { isFinalSubmitted: true } }
+      );
     }
 
     return NextResponse.json({
@@ -262,8 +398,22 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    if (application.isFinalSubmitted) {
+      return NextResponse.json(
+        { success: false, error: "Your preferences and application have been finalized and locked. Editing is no longer allowed." },
+        { status: 403 }
+      );
+    }
+
     const progress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
     const progressKey = isFirst ? "firstPrefProgress" : "secondPrefProgress";
+
+    if (progress.status === "rejected" || progress.status === "passed") {
+      return NextResponse.json(
+        { success: false, error: "This stage cannot be edited because your status for this department is finalized." },
+        { status: 403 }
+      );
+    }
 
     const existingStage = progress.stages.find((s) => s.stage === stageNum);
     if (!existingStage) {
@@ -282,7 +432,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const body = await req.json();
-    const { responses, _trap } = body;
+    const { responses, _trap, finalSubmit } = body;
     if (_trap) return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
 
     // Validate responses and strip unknown fields
@@ -301,6 +451,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         },
       }
     );
+
+    if (finalSubmit) {
+      await Application.updateOne(
+        { userId: session.user.id, cycleId: CYCLE_ID },
+        { $set: { isFinalSubmitted: true } }
+      );
+    }
 
     return NextResponse.json({ 
       success: true, 
