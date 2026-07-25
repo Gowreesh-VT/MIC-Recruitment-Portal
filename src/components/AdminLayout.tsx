@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { BarChart3, Users, Settings, LogOut, TrendingUp, Mail, Calendar, Activity, Gamepad2, PanelLeftClose, PanelLeftOpen, Building } from "lucide-react";
+import { BarChart3, Users, Settings, LogOut, TrendingUp, PanelLeftClose, PanelLeftOpen, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Press_Start_2P } from "next/font/google";
 import { playRetroSound } from "@/lib/audio";
@@ -16,7 +16,7 @@ const pressStart = Press_Start_2P({
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activePage: "dashboard" | "applications" | "settings" | "analytics" | "emails" | "interviews" | "logs" | "arcade" | "departments";
+  activePage: "dashboard" | "applications" | "settings" | "analytics" | "departments" | "logs";
 }
 
 export function AdminLayout({ children, activePage }: AdminLayoutProps) {
@@ -42,9 +42,7 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
     playRetroSound("coin");
   };
 
-  const playJumpSound = () => {
-    playRetroSound("arcade_jump");
-  };
+
 
   const incrementCoins = () => {
     const nextCoins = coins + 1;
@@ -78,30 +76,7 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
       href: "/admin/applications",
       key: "applications" as const,
     },
-    {
-      icon: <Mail className="h-4 w-4" />,
-      label: "Emails",
-      href: "/admin/emails",
-      key: "emails" as const,
-    },
-    {
-      icon: <Calendar className="h-4 w-4" />,
-      label: "Interviews",
-      href: "/admin/interviews",
-      key: "interviews" as const,
-    },
-    {
-      icon: <Activity className="h-4 w-4" />,
-      label: "Audit Logs",
-      href: "/admin/logs",
-      key: "logs" as const,
-    },
-    {
-      icon: <Gamepad2 className="h-4 w-4" />,
-      label: "Super Mario",
-      href: "/admin/arcade",
-      key: "arcade" as const,
-    },
+
     {
       icon: <Building className="h-4 w-4" />,
       label: "Departments",
@@ -126,7 +101,7 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
               src="/mic_logo_pixel.png"
               alt="MIC Logo"
               className="pixelated w-10 h-7 select-none object-contain hover:-translate-y-1 hover:scale-105 transition-all cursor-pointer"
-              onClick={playJumpSound}
+              onClick={playCoinSound}
             />
             <div>
               <p className="text-xs text-zinc-550 uppercase tracking-widest font-extrabold">
