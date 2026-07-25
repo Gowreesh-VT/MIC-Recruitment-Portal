@@ -3,16 +3,11 @@
 import React, { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ChevronRight,
   ChevronLeft,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Loader2,
   AlertTriangle,
   FileText,
   MessageSquare,
-  Award,
   ExternalLink,
   Copy,
   Check,
@@ -31,13 +26,6 @@ import {
   AlertDialog,
 } from "@/components/ui/dialog";
 
-interface PanelistScore {
-  interviewerEmail: string;
-  scores: Record<string, number>;
-  note?: string;
-  createdAt: string;
-}
-
 interface StageSubmission {
   stage: number;
   submittedAt: string;
@@ -46,8 +34,6 @@ interface StageSubmission {
   reviewedBy?: string;
   reviewedAt?: string;
   responses: Record<string, unknown>;
-  scores?: Record<string, number>;
-  panelistScores?: PanelistScore[];
 }
 
 interface PrefProgress {
@@ -72,7 +58,7 @@ interface Application {
   phone: string;
   regNo: string;
   year: string;
-  branch: string;
+  branch?: string;
   whyMic: string;
   createdAt: string;
 }
@@ -93,7 +79,6 @@ interface ClientDepartment {
   slug: string;
   name: string;
   type: "tech" | "non-tech";
-  totalStages: number;
   isActive: boolean;
   stages: StageConfig[];
 }
@@ -236,79 +221,6 @@ function SubmissionDetailModal({
             <ResponseViewer responses={submission.responses} getFieldLabel={getFieldLabel} />
           </div>
 
-          {/* Rubric Scorecard if present */}
-          {submission.scores && Object.keys(submission.scores).length > 0 && (
-            <div className="p-4 rounded-xl bg-teal-500/5 border border-teal-500/15 space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 text-teal-400 shrink-0" />
-                  <span className="text-xs text-teal-400 uppercase font-extrabold tracking-wider">
-                    Scorecard Results
-                  </span>
-                </div>
-                {(() => {
-                  const entries = Object.values(submission.scores);
-                  const total = entries.reduce((acc, curr) => acc + Number(curr), 0);
-                  const maxPossible = entries.length * 5;
-                  const pct = maxPossible > 0 ? Math.round((total / maxPossible) * 100) : 0;
-
-                  let grade = "Weak";
-                  let color = "bg-rose-500/20 text-rose-300 border-rose-500/30";
-                  if (pct >= 85) { grade = "Excellent"; color = "bg-teal-500/20 text-teal-300 border-teal-500/30"; }
-                  else if (pct >= 70) { grade = "Strong"; color = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"; }
-                  else if (pct >= 50) { grade = "Average"; color = "bg-amber-500/20 text-amber-300 border-amber-500/30"; }
-
-                  return (
-                    <Badge variant="outline" className={`px-2.5 py-1 text-xs font-bold border ${color}`}>
-                      {grade} ({total}/{maxPossible} - {pct}%)
-                    </Badge>
-                  );
-                })()}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                {Object.entries(submission.scores).map(([metric, score]) => (
-                  <div key={metric} className="p-2.5 rounded-lg bg-zinc-900/80 border border-zinc-800/80 text-xs">
-                    <span className="text-zinc-400 capitalize block text-[10px] font-semibold">{metric}</span>
-                    <span className="text-white font-extrabold text-sm">{score}/5</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Panelist Breakdown if present */}
-          {submission.panelistScores && submission.panelistScores.length > 0 && (
-            <div className="space-y-3 pt-2 border-t border-zinc-900">
-              <h4 className="text-xs text-zinc-400 font-extrabold uppercase tracking-wider">
-                Panelist Breakdown ({submission.panelistScores.length})
-              </h4>
-              <div className="space-y-2 font-mono">
-                {submission.panelistScores.map((ps, pIdx) => (
-                  <div key={pIdx} className="bg-zinc-900/60 p-3 border border-zinc-800/80 rounded-xl flex flex-col gap-2 text-xs text-zinc-300">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-teal-400 font-bold">{ps.interviewerEmail}</span>
-                      <span className="text-zinc-500 text-[10px]">
-                        {new Date(ps.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
-                      </span>
-                    </div>
-                    <div className="flex gap-3 flex-wrap">
-                      {Object.entries(ps.scores || {}).map(([metric, score]) => (
-                        <div key={metric}>
-                          <span className="text-zinc-500 capitalize">{metric}:</span> <strong className="text-white">{score as number}/5</strong>
-                        </div>
-                      ))}
-                    </div>
-                    {ps.note && (
-                      <p className="text-xs text-zinc-300 font-sans italic bg-zinc-950/60 p-2.5 rounded-lg border border-zinc-900">
-                        “{ps.note}”
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Reviewer Note if present */}
           {submission.adminNote && (
             <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/15 flex gap-3">
@@ -348,26 +260,12 @@ function SubmissionDetailModal({
   );
 }
 
-const DEPT_RUBRICS: Record<string, string[]> = {
-  development: ["Coding", "System Design", "Communication", "Problem Solving"],
-  "competitive-coding": ["Speed", "Accuracy", "Logic"],
-  "ui-ux": ["Visual Aesthetics", "Wireframing", "Figma Skills", "Research"],
-  "ai-ml": ["Math & Stats", "Python Libraries", "ML Concepts"],
-  "cyber-security": ["Hacking Skills", "Networking", "Linux", "Logic"],
-  design: ["Creativity", "Visual Aesthetics", "Tools", "Portfolio"],
-  management: ["Leadership", "Event Planning", "Teamwork", "Case Study"],
-  entrepreneurship: ["Business Acumen", "Pitching", "Idea Validation"],
-  "content-media": ["Writing", "Video Editing", "Camera Work", "Communication"],
-};
-const DEFAULT_RUBRIC = ["Technical", "Communication", "Creativity"];
-
 function PrefPanel({
   progress,
   deptSlug,
   label,
   onActionTrigger,
   acting,
-  totalStages,
   overallStatus,
   deptStages,
   applicantName,
@@ -375,9 +273,8 @@ function PrefPanel({
   progress: PrefProgress;
   deptSlug: string;
   label: string;
-  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject" | "score", note: string, scores?: Record<string, number>) => void;
+  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject", note: string) => void;
   acting: boolean;
-  totalStages: number;
   overallStatus: string;
   deptStages?: StageConfig[];
   applicantName?: string;
@@ -394,8 +291,6 @@ function PrefPanel({
     return field ? field.label : fieldId;
   };
 
-  const rubricList = DEPT_RUBRICS[deptSlug] || DEFAULT_RUBRIC;
-  const [scores, setScores] = useState<Record<string, number>>({});
   const [modalSubmission, setModalSubmission] = useState<{
     stepTitle: string;
     submission: StageSubmission;
@@ -406,92 +301,15 @@ function PrefPanel({
   );
 
   useEffect(() => {
-    const initialScores: Record<string, number> = {};
-    rubricList.forEach((metric) => {
-      initialScores[metric.toLowerCase()] = 0;
-    });
-
-    if (currentStageSubmission) {
-      if (currentStageSubmission.adminNote) {
-        setNote(currentStageSubmission.adminNote);
-      }
-      if (currentStageSubmission.scores) {
-        Object.entries(currentStageSubmission.scores).forEach(([k, v]) => {
-          initialScores[k.toLowerCase()] = Number(v) || 0;
-        });
-      }
+    if (currentStageSubmission?.adminNote) {
+      setNote(currentStageSubmission.adminNote);
     }
-    setScores(initialScores);
-  }, [deptSlug, currentStageSubmission]);
+  }, [currentStageSubmission]);
 
   const canAct =
     progress.status === "active" &&
     overallStatus === "in-progress" &&
     (!currentStageSubmission || currentStageSubmission.result === "pending");
-
-  // Build timeline steps
-  const timelineSteps = [];
-
-  // Step 1: Initial application start
-  timelineSteps.push({
-    stageNum: 0,
-    title: "Application Started",
-    description: "Candidate initiated application",
-    state: "passed" as const,
-    date: null,
-  });
-
-  // Steps 1 to totalStages: Evaluation stages
-  for (let s = 1; s <= totalStages; s++) {
-    const stageDbNum = s;
-    const submission = progress.stages.find((x) => x.stage === stageDbNum);
-
-    let state: "passed" | "failed" | "pending" | "upcoming" = "upcoming";
-    if (submission) {
-      if (submission.result === "passed") state = "passed";
-      else if (submission.result === "failed") state = "failed";
-      else state = "pending";
-    } else if (progress.status === "rejected" || progress.status === "passed") {
-      state = "upcoming";
-    } else if (progress.currentStage > stageDbNum) {
-      state = "passed";
-    }
-
-    let stageTitle = `Stage ${s} Evaluation`;
-    let stageDesc = submission?.result === "pending" ? "Awaiting review" : `Stage ${s} review complete`;
-    if (stageDbNum === 1) {
-      stageTitle = "Stage 1: Domain Evaluation";
-      stageDesc = submission?.result === "pending" ? "Awaiting Domain screening" : "Domain screening complete";
-    } else if (stageDbNum === 2) {
-      stageTitle = "Stage 2: Task Evaluation";
-      stageDesc = submission?.result === "pending" ? "Awaiting Task evaluation" : "Task evaluation complete";
-    } else if (stageDbNum === 3) {
-      stageTitle = "Stage 3: Interview Evaluation";
-      stageDesc = submission?.result === "pending" ? "Awaiting Interview grading" : "Interview grading complete";
-    }
-
-    timelineSteps.push({
-      stageNum: stageDbNum,
-      title: stageTitle,
-      description: stageDesc,
-      state,
-      submission,
-      date: submission?.submittedAt || null,
-    });
-  }
-
-  // Final Step: Outcome
-  let outcomeState: "passed" | "failed" | "upcoming" = "upcoming";
-  if (progress.status === "passed") outcomeState = "passed";
-  else if (progress.status === "rejected") outcomeState = "failed";
-
-  timelineSteps.push({
-    stageNum: 99,
-    title: progress.status === "passed" ? "Accepted" : progress.status === "rejected" ? "Rejected" : "Outcome Decision",
-    description: progress.status === "passed" ? "Candidate selected" : progress.status === "rejected" ? "Preference closed" : "Funnel pending",
-    state: outcomeState,
-    date: null,
-  });
 
   return (
     <Card>
@@ -519,143 +337,62 @@ function PrefPanel({
         </Badge>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-8">
-        {/* Interactive Vertical Timeline */}
-        <div className="space-y-6 relative pl-4 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-900">
-          {timelineSteps.map((step, idx) => {
-            const hasDetail = step.submission && step.stageNum > 0;
-
-            return (
-              <div key={idx} className="relative pl-8 space-y-2">
-                {/* Node icon circle */}
-                <div
-                  className={`absolute left-[-21px] top-0.5 h-6 w-6 rounded-full border flex items-center justify-center z-10 transition-all ${
-                    step.state === "passed"
-                      ? "bg-emerald-500/10 border-emerald-500 text-emerald-400"
-                      : step.state === "failed"
-                      ? "bg-rose-500/10 border-rose-500 text-rose-400"
-                      : step.state === "pending"
-                      ? "bg-amber-500/10 border-amber-500 text-amber-400 animate-pulse"
-                      : "bg-zinc-950 border-zinc-800 text-zinc-700"
-                  }`}
-                >
-                  {step.state === "passed" ? (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  ) : step.state === "failed" ? (
-                    <XCircle className="h-3.5 w-3.5" />
-                  ) : step.state === "pending" ? (
-                    <Clock className="h-3.5 w-3.5" />
-                  ) : (
-                    <div className="h-1.5 w-1.5 rounded-full bg-zinc-800" />
-                  )}
-                </div>
-
-                {/* Node label */}
-                <div
-                  onClick={() => {
-                    if (hasDetail && step.submission) {
-                      setModalSubmission({
-                        stepTitle: step.title,
-                        submission: step.submission,
-                      });
-                    }
-                  }}
-                  className={`flex flex-col text-left transition-all ${
-                    hasDetail ? "cursor-pointer group hover:opacity-90" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`text-xs font-bold ${
-                        step.state !== "upcoming" ? "text-white" : "text-zinc-500"
-                      }`}
-                    >
-                      {step.title}
-                    </span>
-                    {step.date && (
-                      <span className="text-[9px] font-semibold text-zinc-500">
-                        {new Date(step.date).toLocaleDateString("en-IN", {
-                          day: "2-digit",
-                          month: "short",
-                        })}
-                      </span>
-                    )}
-                    {hasDetail && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (step.submission) {
-                            setModalSubmission({
-                              stepTitle: step.title,
-                              submission: step.submission,
-                            });
-                          }
-                        }}
-                        className="text-[10px] text-teal-400 hover:text-teal-300 font-bold flex items-center gap-1 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/20 px-2 py-0.5 rounded-md transition-all cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
-                      >
-                        <FileText className="h-3 w-3" />
-                        View Details
-                      </button>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-zinc-500 font-medium">
-                    {step.description}
-                  </span>
-                </div>
+      <CardContent className="p-6 space-y-6">
+        {/* Form Submission Header/Card */}
+        {currentStageSubmission ? (
+          <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-950 border border-zinc-900">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-teal-400" />
+                <span className="text-sm font-bold text-white">Form Submission</span>
               </div>
-            );
-          })}
-        </div>
+              {currentStageSubmission.submittedAt && (
+                <p className="text-xs text-zinc-500 font-medium">
+                  Submitted on {new Date(currentStageSubmission.submittedAt).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              onClick={() => setModalSubmission({ stepTitle: "Form Submission", submission: currentStageSubmission })}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-teal-400 border-teal-500/30 hover:bg-teal-500/10 font-bold cursor-pointer"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              View Form Details
+            </Button>
+          </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 text-xs text-zinc-500 font-medium">
+            No form submission found for this department.
+          </div>
+        )}
 
         {/* Action Panel */}
         {canAct && (
           <div className="border-t border-zinc-900 pt-6 space-y-4">
             <Badge variant="warning" className="uppercase font-bold tracking-wider text-[10px]">
-              Reviewing Stage {progress.currentStage} Submission
+              Reviewing Form Submission
             </Badge>
 
             <div className="space-y-1.5">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold block">
-                Evaluation Notes (visible to applicant)
+                Evaluation Notes (optional, visible to applicant)
               </label>
               <textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Write stage evaluation details, feedback, or interview instructions..."
+                placeholder="Write evaluation details or feedback..."
                 rows={3}
                 className="w-full bg-zinc-950 border border-zinc-900 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-700 resize-none transition-all"
               />
-            </div>
-
-            <div className="space-y-3 bg-zinc-950 border border-zinc-900 rounded-xl p-4">
-              <p className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
-                Grading Rubric (Required to Advance)
-              </p>
-              {rubricList.map((metric) => {
-                const key = metric.toLowerCase();
-                return (
-                  <div key={metric} className="flex items-center justify-between flex-wrap gap-2">
-                    <span className="text-xs font-bold text-zinc-300">{metric} score</span>
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, 4, 5].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => setScores((s) => ({ ...s, [key]: val }))}
-                          className={`h-8 w-8 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                            scores[key] === val
-                              ? "bg-teal-500 text-slate-950 shadow-[0_0_10px_rgba(20,184,166,0.3)]"
-                              : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white"
-                          }`}
-                        >
-                          {val}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
 
             <div className="flex gap-3 pt-2 flex-wrap sm:flex-nowrap">
@@ -667,37 +404,14 @@ function PrefPanel({
               >
                 Reject Candidate
               </Button>
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  const hasAnyScore = Object.values(scores).some((s) => s > 0);
-                  if (!hasAnyScore && !note.trim()) {
-                    alert("Please select at least one score rubric criterion or enter evaluation notes before saving.");
-                    return;
-                  }
-                  onActionTrigger(prefKey, "score", note, scores);
-                }}
-                disabled={acting}
-                className="flex-1 font-bold h-11 text-teal-400 border-teal-500/30 hover:bg-teal-500/10 cursor-pointer"
-              >
-                Save Scores Only
-              </Button>
 
               <Button
                 variant="emerald"
-                onClick={() => {
-                  if (Object.values(scores).some((s) => s === 0)) {
-                    alert("Please grade all Rubric criteria (1-5) before advancing.");
-                    return;
-                  }
-                  onActionTrigger(prefKey, "advance", note, scores);
-                }}
+                onClick={() => onActionTrigger(prefKey, "advance", note)}
                 disabled={acting}
                 className="flex-1 font-bold h-11 cursor-pointer"
               >
-                Advance Stage
+                Advance Candidate
               </Button>
             </div>
           </div>
@@ -736,9 +450,8 @@ export default function ApplicantDetailPage({
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     preference: "first" | "second";
-    action: "advance" | "reject" | "score";
+    action: "advance" | "reject";
     note: string;
-    scores?: Record<string, number>;
   } | null>(null);
 
   const load = async () => {
@@ -770,44 +483,22 @@ export default function ApplicantDetailPage({
     };
   }, [id]);
 
-  const handleActionConfirmTrigger = async (
+  const handleActionConfirmTrigger = (
     preference: "first" | "second",
-    action: "advance" | "reject" | "score",
-    note: string,
-    scores?: Record<string, number>
+    action: "advance" | "reject",
+    note: string
   ) => {
-    if (action === "score") {
-      setActing(true);
-      setMessage("");
-      try {
-        const res = await fetch(`/api/admin/applications/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action, preference, note, scores }),
-        });
-        const data = await res.json();
-        setMessage(data.success ? data.message : data.error ?? "Action failed.");
-        if (data.success) await load();
-      } catch {
-        setMessage("Network communication failure.");
-      } finally {
-        setActing(false);
-      }
-      return;
-    }
-
     setConfirmDialog({
       isOpen: true,
       preference,
-      action: action as "advance" | "reject",
+      action,
       note,
-      scores,
     });
   };
 
   const handleActionExecute = async () => {
     if (!confirmDialog) return;
-    const { preference, action, note, scores } = confirmDialog;
+    const { preference, action, note } = confirmDialog;
     setConfirmDialog(null);
     setActing(true);
     setMessage("");
@@ -815,7 +506,7 @@ export default function ApplicantDetailPage({
       const res = await fetch(`/api/admin/applications/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, preference, note, scores }),
+        body: JSON.stringify({ action, preference, note }),
       });
       const data = await res.json();
       setMessage(data.success ? data.message : data.error ?? "Action failed.");
@@ -975,7 +666,6 @@ export default function ApplicantDetailPage({
             label="1st Preference"
             onActionTrigger={handleActionConfirmTrigger}
             acting={acting}
-            totalStages={dept1?.totalStages ?? 2}
             overallStatus={application.overallStatus}
             deptStages={dept1?.stages}
             applicantName={applicantDisplayName}
@@ -987,7 +677,6 @@ export default function ApplicantDetailPage({
               label="2nd Preference"
               onActionTrigger={handleActionConfirmTrigger}
               acting={acting}
-              totalStages={dept2?.totalStages ?? 2}
               overallStatus={application.overallStatus}
               deptStages={dept2?.stages}
               applicantName={applicantDisplayName}
@@ -1008,10 +697,10 @@ export default function ApplicantDetailPage({
         isOpen={confirmDialog?.isOpen ?? false}
         onClose={() => setConfirmDialog(null)}
         onConfirm={handleActionExecute}
-        title={confirmDialog?.action === "advance" ? "Advance Candidate Stage?" : "Reject Candidate?"}
+        title={confirmDialog?.action === "advance" ? "Advance Candidate?" : "Reject Candidate?"}
         description={
           confirmDialog?.action === "advance"
-            ? `Are you sure you want to ADVANCE this candidate to the next stage in their ${confirmDialog?.preference} preference department?`
+            ? `Are you sure you want to ADVANCE this candidate in their ${confirmDialog?.preference} preference department?`
             : `Are you sure you want to REJECT this candidate from their ${confirmDialog?.preference} preference department?`
         }
         confirmText={confirmDialog?.action === "advance" ? "Yes, Advance" : "Yes, Reject"}
@@ -1021,3 +710,4 @@ export default function ApplicantDetailPage({
     </AdminLayout>
   );
 }
+

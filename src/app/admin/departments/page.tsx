@@ -22,7 +22,6 @@ const DEPTS = [
 interface DeptConfig {
   slug: string;
   isActive: boolean;
-  totalStages: number;
 }
 
 export default function AdminDepartmentsPage() {
@@ -44,7 +43,6 @@ export default function AdminDepartmentsPage() {
             configs[dept.slug] = {
               slug: dept.slug,
               isActive: dept.isActive,
-              totalStages: dept.totalStages,
             };
           }
         }
@@ -109,7 +107,7 @@ export default function AdminDepartmentsPage() {
                     </h3>
                     <div className="mt-auto pt-6 flex items-center justify-between">
                       <p className="text-xs text-zinc-500 font-medium">
-                        {config ? `${config.totalStages} Stages` : "Loading..."}
+                        Form Configured
                       </p>
                       <div className="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center group-hover:bg-teal-500/20 group-hover:text-teal-400 text-zinc-500 transition-colors">
                         <Settings2 className="h-4 w-4" />

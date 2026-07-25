@@ -11,7 +11,6 @@ import {
   Compass,
   Zap,
   TrendingUp,
-  ShieldAlert,
 } from "lucide-react";
 import {
   LineChart,
@@ -30,16 +29,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-interface AuditLogEntry {
-  _id: string;
-  adminEmail: string;
-  action: string;
-  target: string;
-  details?: string;
-  createdAt: string;
-}
 
 interface Stats {
   total: number;
@@ -59,7 +48,6 @@ interface Stats {
     secondPreference: string;
     updatedAt: string;
   }>;
-  auditLogs?: AuditLogEntry[];
 }
 
 interface Cycle {
@@ -364,104 +352,52 @@ export default function AdminDashboard() {
 
         {/* Lower Grid: Activity & Audit Feed + Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
-          {/* Tabbed Activity Feed & Audit logs */}
+          {/* Activity Feed */}
           <Card className="border-zinc-800/60 bg-zinc-950/40 backdrop-blur-md">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base font-bold text-white">Activity Tracking</CardTitle>
-              <CardDescription className="text-zinc-400">Monitor live candidates and administrative operations</CardDescription>
+            <CardHeader>
+              <CardTitle className="text-base font-bold text-white">Recent Activity</CardTitle>
+              <CardDescription className="text-zinc-400">Monitor live applicant updates and status changes</CardDescription>
             </CardHeader>
-            <CardContent className="pt-4">
-              <Tabs defaultValue="activity" className="w-full">
-                <TabsList className="grid grid-cols-2 w-full mb-4 bg-zinc-900/50">
-                  <TabsTrigger value="activity" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Recent Activity</TabsTrigger>
-                  <TabsTrigger value="audit" className="data-[state=active]:bg-zinc-800 data-[state=active]:text-white">Admin Audit Logs</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="activity" className="space-y-4">
-                  {(stats?.recentActivity ?? []).length === 0 ? (
-                    <div className="text-sm text-zinc-500 text-center py-10 font-medium">No activity yet</div>
-                  ) : (
-                    (stats?.recentActivity ?? []).map((item, i) => {
-                      const borderColor = 
-                        item.overallStatus === "selected" ? "border-emerald-500/50" :
-                        item.overallStatus === "rejected" ? "border-red-500/50" : "border-amber-500/50";
-                      
-                      return (
-                      <div
-                        key={i}
-                        onClick={() => router.push("/admin/applications")}
-                        className={`flex items-center gap-4 p-3 rounded-xl bg-zinc-900/20 border-l-2 ${borderColor} border-y border-r border-y-zinc-800/40 border-r-zinc-800/40 hover:bg-zinc-800/40 hover:shadow-lg transition-all cursor-pointer`}
-                      >
-                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-xs font-bold text-white shadow-inner">
-                          {item.userEmail.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-zinc-200 truncate">{item.userEmail}</p>
-                          <p className="text-[11px] text-zinc-500 mt-0.5 font-medium">
-                            {DEPT_NAMES[item.firstPreference] ?? item.firstPreference} →{" "}
-                            {DEPT_NAMES[item.secondPreference] ?? item.secondPreference}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            item.overallStatus === "selected"
-                              ? "success"
-                              : item.overallStatus === "rejected"
-                              ? "destructive"
-                              : "warning"
-                          }
-                          className="shadow-sm"
-                        >
-                          {item.overallStatus}
-                        </Badge>
-                      </div>
-                    )})
-                  )}
-                </TabsContent>
-
-                <TabsContent value="audit" className="space-y-4">
-                  {(stats?.auditLogs ?? []).length === 0 ? (
-                    <div className="text-sm text-zinc-500 text-center py-10 flex flex-col items-center justify-center gap-2">
-                      <ShieldAlert className="h-8 w-8 text-zinc-600/50" />
-                      <span className="font-medium">No administrator audit logs recorded yet</span>
+            <CardContent className="space-y-4">
+              {(stats?.recentActivity ?? []).length === 0 ? (
+                <div className="text-sm text-zinc-500 text-center py-10 font-medium">No activity yet</div>
+              ) : (
+                (stats?.recentActivity ?? []).map((item, i) => {
+                  const borderColor = 
+                    item.overallStatus === "selected" ? "border-emerald-500/50" :
+                    item.overallStatus === "rejected" ? "border-red-500/50" : "border-amber-500/50";
+                  
+                  return (
+                  <div
+                    key={i}
+                    onClick={() => router.push("/admin/applications")}
+                    className={`flex items-center gap-4 p-3 rounded-xl bg-zinc-900/20 border-l-2 ${borderColor} border-y border-r border-y-zinc-800/40 border-r-zinc-800/40 hover:bg-zinc-800/40 hover:shadow-lg transition-all cursor-pointer`}
+                  >
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                      {item.userEmail.charAt(0).toUpperCase()}
                     </div>
-                  ) : (
-                    (stats?.auditLogs ?? []).map((item) => (
-                      <div
-                        key={item._id}
-                        className="flex items-start gap-4 p-4 rounded-xl bg-zinc-900/20 border border-zinc-800/40 hover:border-zinc-700 hover:bg-zinc-800/30 transition-all text-left group"
-                      >
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <span className="text-xs font-bold text-zinc-200 truncate max-w-44 group-hover:text-white transition-colors">
-                              {item.adminEmail}
-                            </span>
-                            <span className="text-[10px] font-semibold text-zinc-500 bg-zinc-950/50 px-2 py-0.5 rounded-full">
-                              {new Date(item.createdAt).toLocaleTimeString(undefined, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant={getActionBadgeVariant(item.action)} className="shadow-sm">
-                              {item.action.replace("_", " ")}
-                            </Badge>
-                            <span className="text-xs font-bold text-teal-400/90 truncate max-w-48">
-                              {item.target}
-                            </span>
-                          </div>
-                          {item.details && (
-                            <p className="text-xs text-zinc-400 font-medium leading-relaxed bg-zinc-950/30 p-2 rounded-lg border border-zinc-800/30 mt-1">
-                              {item.details}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </TabsContent>
-              </Tabs>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-zinc-200 truncate">{item.userEmail}</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5 font-medium">
+                        {DEPT_NAMES[item.firstPreference] ?? item.firstPreference} →{" "}
+                        {DEPT_NAMES[item.secondPreference] ?? item.secondPreference}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        item.overallStatus === "selected"
+                          ? "success"
+                          : item.overallStatus === "rejected"
+                          ? "destructive"
+                          : "warning"
+                      }
+                      className="shadow-sm"
+                    >
+                      {item.overallStatus}
+                    </Badge>
+                  </div>
+                )})
+              )}
             </CardContent>
           </Card>
 

@@ -9,12 +9,6 @@ import {
   ChevronRight,
   Loader2,
   ArrowUpDown,
-  LayoutGrid,
-  List,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  Star,
   Download,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -67,34 +61,39 @@ export default function AdminApplicationsPage() {
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 1, limit: 25 });
   const [loading, setLoading] = useState(true);
 
-  const getStageLabel = (stage: number) => {
-    if (stage === 1) return "Stage 1: Form";
-    if (stage === 2) return "Stage 2: Task";
-    if (stage === 3) return "Stage 3: Interview";
-    return `Stage ${stage}`;
-  };
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  // Kanban and custom export states
-  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  // Custom export state
   const [showExportModal, setShowExportModal] = useState(false);
+  const [exportScope, setExportScope] = useState<"all" | "filtered" | "selected">("all");
+  const [exportDept, setExportDept] = useState<string>("");
+  const [exportDeptPref, setExportDeptPref] = useState<"any" | "first" | "second" | "active">("any");
   const [exportCols, setExportCols] = useState<Record<string, boolean>>({
     id: false,
+    fullName: true,
     email: true,
+    phone: true,
+    regNo: true,
+    year: true,
+    branch: false,
+    whyMic: false,
     createdAt: true,
     overallStatus: true,
+    activePreference: false,
     firstPref: true,
     firstPrefType: false,
-    firstPrefStatus: false,
+    firstPrefStatus: true,
     firstPrefStage: true,
     secondPref: true,
     secondPrefType: false,
     secondPrefStatus: false,
     secondPrefStage: false,
-    scores: true,
+    scores: false,
+    adminNotes: false,
+    panelistNotes: false,
   });
 
   // Selection states
@@ -108,7 +107,7 @@ export default function AdminApplicationsPage() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        limit: viewMode === "kanban" ? "200" : "25",
+        limit: "25",
         ...(search && { q: search }),
         ...(deptFilter && { dept: deptFilter }),
         ...(statusFilter && { status: statusFilter }),
@@ -124,7 +123,7 @@ export default function AdminApplicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, deptFilter, statusFilter, viewMode]);
+  }, [page, search, deptFilter, statusFilter]);
 
   useEffect(() => {
     let active = true;
@@ -181,107 +180,6 @@ export default function AdminApplicationsPage() {
     }
   };
 
-  // Kanban grouping & drag and drop
-  const getAverageScore = (app: Application) => {
-    const progress = app.activePreference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
-    if (!progress?.stages) return null;
-    let total = 0;
-    let count = 0;
-    progress.stages.forEach((stage: any) => {
-      if (stage.scores) {
-        // Handle Mongoose Map structure or raw object structure
-        const entries = stage.scores instanceof Map 
-          ? Array.from(stage.scores.values()) 
-          : Object.values(stage.scores);
-        entries.forEach((score: any) => {
-          total += Number(score);
-          count++;
-        });
-      }
-    });
-    return count > 0 ? (total / count).toFixed(1) : null;
-  };
-
-  const getKanbanColumns = () => {
-    const cols = {
-      stage1: { title: "Stage 1: Form Review", items: [] as Application[], border: "border-cyan-500/25", headerBg: "bg-cyan-500/10 text-cyan-400" },
-      stage2: { title: "Stage 2: Task Review", items: [] as Application[], border: "border-violet-500/25", headerBg: "bg-violet-500/10 text-violet-400" },
-      stage3: { title: "Stage 3: Interview Review", items: [] as Application[], border: "border-amber-500/25", headerBg: "bg-amber-500/10 text-amber-400" },
-      selected: { title: "Selected", items: [] as Application[], border: "border-emerald-500/25", headerBg: "bg-emerald-500/10 text-emerald-400" },
-      waitlisted: { title: "Waitlisted", items: [] as Application[], border: "border-blue-500/25", headerBg: "bg-blue-500/10 text-blue-400" },
-      rejected: { title: "Rejected", items: [] as Application[], border: "border-rose-500/25", headerBg: "bg-rose-500/10 text-rose-400" },
-    };
-
-    applications.forEach((app) => {
-      if (app.overallStatus === "selected") {
-        cols.selected.items.push(app);
-      } else if (app.overallStatus === "waitlisted") {
-        cols.waitlisted.items.push(app);
-      } else if (app.overallStatus === "rejected") {
-        cols.rejected.items.push(app);
-      } else {
-        const stage = app.activePreference === "first" ? app.firstPrefProgress.currentStage : app.secondPrefProgress.currentStage;
-        if (stage === 1) {
-          cols.stage1.items.push(app);
-        } else if (stage === 2) {
-          cols.stage2.items.push(app);
-        } else if (stage === 3) {
-          cols.stage3.items.push(app);
-        } else {
-          cols.stage1.items.push(app); // fallback
-        }
-      }
-    });
-
-    return cols;
-  };
-
-  const handleDragDrop = async (appId: string, targetCol: string) => {
-    const app = applications.find((a) => a._id === appId);
-    if (!app) return;
-    const pref = app.activePreference;
-
-    let action = "";
-    if (targetCol === "selected") action = "select";
-    else if (targetCol === "waitlisted") action = "waitlist";
-    else if (targetCol === "rejected") action = "reject";
-    else if (targetCol === "stage2") action = "advance";
-    else if (targetCol === "stage3") action = "advance";
-    else if (targetCol === "stage1") {
-      alert("Demoting or resetting stages is not supported via drag and drop. Please use the detailed view page.");
-      return;
-    }
-
-    if (!action) return;
-
-    if (action === "advance" || action === "reject") {
-      if (confirm(`Would you like to open the candidate's profile to evaluate and ${action} them?`)) {
-        router.push(`/admin/applications/${appId}`);
-      }
-      return;
-    }
-
-    // Direct transitions (select, waitlist)
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/admin/applications/${appId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, preference: pref }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        load();
-      } else {
-        alert(data.error || "Failed to update candidate status.");
-        setLoading(false);
-      }
-    } catch {
-      alert("Failed to communicate with server.");
-      setLoading(false);
-    }
-  };
-
   const isAllSelected =
     applications.length > 0 && applications.every((app) => selectedIds.includes(app._id));
 
@@ -298,40 +196,6 @@ export default function AdminApplicationsPage() {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex bg-zinc-950 border border-zinc-900 p-1 rounded-xl text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode("list");
-                  setPage(1);
-                }}
-                className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  viewMode === "list"
-                    ? "bg-zinc-900 text-teal-400 animate-pixel-pulse"
-                    : "text-zinc-550 hover:text-zinc-300"
-                }`}
-              >
-                <List className="h-3.5 w-3.5" />
-                List
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setViewMode("kanban");
-                  setPage(1);
-                }}
-                className={`px-3.5 py-2 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  viewMode === "kanban"
-                    ? "bg-zinc-900 text-teal-400 animate-pixel-pulse"
-                    : "text-zinc-550 hover:text-zinc-300"
-                }`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                Kanban
-              </button>
-            </div>
-
             <Button
               onClick={() => setShowExportModal(true)}
               variant="emerald"
@@ -394,225 +258,146 @@ export default function AdminApplicationsPage() {
           </Select>
         </div>
 
-        {/* Conditional Rendering of Views */}
-        {viewMode === "list" ? (
-          /* List View Wrapper */
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={isAllSelected}
-                        onChange={toggleSelectAll}
-                        className="rounded border-zinc-800 bg-zinc-950 text-teal-500 focus:ring-teal-500 cursor-pointer h-4 w-4"
-                      />
-                    </TableHead>
-                    {["Name", "Email", "1st Pref", "2nd Pref", "Stage", "Status", "Applied", ""].map((h, i) => (
-                      <TableHead key={i}>
-                        <div className="flex items-center gap-1">
-                          {h} {h && <ArrowUpDown className="h-3 w-3 opacity-40" />}
-                        </div>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="py-16 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
-                          <span className="text-xs text-zinc-500 font-medium">
-                            Loading applications...
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ) : applications.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="py-16 text-center text-zinc-500 text-sm font-medium">
-                        No applications found matching criteria
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    applications.map((app) => (
-                      <TableRow
-                        key={app._id}
-                        onClick={() => router.push(`/admin/applications/${app._id}`)}
-                        className="cursor-pointer"
-                      >
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(app._id)}
-                            onChange={() => toggleSelect(app._id)}
-                            className="rounded border-zinc-800 bg-zinc-950 text-teal-500 focus:ring-teal-500 cursor-pointer h-4 w-4"
-                          />
-                        </TableCell>
-                        <TableCell className="font-bold text-white text-sm truncate max-w-[150px]" title={app.userName || "N/A"}>
-                          {app.userName || "—"}
-                        </TableCell>
-                        <TableCell className="text-zinc-400 text-xs truncate max-w-[200px]">
-                          {app.userEmail}
-                        </TableCell>
-                        <TableCell className="text-zinc-350 text-xs">
-                          {DEPT_NAMES[app.firstPreference] ?? app.firstPreference}
-                        </TableCell>
-                        <TableCell className="text-zinc-355 text-xs">
-                          {DEPT_NAMES[app.secondPreference] ?? app.secondPreference}
-                        </TableCell>
-                        <TableCell className="text-zinc-400 text-xs font-semibold">
-                          {getStageLabel(
-                            app.activePreference === "first"
-                              ? app.firstPrefProgress.currentStage
-                              : app.secondPrefProgress.currentStage
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              app.overallStatus === "selected"
-                                ? "success"
-                                : app.overallStatus === "rejected"
-                                ? "destructive"
-                                : app.overallStatus === "waitlisted"
-                                ? "info"
-                                : "warning"
-                            }
-                          >
-                            {app.overallStatus}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-zinc-500 text-xs font-medium">
-                          {new Date(app.createdAt).toLocaleDateString("en-IN", {
-                            day: "2-digit",
-                            month: "short",
-                          })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" className="text-teal-400 hover:text-teal-300 font-bold">
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-
-            {/* Pagination */}
-            {pagination.pages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-900 bg-zinc-950/10">
-                <p className="text-xs text-zinc-500 font-semibold">
-                  Page {pagination.page} of {pagination.pages} · {pagination.total} results
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPage((p) => Math.max(1, p - 1));
-                    }}
-                    disabled={pagination.page <= 1}
-                    className="h-9 w-9"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPage((p) => Math.min(pagination.pages, p + 1));
-                    }}
-                    disabled={pagination.page >= pagination.pages}
-                    className="h-9 w-9"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
-        ) : (
-          /* Kanban Board View */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start select-none pb-4 overflow-x-auto">
-            {loading ? (
-              <div className="col-span-6 py-24 flex flex-col items-center justify-center gap-2">
-                <Loader2 className="h-10 w-10 text-teal-400 animate-spin" />
-                <span className="text-sm text-zinc-500 font-medium">Arranging Kanban Columns...</span>
-              </div>
-            ) : (
-              Object.entries(getKanbanColumns()).map(([colKey, col]) => (
-                <div
-                  key={colKey}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    const appId = e.dataTransfer.getData("applicationId");
-                    if (appId) handleDragDrop(appId, colKey);
-                  }}
-                  className={`rounded-2xl border ${col.border} bg-zinc-950/20 p-4 space-y-3 min-h-[500px] flex flex-col`}
-                >
-                  <div className={`p-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex justify-between items-center ${col.headerBg}`}>
-                    <span>{col.title}</span>
-                    <Badge variant="outline" className="bg-black/40 text-[10px] font-mono border-zinc-800">
-                      {col.items.length}
-                    </Badge>
-                  </div>
-
-                  <div className="flex-1 space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                    {col.items.length === 0 ? (
-                      <div className="text-center py-16 text-zinc-700 font-bold text-xs border border-dashed border-zinc-900 rounded-xl">
-                        Drop Here
+        {/* Applications List Table */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded border-zinc-800 bg-zinc-950 text-teal-500 focus:ring-teal-500 cursor-pointer h-4 w-4"
+                    />
+                  </TableHead>
+                  {["Name", "Email", "1st Pref", "2nd Pref", "Status", "Applied", ""].map((h, i) => (
+                    <TableHead key={i}>
+                      <div className="flex items-center gap-1">
+                        {h} {h && <ArrowUpDown className="h-3 w-3 opacity-40" />}
                       </div>
-                    ) : (
-                      col.items.map((app) => {
-                        const avgRating = getAverageScore(app);
-                        return (
-                          <div
-                            key={app._id}
-                            draggable
-                            onDragStart={(e) => e.dataTransfer.setData("applicationId", app._id)}
-                            onClick={() => router.push(`/admin/applications/${app._id}`)}
-                            className="p-3.5 bg-zinc-950 border border-zinc-900 hover:border-zinc-800 rounded-xl cursor-grab active:cursor-grabbing hover:shadow-[0_0_15px_rgba(20,184,166,0.06)] transition-all space-y-3"
-                          >
-                            <p className="text-xs font-bold text-zinc-200 truncate" title={app.userName || app.userEmail}>
-                              {app.userName || app.userEmail}
-                            </p>
-                            {app.userName && (
-                              <p className="text-[10px] text-zinc-500 truncate" title={app.userEmail}>
-                                {app.userEmail}
-                              </p>
-                            )}
-                            <div className="flex justify-between items-center gap-1.5 flex-wrap">
-                              <span className="px-2 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[9px] text-zinc-400 font-bold uppercase tracking-wider">
-                                {DEPT_NAMES[app.firstPreference] || app.firstPreference}
-                              </span>
-                              {avgRating && (
-                                <span className="text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
-                                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {avgRating}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
+                        <span className="text-xs text-zinc-500 font-medium">
+                          Loading applications...
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : applications.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-16 text-center text-zinc-500 text-sm font-medium">
+                      No applications found matching criteria
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  applications.map((app) => (
+                    <TableRow
+                      key={app._id}
+                      onClick={() => router.push(`/admin/applications/${app._id}`)}
+                      className="cursor-pointer"
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(app._id)}
+                          onChange={() => toggleSelect(app._id)}
+                          className="rounded border-zinc-800 bg-zinc-950 text-teal-500 focus:ring-teal-500 cursor-pointer h-4 w-4"
+                        />
+                      </TableCell>
+                      <TableCell className="font-bold text-white text-sm truncate max-w-[150px]" title={app.userName || "N/A"}>
+                        {app.userName || "—"}
+                      </TableCell>
+                      <TableCell className="text-zinc-400 text-xs truncate max-w-[200px]">
+                        {app.userEmail}
+                      </TableCell>
+                      <TableCell className="text-zinc-350 text-xs">
+                        {DEPT_NAMES[app.firstPreference] ?? app.firstPreference}
+                      </TableCell>
+                      <TableCell className="text-zinc-355 text-xs">
+                        {DEPT_NAMES[app.secondPreference] ?? app.secondPreference}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            app.overallStatus === "selected"
+                              ? "success"
+                              : app.overallStatus === "rejected"
+                              ? "destructive"
+                              : app.overallStatus === "waitlisted"
+                              ? "info"
+                              : "warning"
+                          }
+                        >
+                          {app.overallStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-zinc-500 text-xs font-medium">
+                        {new Date(app.createdAt).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" className="text-teal-400 hover:text-teal-300 font-bold">
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-900 bg-zinc-950/10">
+              <p className="text-xs text-zinc-500 font-semibold">
+                Page {pagination.page} of {pagination.pages} · {pagination.total} results
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPage((p) => Math.max(1, p - 1));
+                  }}
+                  disabled={pagination.page <= 1}
+                  className="h-9 w-9"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPage((p) => Math.min(pagination.pages, p + 1));
+                  }}
+                  disabled={pagination.page >= pagination.pages}
+                  className="h-9 w-9"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
       </div>
 
-      {/* Floating Bulk Actions Bar (only active in list view) */}
-      {selectedIds.length > 0 && viewMode === "list" && (
+      {/* Floating Bulk Actions Bar */}
+      {selectedIds.length > 0 && (
         <div className="fixed bottom-6 left-[calc(50%+112px)] -translate-x-1/2 z-30 bg-zinc-950 border border-zinc-800 rounded-2xl py-3 px-6 shadow-2xl flex items-center gap-5 animate-pixel-slide-up">
           <span className="text-xs font-bold text-zinc-400 whitespace-nowrap">
             <strong className="text-white text-sm mr-1">{selectedIds.length}</strong> selected
@@ -678,75 +463,430 @@ export default function AdminApplicationsPage() {
 
       {/* 2. Custom Export Columns Picker Modal */}
       <Dialog open={showExportModal} onOpenChange={setShowExportModal}>
-        <DialogContent className="max-w-md bg-zinc-950 border border-zinc-900 rounded-2xl p-6 font-mono text-xs">
-          <DialogHeader className="border-b border-zinc-900 pb-3">
-            <DialogTitle className="text-base text-white font-extrabold flex items-center gap-2">
-              <Download className="h-5 w-5 text-teal-400" />
-              Customize CSV Export
-            </DialogTitle>
-            <DialogDescription className="text-xs text-zinc-500">
-              Select the columns to include in the spreadsheet download.
+        <DialogContent className="max-w-2xl bg-zinc-950/95 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-6 font-sans text-xs max-h-[88vh] overflow-y-auto shadow-2xl space-y-5 text-zinc-200">
+          <DialogHeader className="border-b border-zinc-900 pb-4">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-lg text-white font-extrabold flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
+                  <Download className="h-5 w-5" />
+                </div>
+                <span>Export Applications CSV</span>
+              </DialogTitle>
+              <span className="text-[11px] font-semibold px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-teal-400 font-mono">
+                {Object.values(exportCols).filter(Boolean).length} / {Object.keys(exportCols).length} columns selected
+              </span>
+            </div>
+            <DialogDescription className="text-xs text-zinc-400 mt-1.5">
+              Customize export scope, filter by department preferences, and select data columns to include.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-3 my-4">
-            {Object.entries({
-              id: "Applicant ID",
-              email: "Email Address",
-              createdAt: "Applied Date",
-              overallStatus: "Overall Status",
-              firstPref: "First Preference",
-              firstPrefType: "First Pref Type",
-              firstPrefStatus: "First Pref Status",
-              firstPrefStage: "First Pref Stage",
-              secondPref: "Second Preference",
-              secondPrefType: "Second Pref Type",
-              secondPrefStatus: "Second Pref Status",
-              secondPrefStage: "Second Pref Stage",
-              scores: "Rubric Scorecard Data",
-            }).map(([key, label]) => (
-              <label
-                key={key}
-                className="flex items-center gap-2 p-2 bg-zinc-900/40 border border-zinc-900 hover:border-zinc-800 rounded-xl cursor-pointer select-none transition-all"
+          {/* Configuration Grid: Scope & Department Filter */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {/* Export Scope Selector */}
+            <div className="p-3.5 bg-zinc-900/40 border border-zinc-800/70 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-zinc-300 uppercase tracking-wider">
+                  Export Scope
+                </span>
+                <span className="text-[10px] text-zinc-500 font-medium">
+                  {exportScope === "all" ? `${pagination.total} records` : exportScope === "selected" ? `${selectedIds.length} selected` : "Filtered"}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setExportScope("all")}
+                  className={`px-2.5 py-2 rounded-lg border text-[11px] font-bold transition-all ${
+                    exportScope === "all"
+                      ? "bg-teal-500/15 border-teal-500/80 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)]"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  All ({pagination.total})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setExportScope("filtered")}
+                  className={`px-2.5 py-2 rounded-lg border text-[11px] font-bold transition-all ${
+                    exportScope === "filtered"
+                      ? "bg-teal-500/15 border-teal-500/80 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)]"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  Filtered
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedIds.length === 0}
+                  onClick={() => setExportScope("selected")}
+                  className={`px-2.5 py-2 rounded-lg border text-[11px] font-bold transition-all ${
+                    selectedIds.length === 0
+                      ? "bg-zinc-950/40 border-zinc-900/60 text-zinc-600 cursor-not-allowed"
+                      : exportScope === "selected"
+                      ? "bg-teal-500/15 border-teal-500/80 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.15)]"
+                      : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                  }`}
+                >
+                  Selected ({selectedIds.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Department Filter Section */}
+            <div className="p-3.5 bg-zinc-900/40 border border-zinc-800/70 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-zinc-300 uppercase tracking-wider">
+                  Target Department
+                </span>
+                {exportDept && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportDept("");
+                      setExportDeptPref("any");
+                    }}
+                    className="text-[10px] text-teal-400 hover:text-teal-300 hover:underline font-semibold transition-colors"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+              <select
+                value={exportDept}
+                onChange={(e) => setExportDept(e.target.value)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-200 focus:outline-none focus:border-teal-500/60 transition-colors cursor-pointer"
               >
-                <input
-                  type="checkbox"
-                  checked={exportCols[key]}
-                  onChange={(e) => setExportCols((cols) => ({ ...cols, [key]: e.target.checked }))}
-                  className="rounded border-zinc-800 bg-zinc-950 text-teal-500 focus:ring-teal-500 cursor-pointer h-4 w-4"
-                />
-                <span className="text-zinc-350 font-bold text-[10px]">{label}</span>
-              </label>
-            ))}
+                <option value="">All Departments</option>
+                {DEPTS.map((slug) => (
+                  <option key={slug} value={slug}>
+                    {DEPT_NAMES[slug]}
+                  </option>
+                ))}
+              </select>
+
+              {exportDept && (
+                <div className="grid grid-cols-4 gap-1 pt-0.5">
+                  {[
+                    ["any", "Either"],
+                    ["first", "1st Pref"],
+                    ["second", "2nd Pref"],
+                    ["active", "Active"],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setExportDeptPref(key as any)}
+                      className={`px-1.5 py-1 rounded-md text-[10px] font-bold border transition-all ${
+                        exportDeptPref === key
+                          ? "bg-teal-500/20 border-teal-500/80 text-teal-300"
+                          : "bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-zinc-900 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowExportModal(false)}
-              className="px-4 font-bold rounded-xl h-9 text-xs cursor-pointer select-none"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => {
-                const cols = Object.entries(exportCols)
-                  .filter(([_, active]) => active)
-                  .map(([key]) => key)
-                  .join(",");
-                window.location.href = `/api/admin/applications/export?columns=${cols}`;
-                setShowExportModal(false);
-              }}
-              className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-4 rounded-xl h-9 text-xs cursor-pointer select-none flex items-center gap-1.5"
-            >
-              <Download className="h-3.5 w-3.5" />
-              Download CSV
-            </Button>
+          {/* Quick Presets Toolbar */}
+          <div className="p-3 bg-zinc-900/30 border border-zinc-800/50 rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                Column Presets
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExportCols((cols) =>
+                      Object.keys(cols).reduce((acc, k) => ({ ...acc, [k]: true }), {})
+                    )
+                  }
+                  className="px-2.5 py-1 bg-teal-500/10 border border-teal-500/30 text-teal-300 hover:bg-teal-500/20 rounded-lg text-[10px] font-bold transition-all"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExportCols((cols) =>
+                      Object.keys(cols).reduce((acc, k) => ({ ...acc, [k]: false }), {})
+                    )
+                  }
+                  className="px-2.5 py-1 bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-lg text-[10px] font-bold transition-all"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  setExportCols({
+                    id: false,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                    regNo: true,
+                    year: true,
+                    branch: true,
+                    whyMic: false,
+                    createdAt: true,
+                    overallStatus: true,
+                    activePreference: false,
+                    firstPref: true,
+                    firstPrefType: false,
+                    firstPrefStatus: true,
+                    firstPrefStage: true,
+                    secondPref: true,
+                    secondPrefType: false,
+                    secondPrefStatus: false,
+                    secondPrefStage: false,
+                    scores: false,
+                    adminNotes: false,
+                    panelistNotes: false,
+                  })
+                }
+                className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
+              >
+                Standard Summary
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setExportCols({
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    phone: true,
+                    regNo: true,
+                    year: true,
+                    branch: true,
+                    whyMic: true,
+                    createdAt: true,
+                    overallStatus: true,
+                    activePreference: true,
+                    firstPref: true,
+                    firstPrefType: true,
+                    firstPrefStatus: true,
+                    firstPrefStage: true,
+                    secondPref: true,
+                    secondPrefType: true,
+                    secondPrefStatus: true,
+                    secondPrefStage: true,
+                    scores: false,
+                    adminNotes: false,
+                    panelistNotes: false,
+                  })
+                }
+                className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
+              >
+                Full Candidate Profile
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setExportCols({
+                    id: false,
+                    fullName: true,
+                    email: true,
+                    phone: false,
+                    regNo: true,
+                    year: false,
+                    branch: false,
+                    whyMic: false,
+                    createdAt: true,
+                    overallStatus: true,
+                    activePreference: true,
+                    firstPref: true,
+                    firstPrefType: false,
+                    firstPrefStatus: true,
+                    firstPrefStage: true,
+                    secondPref: true,
+                    secondPrefType: false,
+                    secondPrefStatus: true,
+                    secondPrefStage: true,
+                    scores: true,
+                    adminNotes: true,
+                    panelistNotes: true,
+                  })
+                }
+                className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
+              >
+                Evaluations & Rubrics
+              </button>
+            </div>
+          </div>
+
+          {/* Categorized Data Columns */}
+          <div className="space-y-4 pt-1">
+            {/* Candidate Details */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider block">
+                Candidate Profile Details
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  ["fullName", "Full Name"],
+                  ["email", "Email Address"],
+                  ["phone", "Phone Number"],
+                  ["regNo", "Registration No"],
+                  ["year", "Academic Year"],
+                  ["branch", "Branch"],
+                  ["whyMic", "Why MIC Statement"],
+                  ["createdAt", "Applied Date"],
+                ].map(([key, label]) => (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+                      exportCols[key]
+                        ? "bg-teal-500/10 border-teal-500/40 text-white"
+                        : "bg-zinc-900/30 border-zinc-800/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!exportCols[key]}
+                      onChange={(e) =>
+                        setExportCols((cols) => ({ ...cols, [key]: e.target.checked }))
+                      }
+                      className="rounded border-zinc-700 bg-zinc-950 text-teal-500 focus:ring-teal-500/40 cursor-pointer h-4 w-4"
+                    />
+                    <span className="font-semibold text-xs">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Application & Preference Details */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider block">
+                Application & Preference Status
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  ["id", "Applicant ID"],
+                  ["overallStatus", "Overall Status"],
+                  ["activePreference", "Active Preference"],
+                  ["firstPref", "First Preference"],
+                  ["firstPrefType", "First Pref Type"],
+                  ["firstPrefStatus", "First Pref Status"],
+                  ["firstPrefStage", "First Pref Stage"],
+                  ["secondPref", "Second Preference"],
+                  ["secondPrefType", "Second Pref Type"],
+                  ["secondPrefStatus", "Second Pref Status"],
+                  ["secondPrefStage", "Second Pref Stage"],
+                ].map(([key, label]) => (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+                      exportCols[key]
+                        ? "bg-teal-500/10 border-teal-500/40 text-white"
+                        : "bg-zinc-900/30 border-zinc-800/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!exportCols[key]}
+                      onChange={(e) =>
+                        setExportCols((cols) => ({ ...cols, [key]: e.target.checked }))
+                      }
+                      className="rounded border-zinc-700 bg-zinc-950 text-teal-500 focus:ring-teal-500/40 cursor-pointer h-4 w-4"
+                    />
+                    <span className="font-semibold text-xs">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Evaluations & Notes */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider block">
+                Evaluations & Interview Notes
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  ["scores", "Rubric Scores"],
+                  ["adminNotes", "Admin Review Notes"],
+                  ["panelistNotes", "Panelist Notes"],
+                ].map(([key, label]) => (
+                  <label
+                    key={key}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all ${
+                      exportCols[key]
+                        ? "bg-teal-500/10 border-teal-500/40 text-white"
+                        : "bg-zinc-900/30 border-zinc-800/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!!exportCols[key]}
+                      onChange={(e) =>
+                        setExportCols((cols) => ({ ...cols, [key]: e.target.checked }))
+                      }
+                      className="rounded border-zinc-700 bg-zinc-950 text-teal-500 focus:ring-teal-500/40 cursor-pointer h-4 w-4"
+                    />
+                    <span className="font-semibold text-xs">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-900 mt-4">
+            <span className="text-xs text-zinc-500 font-medium">
+              File format: <span className="font-mono text-zinc-300">.csv (UTF-8)</span>
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowExportModal(false)}
+                className="px-4 font-semibold rounded-xl h-9 text-xs cursor-pointer select-none border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  const cols = Object.entries(exportCols)
+                    .filter(([_, active]) => active)
+                    .map(([key]) => key)
+                    .join(",");
+                  const params = new URLSearchParams({
+                    columns: cols,
+                    scope: exportScope,
+                  });
+                  if (exportDept) {
+                    params.set("dept", exportDept);
+                    params.set("pref", exportDeptPref);
+                  }
+                  if (exportScope === "selected" && selectedIds.length > 0) {
+                    params.set("ids", selectedIds.join(","));
+                  } else if (exportScope === "filtered") {
+                    if (deptFilter && !exportDept) params.set("dept", deptFilter);
+                    if (statusFilter) params.set("status", statusFilter);
+                    if (search) params.set("q", search);
+                  }
+                  window.location.href = `/api/admin/applications/export?${params.toString()}`;
+                  setShowExportModal(false);
+                }}
+                className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-5 rounded-xl h-9 text-xs cursor-pointer select-none flex items-center gap-2 shadow-[0_0_15px_rgba(20,184,166,0.2)] transition-all"
+              >
+                <Download className="h-4 w-4" />
+                Download CSV
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>
   );
 }
+
+
