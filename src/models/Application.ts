@@ -59,10 +59,11 @@ export interface IApplication extends Document {
   phone: string;
   regNo: string;
   year: string;
-  branch: string;
+  branch?: string;
   whyMic: string;
 
   activePreference: "first" | "second";
+  isFinalSubmitted?: boolean;
   overallStatus: OverallStatus;
 
   firstPrefProgress: PrefProgress;
@@ -151,13 +152,17 @@ const ApplicationSchema = new Schema<IApplication>(
     phone: { type: String, required: true },
     regNo: { type: String, required: true },
     year: { type: String, required: true },
-    branch: { type: String, required: true },
+    branch: { type: String, required: false },
     whyMic: { type: String, required: true },
 
     activePreference: {
       type: String,
       enum: ["first", "second"],
       default: "first",
+    },
+    isFinalSubmitted: {
+      type: Boolean,
+      default: false,
     },
     overallStatus: {
       type: String,
