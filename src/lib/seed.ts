@@ -561,8 +561,9 @@ async function run() {
             },
             {
               id: "projectPdf",
-              label: "Upload your Task Project PDF",
-              type: "file" as const,
+              label: "Task Project / Documentation URL (Google Drive, Notion, etc.)",
+              type: "url" as const,
+              placeholder: "https://drive.google.com/...",
               required: true,
               subDomain: "common",
               targetYears: ["all"],
@@ -730,8 +731,9 @@ async function run() {
             },
             {
               id: "projectPdf",
-              label: "Upload your Task Design PDF / Presentation",
-              type: "file" as const,
+              label: "Task Design / Presentation URL (Google Drive, Figma, etc.)",
+              type: "url" as const,
+              placeholder: "https://drive.google.com/...",
               required: true,
             },
             {
@@ -828,8 +830,9 @@ async function run() {
             },
             {
               id: "projectPdf",
-              label: "Upload your Task Analysis/Report PDF",
-              type: "file" as const,
+              label: "Task Analysis / Report URL (Google Drive, Colab, etc.)",
+              type: "url" as const,
+              placeholder: "https://drive.google.com/...",
               required: true,
             },
             {
@@ -1198,101 +1201,63 @@ async function run() {
   // -------------------------------------------------------------------------
   // Upsert departments
   // -------------------------------------------------------------------------
-  const S3_BASE = `https://${process.env.AWS_S3_BUCKET_NAME || "mic-recruitment-portal-files"}.s3.${process.env.AWS_REGION || "ap-south-1"}.amazonaws.com/tasks`;
+  const TASKS_BASE = "/tasks";
 
   const DEPT_TASKS: Record<string, { title: string; description: string; pdf: string }> = {
     development: {
       title: "Development Task",
       description: "Build a responsive Next.js application that integrates with a public API (e.g. Weather, GitHub, or NASA) and displays data interactively. Add a search filter and persistent local storage.",
-      pdf: `${S3_BASE}/development-task.pdf`,
+      pdf: `${TASKS_BASE}/development-task.pdf`,
     },
     "competitive-coding": {
       title: "Competitive Coding Task",
       description: "Solve the set of 3 advanced data structure and dynamic programming problems hosted on HackerRank/Codeforces. Ensure optimal time complexity.",
-      pdf: `${S3_BASE}/cc-task.pdf`,
+      pdf: `${TASKS_BASE}/cc-task.pdf`,
     },
     "ui-ux": {
       title: "UI/UX Task",
       description: "Redesign the dashboard UI for a modern digital wallet application. Create high-fidelity wireframes and interactive prototypes in Figma with micro-interactions.",
-      pdf: `${S3_BASE}/uiux-task.pdf`,
+      pdf: `${TASKS_BASE}/uiux-task.pdf`,
     },
     "ai-ml": {
       title: "AI/ML Task",
       description: "Build a predictive machine learning model using PyTorch or Scikit-learn. Perform EDA on the provided dataset, train the model, and submit a Jupyter notebook.",
-      pdf: `${S3_BASE}/aiml-task.pdf`,
+      pdf: `${TASKS_BASE}/aiml-task.pdf`,
     },
     "cyber-security": {
       title: "Cyber Security Task",
       description: "Find and exploit the vulnerabilities in the target virtual machine. Provide a detailed walkthrough of your flags captured and a mitigation report.",
-      pdf: `${S3_BASE}/cyber-task.pdf`,
+      pdf: `${TASKS_BASE}/cyber-task.pdf`,
     },
     design: {
       title: "Design Task",
       description: "Design a poster, social media banner, and a custom sticker sheet for MIC's upcoming annual hackathon 'DevSpace'. Maintain cohesive branding.",
-      pdf: `${S3_BASE}/design-task.pdf`,
+      pdf: `${TASKS_BASE}/design-task.pdf`,
     },
     management: {
       title: "Management Task",
       description: "Draft a comprehensive event proposal for a 24-hour campus hackathon. Include timeline, logistics checklist, sponsor outreach email drafts, and budget.",
-      pdf: `${S3_BASE}/mgmt-task.pdf`,
+      pdf: `${TASKS_BASE}/mgmt-task.pdf`,
     },
     entrepreneurship: {
       title: "Entrepreneurship Task",
       description: "Prepare a 10-slide pitch deck and a Lean Canvas for a SaaS startup solving a student lifestyle problem. Focus on value prop and unit economics.",
-      pdf: `${S3_BASE}/ep-task.pdf`,
+      pdf: `${TASKS_BASE}/ep-task.pdf`,
     },
     "content-media": {
       title: "Content & Media Task",
       description: "Create a 60-second video trailer promoting MIC recruitments. Write a copy deck with 3 sample Instagram posts and captions.",
-      pdf: `${S3_BASE}/media-task.pdf`,
+      pdf: `${TASKS_BASE}/media-task.pdf`,
     },
   };
 
   for (const dept of departments) {
-    const taskInfo = DEPT_TASKS[dept.slug];
-    if (taskInfo) {
-      (dept as any).totalStages = 2;
-      (dept as any).stages = [
-        ...dept.stages,
-        {
-          stage: 2,
-          title: taskInfo.title,
-          description: taskInfo.description,
-          taskPdf: taskInfo.pdf,
-          formFields: [
-            {
-              id: "githubUrl",
-              label: "GitHub Repository URL",
-              type: "url" as const,
-              placeholder: "https://github.com/username/repo",
-              required: true,
-            },
-            {
-              id: "demoUrl",
-              label: "Live Demo / Deployment URL",
-              type: "url" as const,
-              placeholder: "https://project-demo.vercel.app",
-              required: false,
-            },
-            {
-              id: "comments",
-              label: "Additional Notes / Comments",
-              type: "textarea" as const,
-              placeholder: "Explain your design choices, setup instructions, or assumptions...",
-              required: false,
-              maxLength: 600,
-            },
-          ],
-        }
-      ];
-    }
-
     await Department.findOneAndUpdate(
       { slug: dept.slug },
       { $set: dept },
       { upsert: true, new: true }
     );
-    console.log(`✅ Upserted department: ${dept.name} with totalStages: ${(dept as any).totalStages}`);
+    console.log(`✅ Upserted department: ${dept.name}`);
   }
 
   // -------------------------------------------------------------------------

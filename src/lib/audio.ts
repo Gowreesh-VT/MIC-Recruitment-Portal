@@ -3,7 +3,6 @@ let globalAudioCtx: AudioContext | null = null;
 export type SoundType =
   | "select"
   | "jump"
-  | "arcade_jump"
   | "coin"
   | "kick"
   | "gameover"
@@ -50,16 +49,6 @@ export function playRetroSound(type: SoundType = "select") {
       gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.15);
       osc.start();
       osc.stop(ctx.currentTime + 0.15);
-    } else if (type === "arcade_jump") {
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.connect(gain);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-      osc.frequency.setValueAtTime(160, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.25);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.25);
     } else if (type === "coin") {
       const osc = ctx.createOscillator();
       osc.type = "square";

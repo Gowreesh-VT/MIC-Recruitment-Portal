@@ -196,25 +196,6 @@ export const emailBlastSchema = z.object({
   templateType: z.string().optional().default("custom"),
 });
 
-const singleSlotSchema = z.object({
-  adminEmail: z.string().email("Invalid admin email address."),
-  panelName: z.string().optional().default("Panel 1"),
-  deptSlug: z.string().min(1, "Department slug is required."),
-  startTime: z.coerce.date(),
-  endTime: z.coerce.date(),
-  locationType: z.enum(["online", "offline"]),
-  locationDetails: z.string().min(1, "Location details are required."),
-}).refine(data => data.endTime > data.startTime, {
-  message: "End time must be after start time.",
-  path: ["endTime"],
-});
-
-export const interviewSlotInputSchema = z.union([
-  z.object({
-    slots: z.array(singleSlotSchema).min(1, "At least one slot must be provided."),
-  }),
-  singleSlotSchema,
-]);
 
 export const applyInitSchema = z.object({
   firstPreference: z.enum([
@@ -234,7 +215,7 @@ export const applyInitSchema = z.object({
   phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits."),
   regNo: z.string().min(1, "Registration Number is required."),
   year: z.string().min(1, "Year of Study is required."),
-  branch: z.string().min(1, "Branch is required."),
+  branch: z.string().optional().nullable(),
   whyMic: z.string().min(1, "This field is required."),
   _trap: z.string().optional().nullable(),
 });
@@ -244,7 +225,7 @@ export const updateProfileSchema = z.object({
   phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits with no spaces or special characters."),
   regNo: z.string().min(1, "Registration Number is required.").max(50, "Registration Number must not exceed 50 characters."),
   year: z.string().min(1, "Year of Study is required."),
-  branch: z.string().min(1, "Branch is required.").max(100, "Branch must not exceed 100 characters."),
+  branch: z.string().optional().nullable(),
   whyMic: z.string().min(1, "Why MIC answer is required.").max(2000, "Why MIC answer must not exceed 2000 characters."),
 });
 
@@ -285,13 +266,10 @@ export const stageConfigSchema = z.object({
   stage: z.number().int().min(1),
   title: z.string().min(1),
   description: z.string(),
-  taskPdf: z.string().optional(),
   formFields: z.array(formFieldSchema).default([]),
 });
 
 export const deptUpdateSchema = z.object({
   isActive: z.boolean().optional(),
-  totalStages: z.number().int().min(1).max(5).optional(),
-  stageToggles: z.record(z.string(), z.boolean()).optional(),
   stages: z.array(stageConfigSchema).optional(),
 });
