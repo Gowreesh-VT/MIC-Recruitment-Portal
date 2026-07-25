@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendStageUpdate } from "@/lib/mailer";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
@@ -286,11 +285,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   application.markModified(progressKey);
   await application.save();
-
-  // Send email update in background only on advance
-  if (action === "advance") {
-    sendStageUpdate(application.userEmail, "passed", note).catch(console.error);
-  }
 
   return NextResponse.json({
     success: true,

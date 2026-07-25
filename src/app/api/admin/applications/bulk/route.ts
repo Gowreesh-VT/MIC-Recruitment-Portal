@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendStageUpdate } from "@/lib/mailer";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
@@ -119,11 +118,6 @@ export async function POST(req: NextRequest) {
       app.markModified(progressKey);
       await app.save();
       processedEmails.push(app.userEmail);
-
-      // Email update (non-blocking background task) only on advance
-      if (action === "advance") {
-        sendStageUpdate(app.userEmail, "passed", note).catch(console.error);
-      }
     }
 
     return NextResponse.json({

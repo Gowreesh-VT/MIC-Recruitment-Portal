@@ -43,7 +43,7 @@ export async function PUT(req: NextRequest) {
       { status: 400 }
     );
   }
-  const { isOpen, startAt, endAt, countdownEnabled, countdownTarget, countdownTitle } = parseResult.data;
+  const { isOpen, startAt, endAt, countdownEnabled, countdownTarget, countdownTitle, emailNotificationsEnabled } = parseResult.data;
 
   const updateFields: Record<string, unknown> = { isOpen };
   if (startAt !== undefined) updateFields.startAt = startAt ? new Date(startAt) : null;
@@ -51,6 +51,7 @@ export async function PUT(req: NextRequest) {
   if (countdownEnabled !== undefined) updateFields.countdownEnabled = countdownEnabled;
   if (countdownTarget !== undefined) updateFields.countdownTarget = countdownTarget ? new Date(countdownTarget) : null;
   if (countdownTitle !== undefined) updateFields.countdownTitle = countdownTitle || "Recruitment Countdown";
+  if (emailNotificationsEnabled !== undefined) updateFields.emailNotificationsEnabled = emailNotificationsEnabled;
 
   if (isOpen) {
     updateFields.openedAt = new Date();

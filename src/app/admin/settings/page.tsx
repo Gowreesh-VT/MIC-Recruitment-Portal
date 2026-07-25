@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Download,
   Clock,
+  Mail,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,10 @@ export default function AdminSettingsPage() {
   const [countdownTitle, setCountdownTitle] = useState("Recruitment Countdown");
   const [savingCountdown, setSavingCountdown] = useState(false);
   const [savedCountdown, setSavedCountdown] = useState(false);
+
+  // Email notifications state
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+  const [togglingEmail, setTogglingEmail] = useState(false);
   
   // AlertDialog state
   const [showCycleConfirm, setShowCycleConfirm] = useState(false);
@@ -64,6 +69,7 @@ export default function AdminSettingsPage() {
           setCountdownEnabled(cycleData.cycle.countdownEnabled ?? false);
           setCountdownTarget(formatToDatetimeLocal(cycleData.cycle.countdownTarget ?? cycleData.cycle.startAt));
           setCountdownTitle(cycleData.cycle.countdownTitle ?? "Recruitment Countdown");
+          setEmailNotificationsEnabled(cycleData.cycle.emailNotificationsEnabled ?? true);
         }
       } catch {
         // ignore
@@ -73,6 +79,30 @@ export default function AdminSettingsPage() {
     };
     load();
   }, []);
+
+  const handleToggleEmailNotifications = async () => {
+    if (!cycle) return;
+    setTogglingEmail(true);
+    try {
+      const res = await fetch("/api/admin/cycle", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          isOpen: cycle.isOpen,
+          emailNotificationsEnabled: !emailNotificationsEnabled,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.cycle) {
+        setCycle(data.cycle);
+        setEmailNotificationsEnabled(data.cycle.emailNotificationsEnabled ?? true);
+      }
+    } catch {
+      alert("Failed to update email notification settings.");
+    } finally {
+      setTogglingEmail(false);
+    }
+  };
 
   const handleToggleCycleConfirm = async () => {
     if (!cycle) return;
@@ -292,6 +322,42 @@ export default function AdminSettingsPage() {
         </Card>
 
 
+
+        {/* Automated Email Delivery Toggle */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Mail className="h-5 w-5 text-sky-400" />
+              Automated Email Delivery
+            </CardTitle>
+            <CardDescription>
+              Control automated email notifications sent to students upon final preference confirmation
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex items-center justify-between flex-wrap gap-6">
+              <div>
+                <p className="text-sm font-bold text-zinc-200">
+                  {emailNotificationsEnabled ? "Automated Email Delivery is Active" : "Automated Email Delivery is Disabled"}
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {emailNotificationsEnabled
+                    ? "Confirmation emails will be sent automatically when candidates finalize their Tech & Non-Tech preferences."
+                    : "No automated emails will be dispatched to candidates."}
+                </p>
+              </div>
+              <Button
+                variant={emailNotificationsEnabled ? "emerald" : "destructive"}
+                onClick={handleToggleEmailNotifications}
+                disabled={togglingEmail}
+                className="px-6 font-bold h-10 cursor-pointer"
+              >
+                {togglingEmail && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+                {emailNotificationsEnabled ? "ENABLED (Click to Disable)" : "DISABLED (Click to Enable)"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* System Management & Backups Card */}
         <Card>
