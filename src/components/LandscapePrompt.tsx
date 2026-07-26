@@ -12,16 +12,28 @@ const pressStart = Press_Start_2P({
 
 export default function LandscapePrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+
+  const handleDismiss = () => {
+    try {
+      localStorage.setItem("mic_landscape_prompt_dismissed", "true");
+    } catch {}
+    setShowPrompt(false);
+  };
 
   useEffect(() => {
+    // If user has already seen and dismissed the prompt on mobile, do not show it again
+    try {
+      if (localStorage.getItem("mic_landscape_prompt_dismissed") === "true") {
+        return;
+      }
+    } catch {}
+
     const checkOrientation = () => {
-      // Check if it's a mobile device in portrait mode
       if (typeof window !== "undefined") {
         const isPortrait = window.innerHeight > window.innerWidth;
-        const isMobile = window.innerWidth <= 768; // Standard mobile breakpoint
-        
-        if (isPortrait && isMobile && !dismissed) {
+        const isMobile = window.innerWidth <= 768;
+
+        if (isPortrait && isMobile) {
           setShowPrompt(true);
         } else {
           setShowPrompt(false);
@@ -37,7 +49,7 @@ export default function LandscapePrompt() {
       window.removeEventListener("resize", checkOrientation);
       window.removeEventListener("orientationchange", checkOrientation);
     };
-  }, [dismissed]);
+  }, []);
 
   if (!showPrompt) return null;
 
@@ -61,7 +73,7 @@ export default function LandscapePrompt() {
         </div>
 
         <button
-          onClick={() => setDismissed(true)}
+          onClick={handleDismiss}
           className="mt-2 w-full bg-white hover:bg-slate-100 text-black border-4 border-black py-4 px-4 text-[10px] font-bold tracking-widest transition-transform active:translate-y-1"
           style={{ boxShadow: "4px 4px 0px 0px #000" }}
         >

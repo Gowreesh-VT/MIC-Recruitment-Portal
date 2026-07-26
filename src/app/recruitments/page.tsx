@@ -46,15 +46,14 @@ function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisab
   return (
     <div
       onClick={isDisabled ? (hasDisabledAction ? onSelectDisabled : undefined) : onSelect}
-      className={`w-[385px] h-[275px] flex flex-col items-start p-1.5 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${
-        isDisabled && !hasDisabledAction
+      className={`w-[385px] h-[275px] flex flex-col items-start p-1.5 rounded-[10px] border-4 border-solid border-black relative shrink-0 select-none transition-all duration-150 ${isDisabled && !hasDisabledAction
           ? "bg-[#FFB59F]"
           : isDisabled && hasDisabledAction
-          ? "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
-          : isSelected
-          ? "bg-white cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
-          : "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
-      } group`}
+            ? "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
+            : isSelected
+              ? "bg-white cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
+              : "bg-[#FFB59F] cursor-pointer hover:-translate-y-3 hover:scale-[1.02] active:translate-y-0 active:scale-[0.98]"
+        } group`}
       style={{ boxShadow: "6px 6px 0px 0px rgba(0,0,0,0.15)" }}
     >
       {/* Card Header Tag */}
@@ -70,21 +69,20 @@ function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisab
           <p className={`text-[13.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
             {isDisabled && hasDisabledAction ? "WANT TO SWITCH QUESTS? TAP TO DROP & CHOOSE THIS ONE" : isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
-          
+
           {isSelected && progressStatus && (
             <div className="flex items-center gap-2 mt-1">
               <span className="bg-[#E29A2B] text-black text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider">
                 STATUS
               </span>
-              <span className={`text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000] ${
-                progressStatus === "passed"
+              <span className={`text-[10px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000] ${progressStatus === "passed"
                   ? "bg-[#52AE26] text-white"
                   : progressStatus === "rejected"
-                  ? "bg-[#DC2626] text-white"
-                  : progressStatus === "active" || progressStatus === "in-progress"
-                  ? "bg-[#1093EB] text-white"
-                  : "bg-[#FBBF24] text-black"
-              }`}>
+                    ? "bg-[#DC2626] text-white"
+                    : progressStatus === "active" || progressStatus === "in-progress"
+                      ? "bg-[#1093EB] text-white"
+                      : "bg-[#FBBF24] text-black"
+                }`}>
                 {progressStatus.replace("-", " ")}
               </span>
             </div>
@@ -162,20 +160,19 @@ function MobileQuestSign({
   const isSelected = state === "selected";
   const isDisabled = state === "disabled";
   const hasDisabledAction = isDisabled && !!onClickDisabled;
-  
+
   const bgColor = isDisabled ? "bg-[#9C7A3A]" : isSelected ? "bg-[#F0C050]" : "bg-[#E8A830]";
   const triangleFill = isDisabled ? "#9C7A3A" : isSelected ? "#F0C050" : "#E8A830";
 
   return (
     <button
       onClick={isDisabled ? (hasDisabledAction ? onClickDisabled : undefined) : onClick}
-      className={`relative flex items-center gap-1 select-none focus:outline-none flex-shrink-0 ${
-        isDisabled && !hasDisabledAction
+      className={`relative flex items-center gap-1 select-none focus:outline-none flex-shrink-0 ${isDisabled && !hasDisabledAction
           ? "opacity-60 cursor-not-allowed"
           : isDisabled && hasDisabledAction
-          ? "opacity-80 cursor-pointer active:scale-95 transition-transform"
-          : "cursor-pointer active:scale-95 transition-transform"
-      }`}
+            ? "opacity-80 cursor-pointer active:scale-95 transition-transform"
+            : "cursor-pointer active:scale-95 transition-transform"
+        }`}
       aria-label={label}
     >
       {/* If pointing left, triangle is on the left */}
@@ -187,22 +184,21 @@ function MobileQuestSign({
       )}
 
       {/* Pill shape */}
-      <div className={`flex items-center justify-center px-4 py-2 border-[3px] border-[#2A1A00] rounded-full ${bgColor} relative`}
-           style={{ width: "170px", height: "42px", boxShadow: "2px 2px 0px rgba(0,0,0,0.35)" }}>
-        <span className="font-bold tracking-wider uppercase text-black text-[10px] whitespace-nowrap overflow-hidden text-ellipsis px-2 leading-none" style={{ marginTop: "2px" }}>{label}</span>
-        
+      <div className={`flex items-center justify-center px-3 sm:px-4 py-1.5 border-[3px] border-[#2A1A00] rounded-full ${bgColor} relative min-w-[160px] max-w-[210px] sm:min-w-[190px] min-h-[44px] h-auto`}
+        style={{ boxShadow: "2px 2px 0px rgba(0,0,0,0.35)" }}>
+        <span className="font-bold tracking-wider uppercase text-black text-[9px] sm:text-[10px] text-center leading-tight px-1 break-words">{label}</span>
+
         {/* Status badge */}
         {isSelected && progressStatus && (
           <div
-            className={`absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[7px] font-bold uppercase tracking-wider ${
-              progressStatus === "passed"
+            className={`absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[7px] font-bold uppercase tracking-wider ${progressStatus === "passed"
                 ? "text-[#72F418]"
                 : progressStatus === "rejected"
-                ? "text-[#FF4444]"
-                : progressStatus === "active" || progressStatus === "in-progress"
-                ? "text-[#1093EB]"
-                : "text-[#FBBF24]"
-            }`}
+                  ? "text-[#FF4444]"
+                  : progressStatus === "active" || progressStatus === "in-progress"
+                    ? "text-[#1093EB]"
+                    : "text-[#FBBF24]"
+              }`}
             style={{ textShadow: "1px 1px 0 #000" }}
           >
             {progressStatus.replace("-", " ")}
@@ -229,19 +225,19 @@ function MobileEdgePipe({ side }: { side: "left" | "right" }) {
       {isLeft ? (
         <>
           <div className="h-[36px] w-[24px] bg-[#52AE26] border-y-[3px] border-black relative">
-             <div className="absolute top-0 right-0 w-[4px] h-full bg-[#72F418] opacity-50" />
+            <div className="absolute top-0 right-0 w-[4px] h-full bg-[#72F418] opacity-50" />
           </div>
           <div className="h-[46px] w-[14px] bg-[#52AE26] border-[3px] border-black rounded-[2px] relative z-10">
-             <div className="absolute top-0 right-1 w-[2px] h-full bg-[#72F418] opacity-80" />
+            <div className="absolute top-0 right-1 w-[2px] h-full bg-[#72F418] opacity-80" />
           </div>
         </>
       ) : (
         <>
           <div className="h-[46px] w-[14px] bg-[#52AE26] border-[3px] border-black rounded-[2px] relative z-10">
-             <div className="absolute top-0 left-1 w-[2px] h-full bg-[#72F418] opacity-80" />
+            <div className="absolute top-0 left-1 w-[2px] h-full bg-[#72F418] opacity-80" />
           </div>
           <div className="h-[36px] w-[24px] bg-[#52AE26] border-y-[3px] border-black relative">
-             <div className="absolute top-0 left-0 w-[4px] h-full bg-[#72F418] opacity-50" />
+            <div className="absolute top-0 left-0 w-[4px] h-full bg-[#72F418] opacity-50" />
           </div>
         </>
       )}
@@ -320,7 +316,7 @@ function MobileQuestsView({
             className="bg-[#E29A2B] hover:bg-[#F0AD3D] text-black text-[9px] font-bold py-1.5 px-2.5 border-4 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5 transition-transform"
             style={{ boxShadow: "3px 3px 0px 0px #000" }}
           >
-            MENU
+            HOME
           </button>
         </div>
         <div className="flex items-center gap-2 pointer-events-auto">
@@ -336,7 +332,7 @@ function MobileQuestsView({
             className="bg-[#1093EB] text-white text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
             style={{ boxShadow: "3px 3px 0px 0px #000" }}
           >
-            {isLoggedIn ? "PROFILE" : "LOGIN"}
+            {isLoggedIn ? "PROFILE" : "SIGN IN"}
           </button>
         </div>
       </div>
@@ -422,12 +418,12 @@ function MobileQuestsView({
 
       {/* Application Status Card (if user has applied to a dept in this category) */}
       {appliedQuest && appliedSlug && (
-        <div 
-          className="relative z-10 mx-4 mt-3 mb-2 bg-[#B1691F] border-[2px] border-[#D69E60] p-4 flex-shrink-0" 
+        <div
+          className="relative z-10 mx-4 mt-3 mb-2 bg-[#B1691F] border-[2px] border-[#D69E60] p-4 flex-shrink-0"
           style={{ boxShadow: "4px 4px 0px 0px rgba(0,0,0,0.3)" }}
         >
           <div className="text-white text-[12px] font-bold tracking-wider mb-3 uppercase text-center leading-tight">
-            Recruitment<br/>Status
+            Recruitment<br />Status
           </div>
           <div className="text-[7px] font-bold uppercase tracking-wider text-white mb-2">
             YOUR SELECTED QUEST : {appliedQuest.title}
@@ -435,13 +431,12 @@ function MobileQuestsView({
           <div className="text-[7px] font-bold uppercase tracking-wider text-white">
             RESULT :{" "}
             <span
-              className={`${
-                appliedStatus === "passed" || appliedStatus === "active"
+              className={`${appliedStatus === "passed" || appliedStatus === "active"
                   ? "text-[#72F418]"
                   : appliedStatus === "rejected"
-                  ? "text-[#FF4444]"
-                  : "text-[#72F418]" // default to green for in progress
-              }`}
+                    ? "text-[#FF4444]"
+                    : "text-[#72F418]" // default to green for in progress
+                }`}
             >
               {appliedStatus?.replace("-", " ").toUpperCase() || "IN PROGRESS"}
             </span>
@@ -520,7 +515,7 @@ export default function RecruitmentsPage() {
   const [isDead, setIsDead] = useState(false);
   const [scale, setScale] = useState(0);
   const [mounted, setMounted] = useState(false);
-  
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const birdContainerRef = useRef<HTMLDivElement>(null);
   const birdSpriteRef = useRef<HTMLDivElement>(null);
@@ -571,14 +566,14 @@ export default function RecruitmentsPage() {
     p.rotation = 0;
     p.time = 0;
     setIsScrollingLeft(false);
-    
+
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollLeft = 0;
     }
     latestScrollXRef.current = 0;
     targetScrollXRef.current = 0;
     isKeyScrollingRef.current = false;
-    
+
     passedPipes.current = new Set([169, 196]); // Ignore initial pipes passed at start
     setBirdScore(0);
     setIsDead(false);
@@ -586,7 +581,7 @@ export default function RecruitmentsPage() {
     currentPipesRef.current = STATIC_PIPES;
     canvasWidthRef.current = 2865;
     setCanvasWidth(2865);
-    
+
     if (startPlaying === true) {
       updateGameStatus("playing");
       p.velocityY = -10; // Smooth light upward jump arc
@@ -599,7 +594,7 @@ export default function RecruitmentsPage() {
   const flapBird = () => {
     const p = birdPhysicsRef.current;
     if (p.isDead) return;
-    
+
     if (gameStatusRef.current === "idle") {
       // If we are scrolled to the right (browsing cards), reset to start and play immediately
       if (latestScrollXRef.current > 10) {
@@ -608,19 +603,19 @@ export default function RecruitmentsPage() {
       }
       updateGameStatus("playing");
     }
-    
+
     playRetroSound("jump");
     p.velocityY = -10; // Smooth light upward jump arc
   };
 
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (gameStatusRef.current === "dead") return;
-    
+
     const target = e.target as HTMLElement;
     if (target.closest("button") || target.closest(".group") || target.closest("[role='dialog']") || selectedDepartment !== null) {
       return;
     }
-    
+
     flapBird();
   };
 
@@ -717,7 +712,7 @@ export default function RecruitmentsPage() {
       if (statusRes.ok && configRes.ok) {
         const statusData = await statusRes.json();
         const configData = await configRes.json();
-        
+
         setAppStatus(statusData.application);
         setUser(statusData.user);
         setTechQuests(configData.techQuests || []);
@@ -900,7 +895,7 @@ export default function RecruitmentsPage() {
             const maxPipeLeft = Math.max(...currentPipesRef.current.map(pipe => pipe.left));
             if (birdLeft + 1500 > maxPipeLeft) {
               const nextLeft = maxPipeLeft + 450;
-              
+
               // Generate a top and bottom pipe pair with a 200px gap
               const gapHeight = 200;
               const minTopHeight = 120;
@@ -965,7 +960,7 @@ export default function RecruitmentsPage() {
       if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
         return;
       }
-      
+
       // Handle closing instructions overlay with Spacebar or Enter
       if (showInstructionsRef.current) {
         if (e.key === " " || e.key === "Enter") {
@@ -1091,26 +1086,23 @@ export default function RecruitmentsPage() {
   };
 
   const handleApplyFromPopup = (role: string, type: "tech" | "non-tech") => {
+    const hasApplicationRecord = !!appStatus;
+    const targetUrl = !hasApplicationRecord ? `/apply/init?role=${role}` : `/apply/${role}/quest-1`;
+
     if (!user || !isLoggedIn) {
       playRetroSound("select");
-      router.push(`/login?callbackUrl=/recruitments`);
+      router.push(`/login?callbackUrl=${encodeURIComponent(targetUrl)}`);
       return;
     }
     playRetroSound("open");
     setSelectedDepartment(null);
 
-    // If application record already exists in DB (personal details already saved), go straight to quest-1
-    const hasApplicationRecord = !!appStatus;
-
     if (!hasApplicationRecord) {
-      // First preference application -> Go to Personal Details form (/apply/init)
       posthog.capture("First Preference Selected", { department: role });
-      router.push(`/apply/init?role=${role}`);
     } else {
-      // Personal details already saved in DB! Go directly to quest-1 stage form
       posthog.capture("Preference Selected", { department: role });
-      router.push(`/apply/${role}/quest-1`);
     }
+    router.push(targetUrl);
   };
 
   const handleBirdClick = (e: React.MouseEvent) => {
@@ -1224,7 +1216,7 @@ export default function RecruitmentsPage() {
     >
       <RetroLoader isLoading={isLoadingApp} title="LOADING MAP" />
       {/* Floating Header Buttons + Countdown Timer (Fixed Top Right) */}
-      <div 
+      <div
         className="fixed top-4 right-6 z-50 flex items-center gap-4 pointer-events-auto"
         style={{ transform: `scale(${scale})`, transformOrigin: "top right" }}
       >
@@ -1264,10 +1256,10 @@ export default function RecruitmentsPage() {
           >
             <div className="bg-white rounded-full p-[2px] flex items-center justify-center">
               <svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
               </svg>
             </div>
             SIGN IN
@@ -1276,17 +1268,17 @@ export default function RecruitmentsPage() {
       </div>
 
       {/* Fixed Title Banner (Left-aligned near logo) */}
-      <div 
+      <div
         className="fixed z-40 origin-top-left pointer-events-none transition-opacity duration-150"
-        style={{ 
-          left: `${230 * scale}px`, 
-          top: `${16 * scale}px`, 
+        style={{
+          left: `${230 * scale}px`,
+          top: `${16 * scale}px`,
           transform: `scale(${scale})`,
           opacity: mounted ? 1 : 0,
         }}
       >
-        <div 
-          className="px-6 py-4 flex flex-col items-start justify-center pointer-events-auto" 
+        <div
+          className="px-6 py-4 flex flex-col items-start justify-center pointer-events-auto"
         >
           <h1 className="font-normal text-black text-[64px] tracking-[0] leading-[67px] uppercase whitespace-nowrap">
             {pageTitle}
@@ -1303,7 +1295,7 @@ export default function RecruitmentsPage() {
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
           <div className="bg-[#FFE4D6] border-4 border-black p-8 max-w-lg w-full relative flex flex-col items-center gap-6" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
             <div className="absolute top-0 left-0 w-full h-1 bg-white/50" />
-            
+
             <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-12 mb-2" style={{ boxShadow: "4px 4px 0px 0px #000" }}>
               CONNECTION ERROR
             </div>
@@ -1312,7 +1304,7 @@ export default function RecruitmentsPage() {
               {error}
             </div>
 
-            <button 
+            <button
               onClick={() => fetchStatus()}
               className="mt-2 bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-3 px-8 text-[12px] font-bold text-black uppercase tracking-wider active:scale-95 transition-transform"
               style={{ boxShadow: "4px 4px 0px 0px #000" }}
@@ -1464,7 +1456,7 @@ export default function RecruitmentsPage() {
           )}
 
           {/* Interactive Flappy Bird Character (Ultra-Smooth 60/120fps GPU Physics Engine) */}
-          <div 
+          <div
             ref={birdContainerRef}
             className="absolute z-25 cursor-pointer will-change-transform select-none"
             style={{ top: "480px", left: "240px" }}
@@ -1481,12 +1473,12 @@ export default function RecruitmentsPage() {
 
           {/* ================= TECH ROW ================= */}
           {/* Tech signboard (arrow shaped) */}
-          <div 
+          <div
             className="absolute z-20"
-            style={{ 
-              left: "64px", 
-              top: "313px", 
-              width: "282px", 
+            style={{
+              left: "64px",
+              top: "313px",
+              width: "282px",
               height: "86px"
             }}
           >
@@ -1502,18 +1494,18 @@ export default function RecruitmentsPage() {
               }}
             />
             {/* Main shape container */}
-            <div 
+            <div
               className="absolute top-0 left-0 w-[276px] h-[80px]"
             >
               {/* Outer border shape */}
-              <div 
+              <div
                 className="absolute inset-0 bg-black"
                 style={{
                   clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 50%, calc(100% - 24px) 100%, 0 100%)"
                 }}
               />
               {/* Inner background shape */}
-              <div 
+              <div
                 className="absolute top-1 left-1 bottom-1 right-1 bg-[#B87B21] flex items-center justify-center pr-10"
                 style={{
                   clipPath: "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)"
@@ -1530,7 +1522,7 @@ export default function RecruitmentsPage() {
           {techQuests.map((q, idx) => {
             const leftPositions = [350, 830, 1319, 1809, 2300];
             const slug = getDeptSlug(q);
-            
+
             let state: "available" | "selected" | "disabled" = "available";
             let progressStatus = undefined;
 
@@ -1567,17 +1559,17 @@ export default function RecruitmentsPage() {
 
           {/* ================= NON-TECH ROW ================= */}
           {/* Non Tech signboard (arrow shaped) */}
-          <div 
+          <div
             className="absolute z-20"
-            style={{ 
-              left: "64px", 
-              top: "588px", 
-              width: "372px", 
+            style={{
+              left: "64px",
+              top: "588px",
+              width: "372px",
               height: "86px"
             }}
           >
             {/* Shadow shape */}
-            <div 
+            <div
               className="absolute bg-black"
               style={{
                 left: "6px",
@@ -1588,18 +1580,18 @@ export default function RecruitmentsPage() {
               }}
             />
             {/* Main shape container */}
-            <div 
+            <div
               className="absolute top-0 left-0 w-[366px] h-[80px]"
             >
               {/* Outer border shape */}
-              <div 
+              <div
                 className="absolute inset-0 bg-black"
                 style={{
                   clipPath: "polygon(0 0, calc(100% - 24px) 0, 100% 50%, calc(100% - 24px) 100%, 0 100%)"
                 }}
               />
               {/* Inner background shape */}
-              <div 
+              <div
                 className="absolute top-1 left-1 bottom-1 right-1 bg-[#B87B21] flex items-center justify-center pr-10"
                 style={{
                   clipPath: "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)"
@@ -1661,24 +1653,24 @@ export default function RecruitmentsPage() {
             {/* Soil Base with Marquee Text (Extends down so scrollbar sits cleanly on dirt track without sky blue gaps) */}
             <div className="w-full flex-grow bg-[#DD9955] border-b-4 border-black relative overflow-hidden flex items-start pt-3">
               {/* Seamless Infinite Scrolling Text */}
-                <div className="flex whitespace-nowrap animate-marquee">
-                  <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
-                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
-                      <React.Fragment key={idx}>
-                        <span>{text}</span>
-                        <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
-                      </React.Fragment>
-                    ))}
-                  </span>
-                  <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
-                    {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
-                      <React.Fragment key={idx}>
-                        <span>{text}</span>
-                        <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
-                      </React.Fragment>
-                    ))}
-                  </span>
-                </div>
+              <div className="flex whitespace-nowrap animate-marquee">
+                <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                    <React.Fragment key={idx}>
+                      <span>{text}</span>
+                      <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                    </React.Fragment>
+                  ))}
+                </span>
+                <span className="inline-flex items-center shrink-0 text-[24px] text-[#CC7700] tracking-wider uppercase font-bold">
+                  {Array(6).fill("MICROSOFT INNOVATIONS CLUB TENURE 2026-2027").map((text, idx) => (
+                    <React.Fragment key={idx}>
+                      <span>{text}</span>
+                      <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                    </React.Fragment>
+                  ))}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1750,8 +1742,8 @@ export default function RecruitmentsPage() {
       {/* ================= GAME OVER OVERLAY ================= */}
       {gameStatus === "dead" && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div 
-            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-sm w-full relative flex flex-col items-center gap-4 text-center" 
+          <div
+            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-sm w-full relative flex flex-col items-center gap-4 text-center"
             style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}
           >
             <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-10 mb-2 shadow-[2px_2px_0px_#000]">
@@ -1766,7 +1758,7 @@ export default function RecruitmentsPage() {
               SCORE: {birdScore}
             </div>
 
-            <button 
+            <button
               tabIndex={-1}
               onClick={(e) => {
                 e.currentTarget.blur();
@@ -1782,16 +1774,24 @@ export default function RecruitmentsPage() {
       )}
 
       {/* ================= FINAL PREFERENCE CONFIRMATION OVERLAY ================= */}
-      {showFinalPrompt && appStatus?.firstPreference && appStatus?.secondPreference && (() => {
-        const firstIsTech = appStatus.firstPrefType === "tech";
-        const techSlug = firstIsTech ? appStatus.firstPreference : appStatus.secondPreference;
-        const nonTechSlug = firstIsTech ? appStatus.secondPreference : appStatus.firstPreference;
+      {showFinalPrompt && (appStatus?.firstPreference || appStatus?.secondPreference) && (() => {
+        let techSlug: string | undefined = undefined;
+        let nonTechSlug: string | undefined = undefined;
+
+        if (appStatus?.firstPreference) {
+          if (appStatus.firstPrefType === "tech") techSlug = appStatus.firstPreference;
+          else if (appStatus.firstPrefType === "non-tech") nonTechSlug = appStatus.firstPreference;
+        }
+        if (appStatus?.secondPreference) {
+          if (appStatus.secondPrefType === "tech") techSlug = appStatus.secondPreference;
+          else if (appStatus.secondPrefType === "non-tech") nonTechSlug = appStatus.secondPreference;
+        }
 
         const techQuest = techQuests.find((q) => getDeptSlug(q) === techSlug);
         const nonTechQuest = nonTechQuests.find((q) => getDeptSlug(q) === nonTechSlug);
 
-        const techTitle = techQuest?.title || techSlug?.toUpperCase().replace("-", " ") || "TECH PREFERENCE";
-        const nonTechTitle = nonTechQuest?.title || nonTechSlug?.toUpperCase().replace("-", " ") || "NON-TECH PREFERENCE";
+        const techTitle = techQuest?.title || techSlug?.toUpperCase().replace("-", " ") || "Not Selected";
+        const nonTechTitle = nonTechQuest?.title || nonTechSlug?.toUpperCase().replace("-", " ") || "Not Selected";
 
         return (
           <FinalPreferenceConfirmationModal
@@ -1807,8 +1807,8 @@ export default function RecruitmentsPage() {
       {/* ================= INSTRUCTIONS POPUP OVERLAY ================= */}
       {showInstructions && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div 
-            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-md w-full relative flex flex-col items-center gap-4 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]" 
+          <div
+            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-md w-full relative flex flex-col items-center gap-4 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]"
           >
             {/* Header Tag */}
             <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-10 mb-2 shadow-[2px_2px_0px_#000]">
@@ -1834,7 +1834,7 @@ export default function RecruitmentsPage() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={closeInstructions}
               className="bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-2.5 px-6 text-[10px] font-bold text-black uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0 mt-2 shadow-[4px_4px_0px_0px_#000]"
             >

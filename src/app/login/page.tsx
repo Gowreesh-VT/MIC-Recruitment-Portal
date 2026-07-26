@@ -183,6 +183,19 @@ export default function LoginPage() {
 
   // No manual Turnstile script setup needed — TurnstileWidget handles it
 
+  const [cycleOpen, setCycleOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    fetch("/api/apply/status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (typeof data.cycleOpen === "boolean") {
+          setCycleOpen(data.cycleOpen);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleSignIn = async () => {
     if (!turnstileToken) return;
     setIsSigningIn(true);
@@ -204,7 +217,8 @@ export default function LoginPage() {
         return;
       }
 
-      signIn("google", { callbackUrl: "/recruitments" });
+      const targetUrl = cycleOpen ? "/recruitments" : "/profile?closed=true";
+      signIn("google", { callbackUrl: targetUrl });
     } catch {
       setCaptchaError(true);
       setIsSigningIn(false);
