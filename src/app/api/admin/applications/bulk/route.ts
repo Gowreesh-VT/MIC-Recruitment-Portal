@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
+import mongoose from "mongoose";
+
 
 export async function POST(req: NextRequest) {
   // ── Auth guard ────────────────────────────────────────────────────────────
@@ -27,7 +29,19 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const applications = await Application.find({ _id: { $in: ids } });
+    // Validate that every supplied id is a proper MongoDB ObjectId before querying.
+    // Passing arbitrary strings to $in can cause query misrouting or crashes.
+    const validIds = (ids as unknown[]).filter(
+      (id) => typeof id === "string" && mongoose.Types.ObjectId.isValid(id)
+    ) as string[];
+    if (validIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No valid application IDs provided." },
+        { status: 400 }
+      );
+    }
+
+    const applications = await Application.find({ _id: { $in: validIds } });
     if (applications.length === 0) {
       return NextResponse.json(
         { success: false, error: "No matching applications found." },
@@ -123,6 +137,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Successfully bulk ${action === "advance" ? "advanced" : "rejected"} ${applications.length} applications.`,
+      processedEmails,
     });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Bulk action execution failed.";

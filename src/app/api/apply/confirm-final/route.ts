@@ -1,15 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import { validateOrigin } from "@/lib/csrf";
 
 import { sendFinalPreferencesConfirmation } from "@/lib/mailer";
 import Department from "@/models/Department";
 
 const CYCLE_ID = ACTIVE_CYCLE_ID;
 
-export async function POST() {
+
+export async function POST(req: NextRequest) {
+  const csrfError = validateOrigin(req);
+  if (csrfError) return csrfError;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(

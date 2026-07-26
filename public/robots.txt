@@ -1,0 +1,9 @@
+# MIC Recruitment Portal — robots.txt
+# This is a private academic portal. Public crawling is not appropriate.
+# Disallow all search engine access to prevent indexing of applicant-facing pages.
+
+User-agent: *
+Disallow: /
+
+# Specific sitemap and health endpoints can be indexed if needed in future
+# Allow: /api/health

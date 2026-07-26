@@ -58,7 +58,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, skipped: true });
   }
 
-  // Get the visitor IP to pass to Cloudflare for additional signal
+  // Get the visitor IP to pass to Cloudflare for additional signal.
+  // NOTE: This assumes deployment behind a trusted proxy (e.g. Vercel/Cloudflare)
+  // that strips/overwrites client-supplied X-Forwarded-For headers.
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??

@@ -20,18 +20,7 @@ export async function GET() {
 
   await dbConnect();
 
-  const [
-    total,
-    inProgress,
-    selected,
-    rejected,
-    byDept,
-    dailyApplications,
-    recentActivity,
-    byStage,
-    departmentsList,
-    acceptedByDept,
-  ] = await Promise.all([
+  const results = await Promise.allSettled([
     Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID }),
     Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "in-progress" }),
     Application.countDocuments({ cycleId: ACTIVE_CYCLE_ID, overallStatus: "selected" }),
@@ -97,6 +86,25 @@ export async function GET() {
       },
     ]),
   ]);
+
+  // Extract fulfilled values with safe fallbacks so a single failed aggregation
+  // doesn't crash the entire dashboard (Promise.allSettled never throws)
+  const get = <T>(idx: number, fallback: T): T => {
+    const r = results[idx];
+    return r.status === "fulfilled" ? (r.value as T) : fallback;
+  };
+
+  const total            = get<number>(0, 0);
+  const inProgress       = get<number>(1, 0);
+  const selected         = get<number>(2, 0);
+  const rejected         = get<number>(3, 0);
+  const byDept           = get<{ byFirst: unknown[]; bySecond: unknown[] }[]>(4, [{ byFirst: [], bySecond: [] }]);
+  const dailyApplications = get<unknown[]>(5, []);
+  const recentActivity   = get<unknown[]>(6, []);
+  const byStage          = get<unknown[]>(7, []);
+  const departmentsList  = get<unknown[]>(8, []);
+  const acceptedByDept   = get<unknown[]>(9, []);
+
 
   return NextResponse.json({
     success: true,

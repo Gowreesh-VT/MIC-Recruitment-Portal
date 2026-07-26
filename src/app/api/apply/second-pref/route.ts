@@ -4,9 +4,12 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
-import type { DeptSlug, PrefType } from "@/models/Application";
-import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import type { DeptSlug } from "@/models/Application";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
 import { z } from "zod";
+import { validateOrigin } from "@/lib/csrf";
+
+
 
 const secondPrefSchema = z.object({
   secondPreference: z.enum([
@@ -25,19 +28,11 @@ const secondPrefSchema = z.object({
 
 const CYCLE_ID = ACTIVE_CYCLE_ID;
 
-const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
-  development: "tech",
-  "competitive-coding": "tech",
-  "ui-ux": "tech",
-  "ai-ml": "tech",
-  "cyber-security": "tech",
-  design: "non-tech",
-  management: "non-tech",
-  entrepreneurship: "non-tech",
-  "content-media": "non-tech",
-};
 
 export async function POST(req: NextRequest) {
+  const csrfError = validateOrigin(req);
+  if (csrfError) return csrfError;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
