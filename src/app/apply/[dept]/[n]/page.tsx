@@ -100,8 +100,15 @@ function RetroBackground({ scale }: { scale: number }) {
         ))}
 
         {/* Bushes */}
-        <img src="/bushes_pixel.svg" alt="Bushes Left" className="absolute top-[739px] left-0 w-[1456px] h-[200px] z-4 pixelated" />
-        <img src="/bushes_pixel.svg" alt="Bushes Right" className="absolute top-[739px] left-[1456px] w-[1456px] h-[200px] z-4 pixelated" />
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <img
+            key={`bush-${idx}`}
+            src="/bushes_pixel.svg"
+            alt={`Bushes ${idx}`}
+            className="absolute top-[739px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated"
+            style={{ left: `${idx * 1409}px` }}
+          />
+        ))}
 
 
         {/* Flying Bird near rope */}
@@ -382,9 +389,7 @@ export default function StagePage({
     const handleResize = () => {
       if (typeof window !== "undefined") {
         const heightScale = window.innerHeight / 1024;
-        const widthScale = window.innerWidth / 1200;
-        const cappedScale = Math.min(heightScale, widthScale, 1.2);
-        setScale(cappedScale);
+        setScale(heightScale);
       }
     };
     handleResize();

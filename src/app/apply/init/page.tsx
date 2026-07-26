@@ -44,8 +44,15 @@ function RetroBackground({ scale }: { scale: number }) {
         ))}
 
         {/* Bushes */}
-        <img src="/bushes_pixel.svg" alt="Bushes Left" className="absolute top-[739px] left-0 w-[1456px] h-[200px] z-4 pixelated" />
-        <img src="/bushes_pixel.svg" alt="Bushes Right" className="absolute top-[739px] left-[1456px] w-[1456px] h-[200px] z-4 pixelated" />
+        {Array.from({ length: 3 }).map((_, idx) => (
+          <img
+            key={`bush-${idx}`}
+            src="/bushes_pixel.svg"
+            alt={`Bushes ${idx}`}
+            className="absolute top-[739px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated"
+            style={{ left: `${idx * 1409}px` }}
+          />
+        ))}
 
         {/* Flying Bird near rope */}
         <img src="/flappy_bird.svg" alt="Bird" className="absolute w-[64px] h-[64px] pixelated animate-retro-float z-30" style={{ top: "140px", left: "1850px" }} />
