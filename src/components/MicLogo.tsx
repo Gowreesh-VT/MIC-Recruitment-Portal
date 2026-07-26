@@ -33,6 +33,8 @@ export default function MicLogo() {
         alt="MIC Logo"
         width={110}
         height={79}
+        priority
+        loading="eager"
         className="pixelated w-[110px] h-[79px] select-none pointer-events-auto animate-retro-float-small drop-shadow-[4px_4px_0px_rgba(0,0,0,0.6)] cursor-pointer hover:scale-105 transition-transform"
         onClick={() => {
           playRetroSound("select");

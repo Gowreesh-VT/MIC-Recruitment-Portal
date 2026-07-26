@@ -1411,6 +1411,8 @@ export default function RecruitmentsPage() {
               key={`skyline-silhouette-${idx}`}
               src="/pixel_cloud_large.svg"
               alt={`Skyline Back ${idx}`}
+              loading="eager"
+              fetchPriority="high"
               className="absolute top-[565px] w-[1500px] h-[465px] object-cover opacity-100 pointer-events-none select-none pixelated"
               style={{ left: `${idx * 1440}px` }}
             />

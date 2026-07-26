@@ -280,8 +280,8 @@ function DesktopHomePage({
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[180px] left-[1800px] w-[240px] opacity-60 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.8s" }} />
           <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[280px] left-[2100px] w-[180px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.5s" }} />
 
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" loading="eager" fetchPriority="high" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <img src="/pixel_cloud_large.svg" alt="Skyline" loading="eager" fetchPriority="high" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
 
           {Array.from({ length: 12 }).map((_, idx) => (
             <img key={idx} src="/city_skyline.svg" alt="Skyline Block" className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated" style={{ left: `${idx * 245}px` }} />
