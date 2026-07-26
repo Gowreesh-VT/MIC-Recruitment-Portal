@@ -44,6 +44,20 @@ export default function FinalPreferenceConfirmationModal({
         <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 bg-black" />
         <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 bg-black" />
 
+        {/* Modal Close Button */}
+        <button
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="absolute -top-4 -right-4 sm:-top-5 sm:-right-5 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none z-30 disabled:opacity-50"
+          title="Close"
+        >
+          <img
+            src="/Close_icon.svg"
+            alt="Close"
+            className="w-[38px] h-[36px] sm:w-[44px] sm:h-[42px] pixelated select-none pointer-events-none"
+          />
+        </button>
+
         {/* Modal Header */}
         <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[11px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
           FINAL PREFERENCE CONFIRMATION

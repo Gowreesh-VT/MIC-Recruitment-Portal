@@ -199,8 +199,8 @@ function InitPageContent() {
         
         <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col max-h-[85vh]" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
           
-          <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ left: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
-          <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ right: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
+          <div className="absolute bottom-[100%] w-3 h-12 z-[-1]" style={{ left: "10%", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
+          <div className="absolute bottom-[100%] w-3 h-12 z-[-1]" style={{ right: "10%", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
 
           <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] [background-size:10px_10px]" />
@@ -214,9 +214,14 @@ function InitPageContent() {
                 playRetroSound();
                 router.push("/recruitments");
               }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-[#FF6F61] hover:bg-[#FF8575] active:translate-y-[calc(-50%+2px)] border-4 border-black w-8 h-8 flex items-center justify-center font-bold text-[10px] text-black z-30 cursor-pointer shadow-[2px_2px_0px_#000] transition-all"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none"
+              title="Close"
             >
-              X
+              <img
+                src="/Close_icon.svg"
+                alt="Close"
+                className="w-[34px] h-[32px] md:w-[38px] md:h-[36px] pixelated pointer-events-none"
+              />
             </button>
           </div>
 
