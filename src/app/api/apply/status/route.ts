@@ -91,13 +91,13 @@ export async function GET() {
   const processedApplication = {
     ...application,
     isFinalSubmitted: application.isFinalSubmitted ?? false,
-    firstPreference: hasFirstPrefSubmission ? application.firstPreference : undefined,
-    firstPrefType: hasFirstPrefSubmission ? application.firstPrefType : undefined,
-    firstPrefProgress: hasFirstPrefSubmission ? processProgress(application.firstPrefProgress, dept1) : undefined,
+    firstPreference: application.firstPreference,
+    firstPrefType: application.firstPrefType,
+    firstPrefProgress: processProgress(application.firstPrefProgress, dept1),
 
-    secondPreference: hasSecondPrefSubmission ? application.secondPreference : undefined,
-    secondPrefType: hasSecondPrefSubmission ? application.secondPrefType : undefined,
-    secondPrefProgress: hasSecondPrefSubmission ? processProgress(application.secondPrefProgress, dept2) : undefined,
+    secondPreference: application.secondPreference,
+    secondPrefType: application.secondPrefType,
+    secondPrefProgress: processProgress(application.secondPrefProgress, dept2),
   };
 
   return NextResponse.json({

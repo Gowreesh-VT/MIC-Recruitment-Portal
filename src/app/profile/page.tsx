@@ -85,6 +85,8 @@ function ProfilePage() {
   const [saveError, setSaveError] = useState("");
   const [saveSuccess, setSaveSuccess] = useState("");
 
+  const [cycleOpen, setCycleOpen] = useState<boolean>(true);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
@@ -95,6 +97,9 @@ function ProfilePage() {
       fetch("/api/apply/status")
         .then((res) => res.json())
         .then((data) => {
+          if (typeof data.cycleOpen === "boolean") {
+            setCycleOpen(data.cycleOpen);
+          }
           if (data.success && data.application) {
             setAppStatus(data.application);
             setEditForm({
@@ -266,6 +271,7 @@ function ProfilePage() {
 function MobileProfileView({
   session,
   appStatus,
+  cycleOpen = true,
   router,
   onSignOut,
   isEditing,
@@ -281,6 +287,7 @@ function MobileProfileView({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any;
   appStatus: ApplicationStatus | null;
+  cycleOpen?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   router: any;
   onSignOut: () => void;
@@ -315,19 +322,21 @@ function MobileProfileView({
           className="pixelated w-[52px] h-[37px] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer"
           onClick={() => {
             playRetroSound("select");
-            router.push("/recruitments");
+            router.push(cycleOpen ? "/recruitments" : "/");
           }}
         />
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              playRetroSound("select");
-              router.push("/recruitments");
-            }}
-            className="bg-[#7CA922] hover:bg-[#52AE26] text-black text-[9px] font-bold py-1.5 px-3 border-2 border-black uppercase tracking-wider flex items-center gap-1 cursor-pointer active:translate-y-0.5 shadow-[2px_2px_0px_0px_#000]"
-          >
-            <ArrowLeft className="h-3 w-3" /> MAP
-          </button>
+          {cycleOpen && (
+            <button
+              onClick={() => {
+                playRetroSound("select");
+                router.push("/recruitments");
+              }}
+              className="bg-[#7CA922] hover:bg-[#52AE26] text-black text-[9px] font-bold py-1.5 px-3 border-2 border-black uppercase tracking-wider flex items-center gap-1 cursor-pointer active:translate-y-0.5 shadow-[2px_2px_0px_0px_#000]"
+            >
+              <ArrowLeft className="h-3 w-3" /> MAP
+            </button>
+          )}
           <button
             onClick={onSignOut}
             className="bg-[#A93710] hover:bg-[#FF4444] text-white text-[9px] font-bold py-1.5 px-3 border-2 border-black uppercase tracking-wider flex items-center gap-1 cursor-pointer active:translate-y-0.5 shadow-[2px_2px_0px_0px_#000]"
@@ -339,6 +348,13 @@ function MobileProfileView({
 
       {/* Main Scroll Content */}
       <div className="relative z-10 p-4 space-y-5">
+        {!cycleOpen && (
+          <div className="bg-[#FFF3CD] border-4 border-black p-3.5 rounded-[8px] text-center shadow-[4px_4px_0px_0px_#000]">
+            <p className="text-[#A93710] font-bold text-[8.5px] uppercase tracking-wider leading-relaxed">
+              ⚠ RECRUITMENTS HAVE CLOSED. YOUR SUBMITTED RESPONSES AND STATUS ARE DISPLAYED BELOW.
+            </p>
+          </div>
+        )}
         {/* Header / Overall Status Card */}
         <div
           className="bg-[#FFE4D6] border-4 border-black p-4 relative rounded-[8px] shadow-[4px_4px_0px_0px_#000]"
@@ -761,6 +777,7 @@ function MobileTimelineCard({
 function DesktopProfileView({
   session,
   appStatus,
+  cycleOpen = true,
   router,
   onSignOut,
   isEditing,
@@ -776,6 +793,7 @@ function DesktopProfileView({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any;
   appStatus: ApplicationStatus | null;
+  cycleOpen?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   router: any;
   onSignOut: () => void;
@@ -946,6 +964,13 @@ function DesktopProfileView({
 
       {/* ── Main Scroll Container ── */}
       <div className="relative z-10 max-w-[1050px] w-full mx-auto px-6 pt-10 pb-36 space-y-10">
+        {!cycleOpen && (
+          <div className="bg-[#FFF3CD] border-4 border-black p-4 rounded-[10px] text-center shadow-[6px_6px_0px_0px_#000]">
+            <p className="text-[#A93710] font-bold text-[10px] uppercase tracking-widest leading-relaxed">
+              ⚠ RECRUITMENTS HAVE CLOSED. YOUR SUBMITTED QUEST RESPONSES AND APPLICATION STATUS ARE DISPLAYED BELOW.
+            </p>
+          </div>
+        )}
         {!appStatus ? (
           /* Error / No application desktop card */
           <div className="flex items-center justify-center pt-20">

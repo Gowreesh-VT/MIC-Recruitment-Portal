@@ -54,7 +54,9 @@ interface ApplicationStatus {
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
   isFinalSubmitted?: boolean;
   firstPreference: string;
+  firstPrefType?: "tech" | "non-tech";
   secondPreference?: string;
+  secondPrefType?: "tech" | "non-tech";
   firstPrefProgress: {
     status: "active" | "passed" | "rejected" | "pending";
     currentStage: number;
@@ -110,9 +112,6 @@ function RetroBackground({ scale }: { scale: number }) {
           />
         ))}
 
-
-        {/* Flying Bird near rope */}
-        <img src="/flappy_bird.svg" alt="Bird" className="absolute w-[64px] h-[64px] pixelated animate-retro-float z-30" style={{ top: "140px", left: "1850px" }} />
 
         {/* Ground */}
         <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col">
@@ -905,25 +904,35 @@ export default function StagePage({
           type: "tech" as const,
         };
 
-        const otherPrefSlug =
-          application?.firstPreference && application.firstPreference !== dept
-            ? application.firstPreference
-            : application?.secondPreference && application.secondPreference !== dept
-            ? application.secondPreference
-            : null;
+        // Find if user has a preference for the OPPOSITE department type
+        let oppositePrefSlug: string | null = null;
+        if (application) {
+          if (application.firstPreference && application.firstPreference !== dept) {
+            const firstType = application.firstPrefType || DEPT_INFO[application.firstPreference]?.type;
+            if (firstType && firstType !== currentDeptInfo.type) {
+              oppositePrefSlug = application.firstPreference;
+            }
+          }
+          if (!oppositePrefSlug && application.secondPreference && application.secondPreference !== dept) {
+            const secondType = application.secondPrefType || DEPT_INFO[application.secondPreference]?.type;
+            if (secondType && secondType !== currentDeptInfo.type) {
+              oppositePrefSlug = application.secondPreference;
+            }
+          }
+        }
 
-        const isBothPreferences = !!otherPrefSlug;
+        const isBothPreferences = !!oppositePrefSlug;
 
-        if (isBothPreferences && otherPrefSlug) {
-          const otherDeptInfo = DEPT_INFO[otherPrefSlug] || {
-            title: otherPrefSlug.toUpperCase().replace("-", " "),
+        if (isBothPreferences && oppositePrefSlug) {
+          const oppositeDeptInfo = DEPT_INFO[oppositePrefSlug] || {
+            title: oppositePrefSlug.toUpperCase().replace("-", " "),
             type: currentDeptInfo.type === "tech" ? ("non-tech" as const) : ("tech" as const),
           };
 
           const techTitle =
-            currentDeptInfo.type === "tech" ? currentDeptInfo.title : otherDeptInfo.title;
+            currentDeptInfo.type === "tech" ? currentDeptInfo.title : oppositeDeptInfo.title;
           const nonTechTitle =
-            currentDeptInfo.type === "non-tech" ? currentDeptInfo.title : otherDeptInfo.title;
+            currentDeptInfo.type === "non-tech" ? currentDeptInfo.title : oppositeDeptInfo.title;
 
           return (
             <FinalPreferenceConfirmationModal

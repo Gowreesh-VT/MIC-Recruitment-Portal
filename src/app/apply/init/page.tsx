@@ -54,9 +54,6 @@ function RetroBackground({ scale }: { scale: number }) {
           />
         ))}
 
-        {/* Flying Bird near rope */}
-        <img src="/flappy_bird.svg" alt="Bird" className="absolute w-[64px] h-[64px] pixelated animate-retro-float z-30" style={{ top: "140px", left: "1850px" }} />
-
         {/* Ground */}
         <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col">
           <div className="w-full h-5 bg-[#52AE26] border-t-4 border-b-4 border-black flex flex-col justify-between shrink-0">

@@ -136,7 +136,7 @@ export default function DepartmentPopup({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/75 flex items-start sm:items-center justify-center p-3 sm:p-6 select-none animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[100] bg-black/75 flex items-start sm:items-center justify-center p-3 sm:p-6 select-none animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       {/* Modal Container */}
@@ -235,10 +235,12 @@ export default function DepartmentPopup({
                   : "WANNA JOIN US IN COMPLETING THIS QUEST?"}
               </p>
               <button
+                type="button"
                 disabled={department.stage1Open === false}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (department.stage1Open === false) return;
-                  const slug = ROLE_TO_SLUG[department.role] ?? department.role.toLowerCase().replace(/\s+/g, "-");
+                  const slug = department.slug || ROLE_TO_SLUG[department.role] || department.role.toLowerCase().replace(/\s+/g, "-");
                   onApply(slug, deptType);
                 }}
                 className={`w-full sm:w-auto border-2 sm:border-4 border-black py-2.5 px-4 sm:py-3 sm:px-6 text-[9px] sm:text-[10px] font-bold text-black uppercase tracking-wider whitespace-nowrap transition-all ${

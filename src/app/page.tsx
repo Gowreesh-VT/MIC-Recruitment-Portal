@@ -77,30 +77,36 @@ function RetroPipe({ height, top, left, isTop }: { height: number; top: string; 
 function MobileArrowSign({ label, direction, onClick, disabled }: { label: string, direction: "left"|"right", onClick: ()=>void, disabled?: boolean }) {
   const isLeft = direction === "left";
   return (
-    <div 
+    <button
+      type="button"
       onClick={disabled ? undefined : onClick} 
-      className={`relative w-[150px] h-[45px] flex items-center justify-center ${disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:brightness-110 active:scale-95 transition-transform"}`}
+      className={`relative w-[155px] sm:w-[170px] h-[48px] flex items-center justify-center select-none focus:outline-none ${
+        disabled
+          ? "opacity-60 cursor-not-allowed"
+          : "cursor-pointer hover:brightness-110 active:scale-95 transition-transform"
+      }`}
+      aria-label={label}
     >
       {/* Crisp shadow (offset) */}
-      <svg className="absolute inset-0 w-full h-full" style={{ transform: "translate(4px, 4px)" }} preserveAspectRatio="none" viewBox="0 0 150 45">
+      <svg className="absolute inset-0 w-full h-full" style={{ transform: "translate(4px, 4px)" }} preserveAspectRatio="none" viewBox="0 0 155 48">
         {isLeft ? (
-          <polygon points="24,2 148,2 148,43 24,43 2,22.5" fill="rgba(0,0,0,0.35)" />
+          <polygon points="26,2 153,2 153,46 26,46 2,24" fill="rgba(0,0,0,0.35)" />
         ) : (
-          <polygon points="2,2 126,2 148,22.5 126,43 2,43" fill="rgba(0,0,0,0.35)" />
+          <polygon points="2,2 129,2 153,24 129,46 2,46" fill="rgba(0,0,0,0.35)" />
         )}
       </svg>
       {/* Foreground Arrow */}
-      <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 150 45">
+      <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 155 48">
         {isLeft ? (
-          <polygon points="24,2 148,2 148,43 24,43 2,22.5" fill="#C8862A" />
+          <polygon points="26,2 153,2 153,46 26,46 2,24" fill="#C8862A" stroke="#2A1A00" strokeWidth="3" strokeLinejoin="round" />
         ) : (
-          <polygon points="2,2 126,2 148,22.5 126,43 2,43" fill="#C8862A" />
+          <polygon points="2,2 129,2 153,24 129,46 2,46" fill="#C8862A" stroke="#2A1A00" strokeWidth="3" strokeLinejoin="round" />
         )}
       </svg>
-      <span className={`relative z-10 text-black font-bold text-[14px] mt-1 ${isLeft ? "pl-[18px]" : "pr-[18px]"}`}>
+      <span className={`relative z-10 text-black font-bold text-[13px] sm:text-[14px] uppercase tracking-wider ${isLeft ? "pl-[20px]" : "pr-[20px]"}`}>
         {label}
       </span>
-    </div>
+    </button>
   );
 }
 
@@ -110,20 +116,20 @@ function MobileHorizontalPipe({ side }: { side: "left"|"right" }) {
     <div className="flex items-center w-full">
       {isLeft ? (
         <>
-          <div className="h-[40px] flex-grow bg-[#52AE26] border-y-[2px] border-[#333] relative border-l-0">
-             <div className="absolute top-[2px] left-0 w-full h-[6px] bg-[#72F418] opacity-80" />
+          <div className="h-[36px] flex-grow bg-[#52AE26] border-y-[3px] border-black relative border-l-0">
+             <div className="absolute top-[2px] left-0 w-full h-[5px] bg-[#72F418] opacity-80" />
           </div>
-          <div className="h-[52px] w-[22px] shrink-0 bg-[#52AE26] border-[2px] border-[#333] rounded-[2px] relative z-10 ml-[-2px]">
-             <div className="absolute top-[2px] left-0 w-full h-[6px] bg-[#72F418] opacity-80" />
+          <div className="h-[46px] w-[20px] shrink-0 bg-[#52AE26] border-[3px] border-black rounded-[2px] relative z-10 ml-[-2px]">
+             <div className="absolute top-[2px] left-0 w-full h-[5px] bg-[#72F418] opacity-80" />
           </div>
         </>
       ) : (
         <>
-          <div className="h-[52px] w-[22px] shrink-0 bg-[#52AE26] border-[2px] border-[#333] rounded-[2px] relative z-10 mr-[-2px]">
-             <div className="absolute top-[2px] left-0 w-full h-[6px] bg-[#72F418] opacity-80" />
+          <div className="h-[46px] w-[20px] shrink-0 bg-[#52AE26] border-[3px] border-black rounded-[2px] relative z-10 mr-[-2px]">
+             <div className="absolute top-[2px] left-0 w-full h-[5px] bg-[#72F418] opacity-80" />
           </div>
-          <div className="h-[40px] flex-grow bg-[#52AE26] border-y-[2px] border-[#333] relative border-r-0">
-             <div className="absolute top-[2px] left-0 w-full h-[6px] bg-[#72F418] opacity-80" />
+          <div className="h-[36px] flex-grow bg-[#52AE26] border-y-[3px] border-black relative border-r-0">
+             <div className="absolute top-[2px] left-0 w-full h-[5px] bg-[#72F418] opacity-80" />
           </div>
         </>
       )}
@@ -132,7 +138,7 @@ function MobileHorizontalPipe({ side }: { side: "left"|"right" }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mobile Home Layout — matches user screenshot exactly
+// Mobile Home Layout — Polished layout & touch targets
 // ─────────────────────────────────────────────────────────────────────────────
 function MobileHomePage({
   pageConfig,
@@ -149,47 +155,54 @@ function MobileHomePage({
 }) {
   const router = useRouter();
 
+  const handleQuestNav = (type: "tech" | "non-tech") => {
+    playRetroSound("open");
+    router.push(`/recruitments?view=${type}`);
+  };
+
   return (
     <MobileBackground>
-      {/* ── Top bar: Logo + FAQS + PROFILE ── */}
-      <div className="relative z-20 flex items-center justify-between px-3 pt-3 flex-shrink-0">
+      {/* ── Top bar: Logo + FAQS + PROFILE/SIGN IN ── */}
+      <div className="relative z-20 flex items-center justify-between px-4 pt-4 flex-shrink-0">
         <img
           src="/mic_logo_pixel.png"
           alt="MIC Logo"
-          className="pixelated w-[52px] h-[37px] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer"
+          className="pixelated w-[56px] h-[40px] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer active:scale-95 transition-transform"
           onClick={() => { playRetroSound("select"); router.push("/"); }}
         />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={() => { playRetroSound("open"); router.push("/faqs?from=/"); }}
-            className="bg-[#7CA922] text-black text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+            className="bg-[#7CA922] hover:bg-[#8CB932] text-black text-[10px] font-bold py-2 px-3.5 border-4 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5 transition-transform"
             style={{ boxShadow: "3px 3px 0px 0px #000" }}
           >
             FAQS
           </button>
           <button
             onClick={() => { playRetroSound("open"); router.push(isLoggedIn ? "/profile" : "/login?callbackUrl=/"); }}
-            className="bg-[#1093EB] text-white text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+            className="bg-[#1093EB] hover:bg-[#209FFC] text-white text-[10px] font-bold py-2 px-3.5 border-4 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5 transition-transform"
             style={{ boxShadow: "3px 3px 0px 0px #000" }}
           >
-            {isLoggedIn ? "PROFILE" : "LOGIN"}
+            {isLoggedIn ? "PROFILE" : "SIGN IN"}
           </button>
         </div>
       </div>
 
       {/* ── Title + subtitle ── */}
-      <div className="relative z-10 px-4 pt-4 pb-1 flex-shrink-0 text-center">
-        <h1 className="text-black font-bold leading-none w-full" style={{ fontSize: "clamp(20px, 8vw, 30px)", letterSpacing: "-1px" }}>
-          Recruitments
-        </h1>
-        <p className="text-black font-bold uppercase tracking-wide mt-2" style={{ fontSize: "9px" }}>
-          {pageConfig?.welcomeTitle || "CHOOSE THE QUEST SUITS YOU THE MOST"}
-        </p>
+      <div className="relative z-10 px-4 pt-3 pb-1 flex-shrink-0 text-center">
+        <div className="inline-block bg-[#FFE4D6] border-4 border-black px-4 py-2 rounded-[8px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
+          <h1 className="text-[#A93710] font-bold leading-tight uppercase tracking-wider text-[18px] sm:text-[22px] drop-shadow-[1px_1px_0px_#fff]">
+            Recruitments 2026-27
+          </h1>
+          <p className="text-black font-bold uppercase tracking-wider text-[8.5px] sm:text-[9.5px] mt-1">
+            {pageConfig?.welcomeTitle || "CHOOSE THE QUEST SUITS YOU THE MOST"}
+          </p>
+        </div>
       </div>
 
       {/* Countdown Timer */}
       {pageConfig?.countdownSettings?.enabled && pageConfig?.countdownSettings?.target && (
-        <div className="relative z-10 px-4 mt-2 flex-shrink-0">
+        <div className="relative z-10 px-4 mt-3 flex-shrink-0">
           <CountdownTimer
             targetDate={pageConfig.countdownSettings.target}
             title={pageConfig.countdownSettings.title}
@@ -197,37 +210,38 @@ function MobileHomePage({
         </div>
       )}
 
-      {/* ── Center Content ── */}
-      <div className="relative z-10 flex w-full flex-grow items-center justify-between mt-12 mb-8">
+      {/* ── Interactive Stage Content ── */}
+      <div className="relative z-10 flex w-full flex-grow items-center justify-between mt-4 mb-4 px-1">
         
-        {/* Left Side (Arrow + Pipe) */}
-        <div className="flex flex-col items-end w-[150px] gap-3">
-           {/* Arrow pointing Left */}
+        {/* Left Side (Non Tech Arrow + Pipe) */}
+        <div className="flex flex-col items-end w-[155px] sm:w-[170px] gap-2">
            <MobileArrowSign 
              label="Non Tech" 
              direction="left" 
-             onClick={() => { playRetroSound("open"); router.push("/recruitments?view=non-tech"); }} 
+             onClick={() => handleQuestNav("non-tech")} 
            />
-           {/* Pipe pointing Right (Rim on right) */}
            <MobileHorizontalPipe side="left" />
         </div>
  
-        {/* Center: Bird */}
-        <img 
-          src="/flappy_bird.svg" 
-          alt="Bird"
-          className="w-[45px] h-[45px] shrink-0 animate-mobile-bird drop-shadow-[2px_2px_0px_rgba(0,0,0,0.3)] z-30" 
-        />
+        {/* Center: Bird Mascot */}
+        <div className="flex flex-col items-center justify-center shrink-0 z-30 mx-1">
+          <img 
+            src="/flappy_bird.svg" 
+            alt="Bird"
+            className="w-[48px] h-[48px] animate-mobile-bird drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]" 
+          />
+          <span className="text-[7.5px] font-bold text-black bg-[#FFE4D6] border-2 border-black px-1.5 py-0.5 rounded-[3px] mt-1 tracking-wider uppercase shadow-[1px_1px_0px_#000]">
+            SELECT
+          </span>
+        </div>
  
-        {/* Right Side (Arrow + Pipe) */}
-        <div className="flex flex-col items-start w-[150px] gap-3">
-           {/* Arrow pointing Right */}
+        {/* Right Side (Tech Arrow + Pipe) */}
+        <div className="flex flex-col items-start w-[155px] sm:w-[170px] gap-2">
            <MobileArrowSign 
              label="Tech" 
              direction="right" 
-             onClick={() => { playRetroSound("open"); router.push("/recruitments?view=tech"); }} 
+             onClick={() => handleQuestNav("tech")} 
            />
-           {/* Pipe pointing Left (Rim on left) */}
            <MobileHorizontalPipe side="right" />
         </div>
       </div>
