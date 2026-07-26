@@ -784,7 +784,7 @@ export default function RecruitmentsPage() {
     if (typeof window !== "undefined") {
       const hasShown = sessionStorage.getItem("hasShownInstructions");
       if (!hasShown) {
-        updateShowInstructions(true);
+        setTimeout(() => updateShowInstructions(true), 0);
       }
     }
   }, []);

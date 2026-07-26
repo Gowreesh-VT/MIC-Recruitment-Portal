@@ -16,7 +16,9 @@ export function playRetroSound(type: SoundType = "select") {
 
   try {
     if (!globalAudioCtx) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
       globalAudioCtx = new AudioContextClass();
     }

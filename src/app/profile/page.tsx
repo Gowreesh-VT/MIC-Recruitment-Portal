@@ -278,8 +278,10 @@ function MobileProfileView({
   onFormChange,
   onSaveEdit,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any;
   appStatus: ApplicationStatus | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   router: any;
   onSignOut: () => void;
   isEditing: boolean;
@@ -771,8 +773,10 @@ function DesktopProfileView({
   onFormChange,
   onSaveEdit,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   session: any;
   appStatus: ApplicationStatus | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   router: any;
   onSignOut: () => void;
   isEditing: boolean;

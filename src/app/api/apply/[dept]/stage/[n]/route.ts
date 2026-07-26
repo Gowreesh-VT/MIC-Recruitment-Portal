@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { dbConnect } from "@/lib/mongodb";
-import Application from "@/models/Application";
+import Application, { DeptSlug } from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import { sendFinalPreferencesConfirmation } from "@/lib/mailer";
 import { validateResponses } from "@/lib/validation";
-import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
+import { validateOrigin } from "@/lib/csrf";
+
 
 const CYCLE_ID = ACTIVE_CYCLE_ID;
+
+// Limit request body to 128 KB — prevents oversized payloads on form submission
+export const maxRequestBodySize = "128kb";
+
 
 interface RouteParams {
   params: Promise<{ dept: string; n: string }>;
@@ -56,31 +62,11 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
 
   // Determine which preference this dept belongs to
-  let isFirst = application.firstPreference === dept;
-  let isSecond = application.secondPreference === dept;
-
-  const DEPT_TYPE_MAP: Record<string, "tech" | "non-tech"> = {
-    development: "tech",
-    "competitive-coding": "tech",
-    "ui-ux": "tech",
-    "ai-ml": "tech",
-    "cyber-security": "tech",
-    design: "non-tech",
-    management: "non-tech",
-    entrepreneurship: "non-tech",
-    "content-media": "non-tech",
-  };
-
-  const hasFirstPrefSubmission = (application.firstPrefProgress?.stages || []).some(
-    (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
-  );
-
-  const hasSecondPrefSubmission = (application.secondPrefProgress?.stages || []).some(
-    (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
-  );
+  const isFirst = application.firstPreference === dept;
+  const isSecond = application.secondPreference === dept;
 
   if (!isFirst && !isSecond) {
-    const deptType = DEPT_TYPE_MAP[dept];
+    const deptType = DEPT_TYPE_MAP[dept as DeptSlug];
 
     const canBeFirstPref =
       stageNum === 1 &&
@@ -134,6 +120,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
 // POST — submit a stage
 export async function POST(req: NextRequest, { params }: RouteParams) {
+  const csrfError = validateOrigin(req);
+  if (csrfError) return csrfError;
+
   const { dept, n } = await params;
   const stageNum = parseInt(n, 10);
 
@@ -173,28 +162,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     let isFirst = application.firstPreference === dept;
     let isSecond = application.secondPreference === dept;
 
-    const DEPT_TYPE_MAP: Record<string, "tech" | "non-tech"> = {
-      development: "tech",
-      "competitive-coding": "tech",
-      "ui-ux": "tech",
-      "ai-ml": "tech",
-      "cyber-security": "tech",
-      design: "non-tech",
-      management: "non-tech",
-      entrepreneurship: "non-tech",
-      "content-media": "non-tech",
-    };
-
-    const hasFirstPrefSubmission = (application.firstPrefProgress?.stages || []).some(
-      (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
-    );
-
-    const hasSecondPrefSubmission = (application.secondPrefProgress?.stages || []).some(
-      (s: any) => s.submittedAt || (s.responses && Object.keys(s.responses).length > 0)
-    );
-
     if (!isFirst && !isSecond) {
-      const deptType = DEPT_TYPE_MAP[dept];
+      const deptType = DEPT_TYPE_MAP[dept as DeptSlug];
 
       const canBeFirstPref =
         stageNum === 1 &&
@@ -209,7 +178,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
       if (canBeFirstPref) {
         // Drop previous 1st preference and switch to this department ONLY upon actual stage 1 submission
-        application.firstPreference = dept as any;
+        application.firstPreference = dept as DeptSlug;
         application.firstPrefType = deptType;
         application.firstPrefProgress = {
           currentStage: 1,
@@ -220,7 +189,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         isFirst = true;
       } else if (canBeSecondPref) {
         // Drop previous 2nd preference (if any) and switch to this department ONLY upon actual stage 1 submission
-        application.secondPreference = dept as any;
+        application.secondPreference = dept as DeptSlug;
         application.secondPrefType = deptType;
         application.secondPrefProgress = {
           currentStage: 1,

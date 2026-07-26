@@ -1,31 +1,8 @@
 import nodemailer from 'nodemailer';
 import { dbConnect } from "@/lib/mongodb";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
+import EmailLog from "@/models/EmailLog";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
-
-/**
- * Escape HTML special characters to prevent XSS when embedding
- * user-supplied or admin-supplied strings in HTML email bodies.
- */
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
-
-const smtpEmail = process.env.SMTP_EMAIL;
-const smtpPassword = process.env.SMTP_PASSWORD;
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: smtpEmail,
-    pass: smtpPassword,
-  },
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared Layout
@@ -223,15 +200,39 @@ function ctaButton(text: string, href: string, accentColor: string): string {
 // Email: Final Preferences Confirmation
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Escape HTML special characters to prevent XSS when embedding
+ * user-supplied or admin-supplied strings in HTML email bodies.
+ */
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 export async function sendFinalPreferencesConfirmation(
   userEmail: string,
   techPrefName: string,
   nonTechPrefName: string
 ) {
+  const smtpEmail = process.env.SMTP_EMAIL;
+  const smtpPassword = process.env.SMTP_PASSWORD;
+
+  // Guard: only create a transporter when credentials are confirmed present.
+  // Previously the transporter was created at module load with potentially
+  // undefined credentials, causing a silent misconfiguration at startup.
   if (!smtpEmail || !smtpPassword) {
     console.warn(`[MAILER] Skipping final preferences email for ${userEmail}. SMTP credentials not set.`);
     return;
   }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: smtpEmail, pass: smtpPassword },
+  });
 
   try {
     await dbConnect();
@@ -260,23 +261,47 @@ export async function sendFinalPreferencesConfirmation(
     para('Best of luck on your recruitment journey &mdash; MIC Core Team', '#6b7280'),
   ].join('');
 
+  const subject = '⚡ Quest Locked: Final Recruitment Preferences Confirmed!';
+  const htmlBody = buildEmailHtml({
+    heroColor: ACCENT,
+    heroIcon: '⚡',
+    heroLabel: 'Preferences Finalized',
+    heroTitle: 'Quest Locked',
+    heroSubtitle: 'Final Preferences Confirmed',
+    body,
+  });
+
   try {
     await transporter.sendMail({
       from: `"MIC Recruitment" <${smtpEmail}>`,
       to: userEmail,
-      subject: '⚡ Quest Locked: Final Recruitment Preferences Confirmed!',
-      html: buildEmailHtml({
-        heroColor: ACCENT,
-        heroIcon: '⚡',
-        heroLabel: 'Preferences Finalized',
-        heroTitle: 'Quest Locked',
-        heroSubtitle: 'Final Preferences Confirmed',
-        body,
-      }),
+      subject,
+      html: htmlBody,
+    });
+    // Log successful delivery to EmailLog for admin visibility in production
+    await EmailLog.create({
+      recipientEmail: userEmail,
+      senderEmail: smtpEmail,
+      subject,
+      body: htmlBody,
+      templateUsed: 'final-preferences-confirmation',
+      status: 'success',
     });
   } catch (error) {
     console.error('[MAILER] Failed to send final preferences confirmation email:', error);
+    // Log failed delivery so admins can diagnose issues in production
+    try {
+      await EmailLog.create({
+        recipientEmail: userEmail,
+        senderEmail: smtpEmail,
+        subject,
+        body: htmlBody,
+        templateUsed: 'final-preferences-confirmation',
+        status: 'failed',
+        errorDetails: error instanceof Error ? error.message : String(error),
+      });
+    } catch (logErr) {
+      console.error('[MAILER] Failed to write EmailLog entry:', logErr);
+    }
   }
 }
-
-
