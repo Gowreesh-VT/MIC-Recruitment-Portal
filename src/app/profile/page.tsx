@@ -865,7 +865,7 @@ function DesktopProfileView({
         {/* Bushes Strip */}
         <div
           className="absolute w-full z-10"
-          style={{ bottom: "35px", height: "90px" }}
+          style={{ bottom: "33px", height: "92px" }}
         >
           <div
             className="w-full h-full pixelated"
@@ -892,10 +892,10 @@ function DesktopProfileView({
       {/* ── Sticky Top Marquee Footer Bar ── */}
       <div
         className="fixed bottom-0 left-0 w-full z-40 bg-[#DD9955] border-t-4 border-black overflow-hidden flex items-center pointer-events-none"
-        style={{ height: "45px" }}
+        style={{ height: "52px" }}
       >
-        <div className="flex whitespace-nowrap animate-marquee">
-          <span className="inline-flex items-center shrink-0 text-[14px] text-[#CC7700] tracking-wider uppercase font-bold">
+        <div className="flex whitespace-nowrap animate-marquee items-center py-1">
+          <span className="inline-flex items-center shrink-0 text-[13px] text-[#CC7700] tracking-wider uppercase font-bold">
             {Array(8)
               .fill(MARQUEE_TEXT)
               .map((text, idx) => (
@@ -909,7 +909,7 @@ function DesktopProfileView({
                 </React.Fragment>
               ))}
           </span>
-          <span className="inline-flex items-center shrink-0 text-[14px] text-[#CC7700] tracking-wider uppercase font-bold">
+          <span className="inline-flex items-center shrink-0 text-[13px] text-[#CC7700] tracking-wider uppercase font-bold">
             {Array(8)
               .fill(MARQUEE_TEXT)
               .map((text, idx) => (
@@ -952,12 +952,11 @@ function DesktopProfileView({
             <div
               className="bg-[#FFE4D6] border-4 border-black p-10 max-w-lg w-full text-center space-y-6 rounded-[12px] shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] relative"
             >
-              {/* Hanging Wood Ropes */}
+              {/* Hanging Wood Ropes (Constrained to max 48px to prevent sticking out of screen) */}
               <div
-                className="absolute bottom-[100%] w-3 z-[-1]"
+                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
                 style={{
                   left: "12%",
-                  height: "100vh",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
                   borderLeft: "2px solid #000",
@@ -965,10 +964,9 @@ function DesktopProfileView({
                 }}
               />
               <div
-                className="absolute bottom-[100%] w-3 z-[-1]"
+                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
                 style={{
                   right: "12%",
-                  height: "100vh",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
                   borderLeft: "2px solid #000",
@@ -1004,10 +1002,9 @@ function DesktopProfileView({
             >
               {/* Hanging Wood Ropes */}
               <div
-                className="absolute bottom-[100%] w-3 z-[-1]"
+                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
                 style={{
                   left: "8%",
-                  height: "100vh",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
                   borderLeft: "2px solid #000",
@@ -1015,10 +1012,9 @@ function DesktopProfileView({
                 }}
               />
               <div
-                className="absolute bottom-[100%] w-3 z-[-1]"
+                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
                 style={{
                   right: "8%",
-                  height: "100vh",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
                   borderLeft: "2px solid #000",
