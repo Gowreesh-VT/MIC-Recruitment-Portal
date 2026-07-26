@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "MIC Recruitment Portal - Next Gen Admissions",
-  description: "Register for the premium developer recruiter program protected by Cloudflare Turnstile & hCaptcha.",
+  description: "Apply to join the Microsoft Innovations Club at VIT Chennai. Open to all VIT students.",
 };
 
 export default function RootLayout({
