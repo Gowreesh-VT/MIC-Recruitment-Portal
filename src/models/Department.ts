@@ -11,8 +11,7 @@ export interface FormField {
     | "checkbox"
     | "url"
     | "number"
-    | "email"
-    | "file";
+    | "email";
   placeholder?: string;
   options?: string[];
   required: boolean;
@@ -57,7 +56,6 @@ const FormFieldSchema = new Schema<FormField>(
         "url",
         "number",
         "email",
-        "file",
       ],
       required: true,
     },

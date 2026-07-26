@@ -133,8 +133,8 @@ export function validateResponses(
       fieldSchema = field.required
         ? z.union([linkedinSchema, linkedinArraySchema.min(1, `"${field.label}" is required.`)])
         : z.union([linkedinSchema, linkedinArraySchema, z.literal(""), z.null(), z.undefined()]).optional();
-    } else if (field.type === "url" || field.type === "file") {
-      // Generic URL or uploaded file URL field
+    } else if (field.type === "url") {
+      // Generic URL field
       const urlSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
         .url(`"${field.label}" must be a valid URL.`);
@@ -252,7 +252,6 @@ export const formFieldSchema = z.object({
     "url",
     "number",
     "email",
-    "file",
   ]),
   placeholder: z.string().optional(),
   options: z.array(z.string()).optional(),

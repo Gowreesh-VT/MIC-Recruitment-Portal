@@ -20,23 +20,14 @@ export type OverallStatus =
   | "waitlisted";
 export type PrefStatus = "active" | "passed" | "rejected" | "pending";
 
-export interface IPanelistScore {
-  interviewerEmail: string;
-  scores: Record<string, number>;
-  note?: string;
-  createdAt: Date;
-}
-
 export interface StageSubmission {
   stage: number;
   submittedAt: Date;
   responses: Record<string, unknown>;
-  scores?: Record<string, number>;
   adminNote?: string;
   reviewedBy?: string;
   reviewedAt?: Date;
   result: StageResult;
-  panelistScores?: IPanelistScore[];
 }
 
 export interface PrefProgress {
@@ -78,15 +69,6 @@ const StageSubmissionSchema = new Schema<StageSubmission>(
     stage: { type: Number, required: true },
     submittedAt: { type: Date, required: true },
     responses: { type: Schema.Types.Mixed, default: {} },
-    scores: { type: Map, of: Number },
-    panelistScores: [
-      {
-        interviewerEmail: { type: String, required: true },
-        scores: { type: Map, of: Number },
-        note: { type: String },
-        createdAt: { type: Date, default: Date.now },
-      },
-    ],
     adminNote: { type: String },
     reviewedBy: { type: String },
     reviewedAt: { type: Date },
@@ -179,9 +161,14 @@ const ApplicationSchema = new Schema<IApplication>(
   { timestamps: true }
 );
 
-// One application per user per cycle
+// Query performance indexes
 ApplicationSchema.index({ userId: 1, cycleId: 1 }, { unique: true });
 ApplicationSchema.index({ userEmail: 1, cycleId: 1 });
+ApplicationSchema.index({ overallStatus: 1, cycleId: 1 });
+ApplicationSchema.index({ firstPreference: 1, cycleId: 1 });
+ApplicationSchema.index({ secondPreference: 1, cycleId: 1 });
+ApplicationSchema.index({ "firstPrefProgress.currentStage": 1 });
+ApplicationSchema.index({ "secondPrefProgress.currentStage": 1 });
 
 const Application: Model<IApplication> =
   mongoose.models.Application ||
