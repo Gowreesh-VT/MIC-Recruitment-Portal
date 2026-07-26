@@ -173,9 +173,7 @@ export default function LoginPage() {
       if (typeof window !== "undefined") {
         setIsMobile(window.innerWidth < 768);
         const heightScale = window.innerHeight / 1024;
-        const widthScale = window.innerWidth / 1200;
-        const cappedScale = Math.min(heightScale, widthScale, 1.2);
-        setScale(cappedScale);
+        setScale(heightScale);
       }
     };
     handleResize();

@@ -308,12 +308,21 @@ function MobileQuestsView({
 
       {/* Top bar (absolute so pipe goes behind/above) */}
       <div className="absolute top-0 left-0 w-full z-20 flex items-center justify-between px-3 pt-3 pointer-events-none">
-        <img
-          src="/mic_logo_pixel.png"
-          alt="MIC Logo"
-          className="pixelated w-[52px] h-[37px] animate-retro-float-small drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer pointer-events-auto"
-          onClick={() => { playSound("select"); router.push("/"); }}
-        />
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <img
+            src="/mic_logo_pixel.png"
+            alt="MIC Logo"
+            className="pixelated w-[52px] h-[37px] animate-retro-float-small drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer"
+            onClick={() => { playSound("select"); router.push("/"); }}
+          />
+          <button
+            onClick={() => { playSound("select"); router.push("/"); }}
+            className="bg-[#E29A2B] hover:bg-[#F0AD3D] text-black text-[9px] font-bold py-1.5 px-2.5 border-4 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5 transition-transform"
+            style={{ boxShadow: "3px 3px 0px 0px #000" }}
+          >
+            MENU
+          </button>
+        </div>
         <div className="flex items-center gap-2 pointer-events-auto">
           <button
             onClick={() => { playSound("open"); router.push("/faqs?from=/recruitments"); }}
@@ -684,12 +693,10 @@ export default function RecruitmentsPage() {
     const handleResize = () => {
       if (typeof window !== "undefined") {
         setIsMobile(window.innerWidth < 768);
-        // Subtract 16px to account for the custom retro-scrollbar height so it doesn't overlap the ground
-        const heightScale = (window.innerHeight - 16) / 1024;
-        const widthScale = window.innerWidth / 1200;
-        const cappedScale = Math.min(heightScale, widthScale, 1.2); // Cap scale to prevent heavy pixel stretch
-        latestScaleRef.current = cappedScale;
-        setScale(cappedScale);
+        // Scale to fit viewport height exactly so ground marquee rests at bottom with zero empty space
+        const heightScale = window.innerHeight / 1024;
+        latestScaleRef.current = heightScale;
+        setScale(heightScale);
         setMounted(true);
       }
     };

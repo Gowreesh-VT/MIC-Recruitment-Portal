@@ -73,7 +73,7 @@ export default function MobileBackground({ children }: { children?: React.ReactN
       </div>
 
       {/* Main Content Area (Children) - Floating and scrolling above the pinned background */}
-      <div className="relative z-10 w-full h-full flex flex-col overflow-y-auto overflow-x-hidden pb-[320px]">
+      <div className="relative z-10 w-full h-full flex flex-col overflow-y-auto overflow-x-hidden pb-[80px]">
         {children}
       </div>
     </div>
