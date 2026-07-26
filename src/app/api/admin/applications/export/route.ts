@@ -5,6 +5,7 @@ import Application from "@/models/Application";
 import mongoose from "mongoose";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
 
+
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -127,9 +128,7 @@ export async function GET(req: NextRequest) {
       secondPrefType: "Second Pref Type",
       secondPrefStatus: "Second Pref Status",
       secondPrefStage: "Second Pref Current Stage",
-      scores: "Rubric Scores",
       adminNotes: "Admin Notes",
-      panelistNotes: "Panelist Notes",
     };
 
     const columns = colsParam ? colsParam.split(",") : Object.keys(allHeaders);
@@ -138,44 +137,16 @@ export async function GET(req: NextRequest) {
     const activeCols = columns.filter((col) => col in allHeaders) as Array<keyof typeof allHeaders>;
     const headers = activeCols.map((col) => allHeaders[col]);
 
-    interface ExportPanelistScore {
-      interviewerEmail?: string;
-      scores?: Map<string, unknown> | Record<string, unknown>;
-      note?: string;
-    }
-
     interface ExportStage {
       stage?: number;
-      scores?: Map<string, unknown> | Record<string, unknown>;
       adminNote?: string;
       reviewedBy?: string;
-      panelistScores?: ExportPanelistScore[];
     }
 
     // Map rows
     const rows = (applications as Record<string, unknown>[]).map((app) => {
       const firstProgress = app.firstPrefProgress as Record<string, unknown> | undefined;
       const secondProgress = app.secondPrefProgress as Record<string, unknown> | undefined;
-
-      const getScoresString = () => {
-        const scoresList: string[] = [];
-        const processStages = (stages: ExportStage[] | undefined, prefLabel: string) => {
-          stages?.forEach((s) => {
-            if (s.scores) {
-              const entries = (
-                s.scores instanceof Map ? Array.from(s.scores.entries()) : Object.entries(s.scores)
-              ) as [string, unknown][];
-              const scoresEntries = entries.map(([k, v]) => `${k}:${v}`).join("; ");
-              if (scoresEntries) {
-                scoresList.push(`[${prefLabel} Stage ${s.stage}] ${scoresEntries}`);
-              }
-            }
-          });
-        };
-        processStages(firstProgress?.stages as ExportStage[] | undefined, "First");
-        processStages(secondProgress?.stages as ExportStage[] | undefined, "Second");
-        return scoresList.join(" | ");
-      };
 
       const getAdminNotesString = () => {
         const notesList: string[] = [];
@@ -184,29 +155,6 @@ export async function GET(req: NextRequest) {
             if (s.adminNote && s.adminNote.trim()) {
               const reviewer = s.reviewedBy ? ` (${s.reviewedBy})` : "";
               notesList.push(`[${prefLabel} Stage ${s.stage}] ${s.adminNote.trim()}${reviewer}`);
-            }
-          });
-        };
-        processStages(firstProgress?.stages as ExportStage[] | undefined, "First");
-        processStages(secondProgress?.stages as ExportStage[] | undefined, "Second");
-        return notesList.join(" | ");
-      };
-
-      const getPanelistNotesString = () => {
-        const notesList: string[] = [];
-        const processStages = (stages: ExportStage[] | undefined, prefLabel: string) => {
-          stages?.forEach((s) => {
-            if (s.panelistScores && s.panelistScores.length > 0) {
-              s.panelistScores.forEach((p) => {
-                const interviewer = p.interviewerEmail ?? "Interviewer";
-                const pScores = p.scores
-                  ? (p.scores instanceof Map ? Array.from(p.scores.entries()) : Object.entries(p.scores))
-                      .map(([k, v]) => `${k}:${v}`)
-                      .join("; ")
-                  : "";
-                const noteText = p.note ? ` Note: ${p.note.trim()}` : "";
-                notesList.push(`[${prefLabel} Stage ${s.stage} - ${interviewer}]${pScores ? ` Scores: ${pScores}` : ""}${noteText}`);
-              });
             }
           });
         };
@@ -238,9 +186,7 @@ export async function GET(req: NextRequest) {
         secondPrefType: String(app.secondPrefType ?? ""),
         secondPrefStatus: String(secondProgress?.status ?? ""),
         secondPrefStage: String(secondProgress?.currentStage ?? "1"),
-        scores: getScoresString(),
         adminNotes: getAdminNotesString(),
-        panelistNotes: getPanelistNotesString(),
       };
 
       return activeCols.map((col) => {
@@ -255,7 +201,7 @@ export async function GET(req: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="mic-applicants-2026.csv"',
+        "Content-Disposition": `attachment; filename="mic-applicants-${ACTIVE_CYCLE_ID}.csv"`,
       },
     });
   } catch (error) {

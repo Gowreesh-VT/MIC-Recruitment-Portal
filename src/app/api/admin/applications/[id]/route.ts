@@ -68,12 +68,12 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   await dbConnect();
 
   const body = await req.json();
-  const { action, preference, note, scores } = body;
+  const { action, preference, note } = body;
 
-  if (!["advance", "reject", "waitlist", "select", "score"].includes(action) || !["first", "second"].includes(preference)) {
+  if (!["advance", "reject", "waitlist", "select"].includes(action) || !["first", "second"].includes(preference)) {
     return NextResponse.json({ success: false, error: "Invalid action or preference." }, { status: 400 });
   }
-  // action: "advance" | "reject" | "waitlist" | "select" | "score"
+  // action: "advance" | "reject" | "waitlist" | "select"
   // preference: "first" | "second"
 
   const application = await Application.findById(id);
@@ -101,10 +101,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   const progressKey = preference === "first" ? "firstPrefProgress" : "secondPrefProgress";
-  const deptSlug =
-    preference === "first"
-      ? application.firstPreference
-      : application.secondPreference;
 
   const progress =
     preference === "first"
@@ -126,93 +122,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     currentStageIdx = progress.stages.length - 1;
   }
 
-  // Multi-interviewer Panelist Scoring Update
-  if (scores && Object.keys(scores).length > 0) {
-    const stage = (preference === "first"
-      ? application.firstPrefProgress
-      : application.secondPrefProgress).stages[currentStageIdx];
-
-    if (!stage.panelistScores) {
-      stage.panelistScores = [];
-    }
-
-    const interviewerEmail = session.user.email ?? "unknown";
-
-    // Filter valid positive scores
-    const validScores: Record<string, number> = {};
-    Object.entries(scores).forEach(([k, v]) => {
-      const numVal = Number(v);
-      if (numVal > 0) {
-        validScores[k] = numVal;
-      }
-    });
-
-    interface PanelistScoreEntry {
-      interviewerEmail?: string;
-      scores?: Map<string, number> | Record<string, number>;
-      note?: string;
-      createdAt?: Date;
-    }
-
-    const existingIdx = stage.panelistScores.findIndex(
-      (ps: PanelistScoreEntry) => ps.interviewerEmail === interviewerEmail
-    );
-
-    if (existingIdx !== -1) {
-      stage.panelistScores[existingIdx].scores = validScores;
-      if (note) stage.panelistScores[existingIdx].note = note;
-      stage.panelistScores[existingIdx].createdAt = new Date();
-    } else {
-      stage.panelistScores.push({
-        interviewerEmail,
-        scores: validScores,
-        note: note || "",
-        createdAt: new Date(),
-      });
-    }
-
-    // Recalculate averages across all panelists safely
-    const scoreSums: Record<string, number> = {};
-    const scoreCounts: Record<string, number> = {};
-
-    stage.panelistScores.forEach((ps: PanelistScoreEntry) => {
-      if (!ps || !ps.scores) return;
-
-      let entries: [string, unknown][] = [];
-      if (ps.scores instanceof Map) {
-        entries = Array.from(ps.scores.entries());
-      } else if (typeof ps.scores === "object" && ps.scores !== null) {
-        entries = Object.entries(ps.scores);
-      }
-
-      entries.forEach(([key, val]) => {
-        const scoreVal = Number(val);
-        if (!isNaN(scoreVal) && scoreVal > 0) {
-          scoreSums[key] = (scoreSums[key] || 0) + scoreVal;
-          scoreCounts[key] = (scoreCounts[key] || 0) + 1;
-        }
-      });
-    });
-
-    const averagedScores: Record<string, number> = {};
-    Object.keys(scoreSums).forEach((key) => {
-      averagedScores[key] = Number((scoreSums[key] / scoreCounts[key]).toFixed(1));
-    });
-
-    stage.scores = averagedScores;
-    if (note) stage.adminNote = note;
-  } else if (note) {
+  if (note) {
     (preference === "first"
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].adminNote = note;
-  }
-
-  if (action === "score") {
-    application.markModified(progressKey);
-    application.markModified(`${progressKey}.stages`);
-    await application.save();
-
-    return NextResponse.json({ success: true, message: "Scores updated successfully.", application });
   }
 
   if (action === "advance") {

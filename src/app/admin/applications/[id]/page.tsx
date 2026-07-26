@@ -302,7 +302,7 @@ function PrefPanel({
 
   useEffect(() => {
     if (currentStageSubmission?.adminNote) {
-      setNote(currentStageSubmission.adminNote);
+      setTimeout(() => setNote(currentStageSubmission.adminNote ?? ""), 0);
     }
   }, [currentStageSubmission]);
 

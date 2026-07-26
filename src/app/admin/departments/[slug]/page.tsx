@@ -134,7 +134,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
     });
   };
 
-  const updateField = (idx: number, key: keyof FormField, value: any) => {
+  const updateField = (idx: number, key: keyof FormField, value: unknown) => {
     setConfig((prev) => {
       if (!prev) return prev;
       const newConfig = { ...prev };
@@ -295,7 +295,7 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
                       <Plus className="h-5 w-5 text-zinc-500" />
                     </div>
                     <p className="text-sm font-medium text-zinc-400 mb-1">No custom questions added yet</p>
-                    <p className="text-xs text-zinc-500 max-w-sm">Click the 'Add Question' button above to start collecting specific information from applicants.</p>
+                    <p className="text-xs text-zinc-500 max-w-sm">Click the &apos;Add Question&apos; button above to start collecting specific information from applicants.</p>
                   </div>
                 ) : (
                   config?.stages?.[0]?.formFields?.map((field, idx) => (

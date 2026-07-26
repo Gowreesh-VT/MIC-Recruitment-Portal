@@ -36,8 +36,8 @@ interface Application {
   firstPrefType: string;
   overallStatus: string;
   activePreference: string;
-  firstPrefProgress: { currentStage: number; status: string; stages: any[] };
-  secondPrefProgress: { currentStage: number; status: string; stages: any[] };
+  firstPrefProgress: { currentStage: number; status: string; stages: unknown[] };
+  secondPrefProgress: { currentStage: number; status: string; stages: unknown[] };
   createdAt: string;
 }
 
@@ -91,9 +91,7 @@ export default function AdminApplicationsPage() {
     secondPrefType: false,
     secondPrefStatus: false,
     secondPrefStage: false,
-    scores: false,
     adminNotes: false,
-    panelistNotes: false,
   });
 
   // Selection states
@@ -576,7 +574,7 @@ export default function AdminApplicationsPage() {
                     <button
                       key={key}
                       type="button"
-                      onClick={() => setExportDeptPref(key as any)}
+                      onClick={() => setExportDeptPref(key as "any" | "first" | "second" | "active")}
                       className={`px-1.5 py-1 rounded-md text-[10px] font-bold border transition-all ${
                         exportDeptPref === key
                           ? "bg-teal-500/20 border-teal-500/80 text-teal-300"
@@ -647,9 +645,7 @@ export default function AdminApplicationsPage() {
                     secondPrefType: false,
                     secondPrefStatus: false,
                     secondPrefStage: false,
-                    scores: false,
                     adminNotes: false,
-                    panelistNotes: false,
                   })
                 }
                 className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
@@ -679,9 +675,7 @@ export default function AdminApplicationsPage() {
                     secondPrefType: true,
                     secondPrefStatus: true,
                     secondPrefStage: true,
-                    scores: false,
                     adminNotes: false,
-                    panelistNotes: false,
                   })
                 }
                 className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
@@ -711,14 +705,12 @@ export default function AdminApplicationsPage() {
                     secondPrefType: false,
                     secondPrefStatus: true,
                     secondPrefStage: true,
-                    scores: true,
                     adminNotes: true,
-                    panelistNotes: true,
                   })
                 }
                 className="px-3 py-1.5 bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold transition-all hover:bg-zinc-800/60"
               >
-                Evaluations & Rubrics
+                Admin Review Notes
               </button>
             </div>
           </div>
@@ -811,9 +803,7 @@ export default function AdminApplicationsPage() {
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
-                  ["scores", "Rubric Scores"],
                   ["adminNotes", "Admin Review Notes"],
-                  ["panelistNotes", "Panelist Notes"],
                 ].map(([key, label]) => (
                   <label
                     key={key}

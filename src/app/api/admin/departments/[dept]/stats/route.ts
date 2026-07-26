@@ -124,59 +124,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       count: y.count,
     }));
 
-    // Rubric average scores
-    const appsWithScores = await Application.find({
-      cycleId: ACTIVE_CYCLE_ID,
-      $or: [{ firstPreference: dept }, { secondPreference: dept }],
-    }).select("firstPreference secondPreference firstPrefProgress secondPrefProgress");
-
-    const scoreTotals: Record<string, { sum: number; count: number }> = {};
-    for (const app of appsWithScores) {
-      const isFirst = app.firstPreference === dept;
-      const progress = isFirst ? app.firstPrefProgress : app.secondPrefProgress;
-      if (progress?.stages) {
-        for (const stage of progress.stages) {
-          if (stage.scores) {
-            const scoresObj =
-              stage.scores instanceof Map
-                ? Object.fromEntries(stage.scores)
-                : stage.scores;
-            for (const [key, val] of Object.entries(scoresObj)) {
-              if (typeof val === "number") {
-                if (!scoreTotals[key]) scoreTotals[key] = { sum: 0, count: 0 };
-                scoreTotals[key].sum += val;
-                scoreTotals[key].count += 1;
-              }
-            }
-          }
-          if (stage.panelistScores) {
-            for (const ps of stage.panelistScores) {
-              if (ps.scores) {
-                const scoresObj =
-                  ps.scores instanceof Map
-                    ? Object.fromEntries(ps.scores)
-                    : ps.scores;
-                for (const [key, val] of Object.entries(scoresObj)) {
-                  if (typeof val === "number") {
-                    if (!scoreTotals[key]) scoreTotals[key] = { sum: 0, count: 0 };
-                    scoreTotals[key].sum += val;
-                    scoreTotals[key].count += 1;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    const avgScores: Record<string, number> = {};
-    for (const [key, data] of Object.entries(scoreTotals)) {
-      if (data.count > 0) {
-        avgScores[key] = Number((data.sum / data.count).toFixed(1));
-      }
-    }
-
     return NextResponse.json({
       success: true,
       stats: {
@@ -191,7 +138,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         byStage,
         stagesFunnel,
         yearDistribution,
-        avgScores,
       },
     });
   } catch {
