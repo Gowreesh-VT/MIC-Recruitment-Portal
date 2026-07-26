@@ -952,25 +952,19 @@ function DesktopProfileView({
             <div
               className="bg-[#FFE4D6] border-4 border-black p-10 max-w-lg w-full text-center space-y-6 rounded-[12px] shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] relative"
             >
-              {/* Hanging Wood Ropes (Constrained to max 48px to prevent sticking out of screen) */}
+              {/* Hanging Wood Ropes (Extending up to top of screen) */}
               <div
-                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
+                className="absolute -top-[800px] left-[12%] w-4 h-[805px] pointer-events-none z-[-1] border-x-2 border-black"
                 style={{
-                  left: "12%",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
-                  borderLeft: "2px solid #000",
-                  borderRight: "2px solid #000",
                 }}
               />
               <div
-                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
+                className="absolute -top-[800px] right-[12%] w-4 h-[805px] pointer-events-none z-[-1] border-x-2 border-black"
                 style={{
-                  right: "12%",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
-                  borderLeft: "2px solid #000",
-                  borderRight: "2px solid #000",
                 }}
               />
 
@@ -1000,25 +994,19 @@ function DesktopProfileView({
             <div
               className="bg-[#FFE4D6] border-4 border-black rounded-[12px] shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] relative overflow-hidden"
             >
-              {/* Hanging Wood Ropes */}
+              {/* Hanging Wood Ropes (Extending up to top of screen) */}
               <div
-                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
+                className="absolute -top-[800px] left-[8%] w-4 h-[805px] pointer-events-none z-[-1] border-x-2 border-black"
                 style={{
-                  left: "8%",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
-                  borderLeft: "2px solid #000",
-                  borderRight: "2px solid #000",
                 }}
               />
               <div
-                className="absolute bottom-[100%] w-3 h-12 z-[-1]"
+                className="absolute -top-[800px] right-[8%] w-4 h-[805px] pointer-events-none z-[-1] border-x-2 border-black"
                 style={{
-                  right: "8%",
                   background:
                     "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)",
-                  borderLeft: "2px solid #000",
-                  borderRight: "2px solid #000",
                 }}
               />
 
