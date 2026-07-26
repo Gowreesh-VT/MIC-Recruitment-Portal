@@ -73,8 +73,10 @@ export default function TurnstileWidget({
         console.warn(
           "[Turnstile] NEXT_PUBLIC_TURNSTILE_SITE_KEY not set. Auto-bypassing challenge in development mode."
         );
-        setBypassed(true);
-        onSuccess("bypassed");
+        setTimeout(() => {
+          setBypassed(true);
+          onSuccess("bypassed");
+        }, 0);
       } else if (!rawSiteKey && process.env.NODE_ENV === "production") {
         console.error(
           "[Turnstile] CRITICAL: NEXT_PUBLIC_TURNSTILE_SITE_KEY is missing in production environment."
@@ -121,8 +123,8 @@ export default function TurnstileWidget({
     if (bypassed) return;
 
     if (window.turnstile) {
-      renderWidget();
-      return;
+      const timer = setTimeout(() => renderWidget(), 0);
+      return () => clearTimeout(timer);
     }
 
     if (!document.getElementById(TURNSTILE_SCRIPT_ID)) {

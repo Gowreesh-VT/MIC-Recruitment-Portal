@@ -1,6 +1,5 @@
-"use client";
-
 import React, { useEffect } from "react";
+import Image from "next/image";
 
 export interface DepartmentData {
   slug?: string;
@@ -158,9 +157,11 @@ export default function DepartmentPopup({
           className="absolute -top-5 -right-5 sm:-top-6 sm:-right-6 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none z-30"
           title="Close Popup"
         >
-          <img
+          <Image
             src="/Close_icon.svg"
             alt="Close"
+            width={46}
+            height={44}
             className="w-[38px] h-[36px] sm:w-[46px] sm:h-[44px] pixelated select-none pointer-events-none"
           />
         </button>

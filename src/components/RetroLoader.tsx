@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Press_Start_2P } from "next/font/google";
+import Image from "next/image";
 import MicLogo from "@/components/MicLogo";
 import MobileBackground from "@/components/MobileBackground";
 
@@ -71,7 +72,6 @@ export default function RetroLoader({
   title,
 }: RetroLoaderProps) {
   const [progress, setProgress] = useState(0);
-  const [statusText, setStatusText] = useState(STATUS_MESSAGES[0]);
   const [isVisible, setIsVisible] = useState(true);
   const [scale, setScale] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -99,7 +99,7 @@ export default function RetroLoader({
     loadedRef.current = !isLoading;
     if (!isLoading) {
       progressRef.current = 100;
-      setProgress(100);
+      setTimeout(() => setProgress(100), 0);
       const timer = setTimeout(() => {
         setIsVisible(false);
         if (onComplete) onComplete();
@@ -125,16 +125,21 @@ export default function RetroLoader({
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // Status text based on progress
-  useEffect(() => {
-    if (progress < 15) setStatusText(STATUS_MESSAGES[0]);
-    else if (progress < 30) setStatusText(STATUS_MESSAGES[1]);
-    else if (progress < 50) setStatusText(STATUS_MESSAGES[2]);
-    else if (progress < 75) setStatusText(STATUS_MESSAGES[3]);
-    else if (progress < 90) setStatusText(STATUS_MESSAGES[4]);
-    else if (progress < 100) setStatusText(STATUS_MESSAGES[5]);
-    else setStatusText(STATUS_MESSAGES[6]);
-  }, [progress]);
+  // Status text based on progress (derived directly)
+  const statusText =
+    progress < 15
+      ? STATUS_MESSAGES[0]
+      : progress < 30
+      ? STATUS_MESSAGES[1]
+      : progress < 50
+      ? STATUS_MESSAGES[2]
+      : progress < 75
+      ? STATUS_MESSAGES[3]
+      : progress < 90
+      ? STATUS_MESSAGES[4]
+      : progress < 100
+      ? STATUS_MESSAGES[5]
+      : STATUS_MESSAGES[6];
 
   if (!isVisible) return null;
 
@@ -148,9 +153,11 @@ export default function RetroLoader({
         <MobileBackground>
           {/* Top bar */}
           <div className="relative z-20 flex items-center justify-between px-3 pt-3 flex-shrink-0">
-            <img
+            <Image
               src="/mic_logo_pixel.png"
               alt="MIC Logo"
+              width={52}
+              height={37}
               className="pixelated w-[52px] h-[37px] drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)]"
             />
           </div>
@@ -213,33 +220,35 @@ export default function RetroLoader({
 
           
           {/* Floating Clouds */}
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[300px] left-[1060px] w-[280px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[1167px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.5s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[333px] left-[2509px] w-[260px] opacity-75 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.8s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.2s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={280} height={140} className="absolute top-[300px] left-[1060px] w-[280px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={320} height={160} className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={360} height={180} className="absolute top-[39px] left-[1167px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.5s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={260} height={130} className="absolute top-[333px] left-[2509px] w-[260px] opacity-75 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.8s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={320} height={160} className="absolute top-[140px] left-[1312px] w-[320px] opacity-85 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "2.3s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={360} height={180} className="absolute top-[39px] left-[2519px] w-[360px] opacity-90 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.2s" }} />
 
           {/* Additional Small Clouds */}
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[220px] left-[400px] w-[200px] opacity-70 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.2s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[180px] left-[1800px] w-[240px] opacity-60 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.8s" }} />
-          <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[280px] left-[2100px] w-[180px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.5s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={200} height={100} className="absolute top-[220px] left-[400px] w-[200px] opacity-70 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.2s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={240} height={120} className="absolute top-[180px] left-[1800px] w-[240px] opacity-60 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "0.8s" }} />
+          <Image src="/pixel_cloud_small.svg" alt="Cloud" width={180} height={90} className="absolute top-[280px] left-[2100px] w-[180px] opacity-80 animate-retro-float pixelated select-none pointer-events-none" style={{ animationDelay: "1.5s" }} />
 
           {/* Background Skyline */}
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
-          <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <Image src="/pixel_cloud_large.svg" alt="Skyline" width={1437} height={458} className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
+          <Image src="/pixel_cloud_large.svg" alt="Skyline" width={1437} height={458} className="absolute top-[566px] left-[1435px] w-[1437px] h-[458px] object-cover opacity-100 pointer-events-none select-none pixelated" />
           
           {/* Midground Skyline Blocks */}
           {Array.from({ length: 12 }).map((_, idx) => (
-            <img key={idx} src="/city_skyline.svg" alt="Skyline Block" className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated" style={{ left: `${idx * 245}px` }} />
+            <Image key={idx} src="/city_skyline.svg" alt="Skyline Block" width={246} height={249} className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pointer-events-none select-none pixelated" style={{ left: `${idx * 245}px` }} />
           ))}
 
           {/* Green Bushes */}
           {Array.from({ length: 3 }).map((_, idx) => (
-            <img
+            <Image
               key={`bush-${idx}`}
               src="/bushes_pixel.svg"
               alt={`Bushes ${idx}`}
+              width={1456}
+              height={200}
               className="absolute top-[739px] w-[1456px] h-[200px] z-4 pointer-events-none select-none pixelated"
               style={{ left: `${idx * 1409}px` }}
             />
@@ -361,7 +370,7 @@ export default function RetroLoader({
                   {Array(6).fill(MARQUEE_TEXT).map((text, idx) => (
                     <React.Fragment key={idx}>
                       <span>{text}</span>
-                      <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      <Image src="/mic_logo_pixel.png" alt="MIC" width={32} height={32} className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
                     </React.Fragment>
                   ))}
                 </span>
@@ -369,7 +378,7 @@ export default function RetroLoader({
                   {Array(6).fill(MARQUEE_TEXT).map((text, idx) => (
                     <React.Fragment key={idx}>
                       <span>{text}</span>
-                      <img src="/mic_logo_pixel.png" alt="MIC" className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
+                      <Image src="/mic_logo_pixel.png" alt="MIC" width={32} height={32} className="w-8 h-8 md:w-10 md:h-10 mx-8 shrink-0" />
                     </React.Fragment>
                   ))}
                 </span>

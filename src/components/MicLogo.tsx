@@ -2,12 +2,11 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { playRetroSound } from "@/lib/audio";
 
 export default function MicLogo() {
   const router = useRouter();
-
-
 
   const [scale, setScale] = React.useState(1);
   React.useEffect(() => {
@@ -29,9 +28,11 @@ export default function MicLogo() {
       className="fixed top-6 left-4 z-50 pointer-events-none"
       style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}
     >
-      <img
+      <Image
         src="/mic_logo_pixel.png"
         alt="MIC Logo"
+        width={110}
+        height={79}
         className="pixelated w-[110px] h-[79px] select-none pointer-events-auto animate-retro-float-small drop-shadow-[4px_4px_0px_rgba(0,0,0,0.6)] cursor-pointer hover:scale-105 transition-transform"
         onClick={() => {
           playRetroSound("select");

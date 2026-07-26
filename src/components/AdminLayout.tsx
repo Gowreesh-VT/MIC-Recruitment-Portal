@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import Image from "next/image";
 import { BarChart3, Users, Settings, LogOut, TrendingUp, PanelLeftClose, PanelLeftOpen, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Press_Start_2P } from "next/font/google";
@@ -97,9 +98,11 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
       <aside className={`fixed left-0 top-0 h-full w-56 bg-zinc-950 border-r-4 border-black flex flex-col z-20 transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-5 border-b-4 border-black flex items-center justify-between gap-3 bg-zinc-900/20">
           <div className="flex items-center gap-3">
-            <img
+            <Image
               src="/mic_logo_pixel.png"
               alt="MIC Logo"
+              width={40}
+              height={28}
               className="pixelated w-10 h-7 select-none object-contain hover:-translate-y-1 hover:scale-105 transition-all cursor-pointer"
               onClick={playCoinSound}
             />

@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 export default function MobileBackground({ children }: { children?: React.ReactNode }) {
   const MARQUEE_TEXT = "MICROSOFT INNOVATIONS CLUB TENURE 2026-2027";
@@ -15,10 +16,10 @@ export default function MobileBackground({ children }: { children?: React.ReactN
 
       {/* Scattered Sky Clouds - Fixed behind content */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <img src="/pixel_cloud_small.svg" alt="" className="absolute top-[90px] left-[10px] w-[120px] opacity-75 animate-retro-float pixelated" style={{ animationDelay: "0.3s" }} />
-        <img src="/pixel_cloud_small.svg" alt="" className="absolute top-[50px] right-[15px] w-[100px] opacity-65 animate-retro-float pixelated" style={{ animationDelay: "1.1s" }} />
-        <img src="/pixel_cloud_small.svg" alt="" className="absolute top-[220px] right-[40px] w-[80px] opacity-55 animate-retro-float pixelated" style={{ animationDelay: "0.6s" }} />
-        <img src="/pixel_cloud_small.svg" alt="" className="absolute top-[300px] left-[20px] w-[90px] opacity-50 animate-retro-float pixelated" style={{ animationDelay: "1.8s" }} />
+        <Image src="/pixel_cloud_small.svg" alt="" width={120} height={60} className="absolute top-[90px] left-[10px] w-[120px] opacity-75 animate-retro-float pixelated" style={{ animationDelay: "0.3s" }} />
+        <Image src="/pixel_cloud_small.svg" alt="" width={100} height={50} className="absolute top-[50px] right-[15px] w-[100px] opacity-65 animate-retro-float pixelated" style={{ animationDelay: "1.1s" }} />
+        <Image src="/pixel_cloud_small.svg" alt="" width={80} height={40} className="absolute top-[220px] right-[40px] w-[80px] opacity-55 animate-retro-float pixelated" style={{ animationDelay: "0.6s" }} />
+        <Image src="/pixel_cloud_small.svg" alt="" width={90} height={45} className="absolute top-[300px] left-[20px] w-[90px] opacity-50 animate-retro-float pixelated" style={{ animationDelay: "1.8s" }} />
       </div>
 
       {/* ── PINNED Bottom Scene (Fixed at exact position above marquee footer) ── */}
@@ -26,7 +27,7 @@ export default function MobileBackground({ children }: { children?: React.ReactN
         {/* City Skyline */}
         <div className="absolute w-full overflow-hidden flex" style={{ bottom: "30px", height: "220px" }}>
            {Array.from({ length: 4 }).map((_, i) => (
-             <img key={`city-${i}`} src="/city_skyline.svg" alt="" className="h-full pixelated opacity-75 flex-shrink-0" style={{ width: "45%", marginLeft: i === 0 ? "0" : "-5%" }} />
+             <Image key={`city-${i}`} src="/city_skyline.svg" alt="" width={300} height={220} className="h-full pixelated opacity-75 flex-shrink-0" style={{ width: "45%", marginLeft: i === 0 ? "0" : "-5%" }} />
            ))}
         </div>
         
@@ -57,7 +58,7 @@ export default function MobileBackground({ children }: { children?: React.ReactN
             {Array(6).fill(MARQUEE_TEXT).map((text, idx) => (
               <React.Fragment key={`mq1-${idx}`}>
                 <span>{text}</span>
-                <img src="/mic_logo_pixel.png" alt="MIC" className="w-6 h-6 mx-4 shrink-0" />
+                <Image src="/mic_logo_pixel.png" alt="MIC" width={24} height={24} className="w-6 h-6 mx-4 shrink-0" />
               </React.Fragment>
             ))}
           </span>
@@ -65,7 +66,7 @@ export default function MobileBackground({ children }: { children?: React.ReactN
             {Array(6).fill(MARQUEE_TEXT).map((text, idx) => (
               <React.Fragment key={`mq2-${idx}`}>
                 <span>{text}</span>
-                <img src="/mic_logo_pixel.png" alt="MIC" className="w-6 h-6 mx-4 shrink-0" />
+                <Image src="/mic_logo_pixel.png" alt="MIC" width={24} height={24} className="w-6 h-6 mx-4 shrink-0" />
               </React.Fragment>
             ))}
           </span>
