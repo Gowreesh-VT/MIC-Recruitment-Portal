@@ -65,8 +65,8 @@ function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisab
 
       {/* Inner White Box */}
       <div className={`flex-grow w-full p-2.5 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
-        <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-3" : ""}`}>
-          <p className={`text-[13.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
+        <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3 flex flex-col items-center justify-center text-center gap-2`}>
+          <p className={`text-[12.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
             {isDisabled && hasDisabledAction ? "WANT TO SWITCH QUESTS? TAP TO DROP & CHOOSE THIS ONE" : isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
 
@@ -85,6 +85,12 @@ function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisab
                 }`}>
                 {progressStatus.replace("-", " ")}
               </span>
+            </div>
+          )}
+
+          {!isSelected && !isDisabled && (
+            <div className="bg-[#E29A2B] text-black text-[9px] font-bold px-2.5 py-1 border-2 border-black uppercase tracking-wider shadow-[2px_2px_0px_#000] group-hover:bg-[#F0AD3D] transition-colors mt-0.5">
+              CLICK HERE TO APPLY...
             </div>
           )}
         </div>
@@ -184,9 +190,15 @@ function MobileQuestSign({
       )}
 
       {/* Pill shape */}
-      <div className={`flex items-center justify-center px-3 sm:px-4 py-1.5 border-[3px] border-[#2A1A00] rounded-full ${bgColor} relative min-w-[160px] max-w-[210px] sm:min-w-[190px] min-h-[44px] h-auto`}
+      <div className={`flex flex-col items-center justify-center px-3 sm:px-4 py-1.5 border-[3px] border-[#2A1A00] rounded-full ${bgColor} relative min-w-[160px] max-w-[210px] sm:min-w-[190px] min-h-[44px] h-auto gap-0.5`}
         style={{ boxShadow: "2px 2px 0px rgba(0,0,0,0.35)" }}>
         <span className="font-bold tracking-wider uppercase text-black text-[9px] sm:text-[10px] text-center leading-tight px-1 break-words">{label}</span>
+
+        {!isSelected && !isDisabled && (
+          <span className="text-[6.5px] sm:text-[7.5px] font-bold uppercase tracking-wider text-[#5C3A00]">
+            CLICK HERE TO APPLY...
+          </span>
+        )}
 
         {/* Status badge */}
         {isSelected && progressStatus && (
@@ -1511,7 +1523,7 @@ export default function RecruitmentsPage() {
                   clipPath: "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)"
                 }}
               >
-                <span className="text-black text-[22px] font-bold tracking-wider">
+                <span className="text-black text-[15px] font-bold tracking-wider">
                   Tech
                 </span>
               </div>
@@ -1597,7 +1609,7 @@ export default function RecruitmentsPage() {
                   clipPath: "polygon(0 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 0 100%)"
                 }}
               >
-                <span className="text-black text-[22px] font-bold tracking-wider">
+                <span className="text-black text-[15px] font-bold tracking-wider">
                   Non Tech
                 </span>
               </div>

@@ -85,6 +85,10 @@ function ErrorContent() {
       title: "VERIFICATION FAILED",
       body: "The sign-in link is invalid or has expired.",
     },
+    OAuthAccountNotLinked: {
+      title: "ACCOUNT LINK ERROR",
+      body: "An account already exists with this email address under a different sign-in method.",
+    },
   };
 
   const content = messages[error ?? ""] ?? {
