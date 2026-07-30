@@ -5,32 +5,28 @@ import React, { useEffect } from "react";
 interface FinalPreferenceConfirmationModalProps {
   techPreferenceTitle: string;
   nonTechPreferenceTitle: string;
-  onConfirmFinal: () => void;
-  onCancel: () => void;
-  isSubmitting?: boolean;
+  onClose: () => void;
 }
 
 export default function FinalPreferenceConfirmationModal({
   techPreferenceTitle,
   nonTechPreferenceTitle,
-  onConfirmFinal,
-  onCancel,
-  isSubmitting = false,
+  onClose,
 }: FinalPreferenceConfirmationModalProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onCancel();
+        onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
+  }, [onClose]);
 
   return (
     <div
       className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4 select-none animate-fade-in font-press-start"
-      onClick={onCancel}
+      onClick={onClose}
     >
       {/* Modal Container */}
       <div
@@ -46,9 +42,8 @@ export default function FinalPreferenceConfirmationModal({
 
         {/* Modal Close Button */}
         <button
-          onClick={onCancel}
-          disabled={isSubmitting}
-          className="absolute -top-4 -right-4 sm:-top-5 sm:-right-5 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none z-30 disabled:opacity-50"
+          onClick={onClose}
+          className="absolute -top-4 -right-4 sm:-top-5 sm:-right-5 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none z-30"
           title="Close"
         >
           <img
@@ -59,66 +54,46 @@ export default function FinalPreferenceConfirmationModal({
         </button>
 
         {/* Modal Header */}
-        <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[11px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
-          FINAL PREFERENCE CONFIRMATION
+        <div className="bg-[#B87B21] text-white px-4 py-2 border-2 border-black text-[11px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
+          YOUR SELECTED PREFERENCES
         </div>
 
         {/* Preferences Summary */}
-        <div className="w-full flex flex-col gap-2 my-1">
-          <div className="bg-white border-2 border-black p-3 rounded-[6px] text-left shadow-[2px_2px_0px_#000]">
+        <div className="w-full flex flex-col gap-2.5 my-1">
+          <div className="bg-white border-2 border-black p-3.5 rounded-[6px] text-left shadow-[2px_2px_0px_#000]">
             <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider block mb-1">
               TECH PREFERENCE
             </span>
-            <span className="text-[12px] text-[#A93710] font-bold uppercase tracking-wider block">
-              {techPreferenceTitle}
+            <span className="text-[13px] text-[#A93710] font-bold uppercase tracking-wider block">
+              {techPreferenceTitle || "NOT SELECTED"}
             </span>
           </div>
 
-          <div className="bg-white border-2 border-black p-3 rounded-[6px] text-left shadow-[2px_2px_0px_#000]">
+          <div className="bg-white border-2 border-black p-3.5 rounded-[6px] text-left shadow-[2px_2px_0px_#000]">
             <span className="text-[8px] text-gray-600 font-bold uppercase tracking-wider block mb-1">
               NON-TECH PREFERENCE
             </span>
-            <span className="text-[12px] text-[#1093EB] font-bold uppercase tracking-wider block">
-              {nonTechPreferenceTitle}
+            <span className="text-[13px] text-[#1093EB] font-bold uppercase tracking-wider block">
+              {nonTechPreferenceTitle || "NOT SELECTED"}
             </span>
           </div>
         </div>
 
-        {/* Modal Warning Body */}
-        <div className="my-1 space-y-2">
+        {/* Info Body */}
+        <div className="my-1">
           <p className="text-[10px] text-black font-bold uppercase tracking-wider leading-relaxed">
-            THIS IS YOUR FINAL TECH & NON-TECH PREFERENCE.
-          </p>
-          <p className="text-[10px] text-[#A93710] font-bold uppercase tracking-wider leading-relaxed">
-            DO YOU WANT TO SUBMIT IT FINAL? AFTER THIS THERE IS NO OPTION FOR EDITING.
+            THESE ARE YOUR ACTIVE TECH & NON-TECH QUEST PREFERENCES FOR THIS RECRUITMENT CYCLE.
           </p>
         </div>
 
-        {/* Auto-Confirm Warning Notice Box */}
-        <div className="w-full bg-[#FFF3CD] border-2 border-[#E29A2B] p-3 text-[8.5px] text-black font-bold uppercase tracking-wider leading-relaxed shadow-[2px_2px_0px_#000]">
-          ⚠ NOTE: IF YOU CANCEL, YOUR RESPONSES WILL BE AUTO-CONFIRMED ONCE RECRUITMENTS CLOSE.
-        </div>
-
-        {/* Selection Buttons */}
-        <div className="w-full flex flex-col sm:flex-row gap-3 mt-2">
-          {/* Cancel Button */}
+        {/* Close Button */}
+        <div className="w-full mt-2">
           <button
-            onClick={onCancel}
-            disabled={isSubmitting}
-            className="flex-1 bg-[#888888] hover:bg-[#999999] disabled:opacity-60 text-white border-4 border-black py-3 px-4 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0"
+            onClick={onClose}
+            className="w-full bg-[#E29A2B] hover:bg-[#F0AD3D] text-black border-4 border-black py-3 px-4 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0"
             style={{ boxShadow: "4px 4px 0px 0px #000" }}
           >
-            Cancel
-          </button>
-
-          {/* Submit Final Button */}
-          <button
-            onClick={onConfirmFinal}
-            disabled={isSubmitting}
-            className="flex-1 bg-[#7CA922] hover:bg-[#8CB932] disabled:opacity-60 text-black border-4 border-black py-3 px-4 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-transform hover:-translate-y-0.5 active:translate-y-0"
-            style={{ boxShadow: "4px 4px 0px 0px #000" }}
-          >
-            {isSubmitting ? "SUBMITTING..." : "SUBMIT FINAL"}
+            GOT IT!
           </button>
         </div>
       </div>

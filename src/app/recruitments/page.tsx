@@ -12,6 +12,10 @@ import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
 import CountdownTimer from "@/components/CountdownTimer";
 import { playRetroSound } from "@/lib/audio";
+import ApplicationProgressCard from "@/components/ApplicationProgressCard";
+import ConfirmationModal from "@/components/ConfirmationModal";
+import ActiveDepartmentCard from "@/components/ActiveDepartmentCard";
+import StageRoadmap from "@/components/StageRoadmap";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -67,7 +71,7 @@ function QuestCard({ title, desc, state, progressStatus, onSelect, onSelectDisab
       <div className={`flex-grow w-full p-2.5 rounded-b-[6px] flex items-center justify-center ${isSelected ? "bg-[#FFF4E6]" : "bg-[#FFDED6]"}`}>
         <div className={`w-full h-full ${isDisabled ? "bg-[#FFCDC0]" : "bg-white"} border-4 border-solid border-black p-3.5 flex flex-col items-center justify-center text-center ${isSelected ? "gap-3" : ""}`}>
           <p className={`text-[13.5px] font-bold tracking-wide leading-relaxed uppercase ${isDisabled ? "text-[#A93710] drop-shadow-[1px_1px_0px_#fff]" : "text-black"}`}>
-            {isDisabled && hasDisabledAction ? "WANT TO SWITCH QUESTS? TAP TO DROP & CHOOSE THIS ONE" : isDisabled ? "YOU HAVE ALREADY APPLIED FOR A SIMILAR QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
+            {isDisabled && hasDisabledAction ? "SWITCH QUESTS TO APPLY" : isDisabled ? "ALREADY ON A QUEST" : isSelected ? "WANNA RECHECK YOUR GEAR FOR THE QUEST?" : desc}
           </p>
 
           {isSelected && progressStatus && (
@@ -277,13 +281,109 @@ function MobileQuestsView({
     ? appStatus?.firstPrefProgress.status
     : appStatus?.secondPrefProgress.status;
 
+  if (appliedQuest && appliedSlug && appliedStatus) {
+    const isPending =
+      appliedStatus !== "passed" &&
+      appliedStatus !== "accepted" &&
+      appliedStatus !== "rejected" &&
+      appliedStatus !== "failed";
+
+    return (
+      <MobileBackground>
+        {/* Top pipe */}
+        <div className="relative z-10 flex flex-col items-center flex-shrink-0 mt-[-10px]">
+          <div className="w-[52px] h-[60px] flex flex-col items-center pointer-events-none select-none">
+            <div
+              className="w-[46px] h-[36px] border-x-[3px] border-t-[3px] border-black box-border"
+              style={{
+                background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
+              }}
+            />
+            <div
+              className="w-[52px] h-[24px] border-[3px] border-black box-border shadow-[inset_0_-3px_0_0_rgba(0,0,0,0.4)] flex-shrink-0"
+              style={{
+                background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
+              }}
+            />
+          </div>
+          <img
+            src="/flappy_bird.svg"
+            alt="Flappy Bird"
+            className="w-[44px] h-[44px] pixelated animate-mobile-bird drop-shadow-[2px_2px_0px_rgba(0,0,0,0.3)] mt-1"
+          />
+        </div>
+
+        {/* Top bar */}
+        <div className="absolute top-0 left-0 w-full z-20 flex items-center justify-between px-3 pt-3 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <img
+              src="/mic_logo_pixel.png"
+              alt="MIC Logo"
+              className="pixelated w-[52px] h-[37px] animate-retro-float-small drop-shadow-[2px_2px_0px_rgba(0,0,0,0.5)] cursor-pointer"
+              onClick={() => { playSound("select"); router.push("/"); }}
+            />
+            <button
+              onClick={() => { playSound("select"); router.push("/"); }}
+              className="bg-[#E29A2B] hover:bg-[#F0AD3D] text-black text-[9px] font-bold py-1.5 px-2.5 border-4 border-black uppercase tracking-wider cursor-pointer active:translate-y-0.5 transition-transform"
+              style={{ boxShadow: "3px 3px 0px 0px #000" }}
+            >
+              HOME
+            </button>
+          </div>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => { playSound("open"); router.push("/faqs?from=/recruitments"); }}
+              className="bg-[#7CA922] text-black text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+              style={{ boxShadow: "3px 3px 0px 0px #000" }}
+            >
+              FAQS
+            </button>
+            <button
+              onClick={() => { playSound("open"); router.push(isLoggedIn ? "/profile" : "/login?callbackUrl=/recruitments"); }}
+              className="bg-[#1093EB] text-white text-[9px] font-bold py-1.5 px-3 border-4 border-black uppercase tracking-wider cursor-pointer"
+              style={{ boxShadow: "3px 3px 0px 0px #000" }}
+            >
+              {isLoggedIn ? "PROFILE" : "SIGN IN"}
+            </button>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="relative z-10 px-4 pt-1 pb-0 flex-shrink-0 text-center">
+          <h1 className="text-black font-bold leading-tight" style={{ fontSize: "clamp(20px, 6vw, 26px)" }}>
+            {title}
+          </h1>
+        </div>
+
+        {/* Main Content: Active Department Card + Stage Roadmap */}
+        <div className="relative z-10 flex flex-col items-center gap-2 flex-grow w-full py-2 px-3 overflow-y-auto">
+          <ActiveDepartmentCard
+            deptTitle={appliedQuest.title}
+            deptSlug={appliedSlug}
+            statusText={appliedStatus}
+            isStage2Pending={isPending}
+            onEditForm={() => router.push(`/apply/${appliedSlug}/quest-1`)}
+            onChangeDepartment={() => onQuestSelect(appliedQuest, type, appliedSlug)}
+          />
+
+          <StageRoadmap
+            stage1Submitted={true}
+            stage2Status={appliedStatus as "pending" | "accepted" | "rejected" | "passed" | "failed"}
+            stage3Unlocked={appliedStatus === "passed" || appliedStatus === "accepted"}
+            isVertical={true}
+          />
+        </div>
+      </MobileBackground>
+    );
+  }
+
   return (
     <MobileBackground>
-      {/* Top pipe (touches top of screen) */}
+      {/* Top pipe */}
       <div className="relative z-10 flex flex-col items-center flex-shrink-0 mt-[-10px]">
-        <div className="w-[52px] h-[80px] flex flex-col items-center pointer-events-none select-none">
+        <div className="w-[52px] h-[60px] flex flex-col items-center pointer-events-none select-none">
           <div
-            className="w-[46px] h-[56px] border-x-[3px] border-t-[3px] border-black box-border"
+            className="w-[46px] h-[36px] border-x-[3px] border-t-[3px] border-black box-border"
             style={{
               background: "linear-gradient(90deg, #b8f848 0%, #b8f848 14%, #73bf2e 14%, #73bf2e 28%, #52c017 28%, #52c017 68%, #38800e 68%, #38800e 84%, #204803 84%, #204803 100%)"
             }}
@@ -298,11 +398,11 @@ function MobileQuestsView({
         <img
           src="/flappy_bird.svg"
           alt="Flappy Bird"
-          className="w-[50px] h-[50px] pixelated animate-mobile-bird drop-shadow-[2px_2px_0px_rgba(0,0,0,0.3)] mt-2"
+          className="w-[44px] h-[44px] pixelated animate-mobile-bird drop-shadow-[2px_2px_0px_rgba(0,0,0,0.3)] mt-1"
         />
       </div>
 
-      {/* Top bar (absolute so pipe goes behind/above) */}
+      {/* Top bar */}
       <div className="absolute top-0 left-0 w-full z-20 flex items-center justify-between px-3 pt-3 pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
           <img
@@ -358,23 +458,7 @@ function MobileQuestsView({
       <div className="relative z-10 flex flex-col justify-evenly flex-grow w-full py-4 min-h-[350px] overflow-x-hidden">
         {quests.map((q, idx) => {
           const slug = getDeptSlug(q);
-          const isLeft = idx % 2 === 0; // even = left-pointing, odd = right-pointing
-          let state: "available" | "selected" | "disabled" = "available";
-          let progressStatus = undefined;
-
-          if (appStatus?.firstPreference === slug) {
-            state = "selected";
-            progressStatus = appStatus.firstPrefProgress?.status;
-          } else if (appStatus?.secondPreference === slug) {
-            state = "selected";
-            progressStatus = appStatus.secondPrefProgress?.status;
-          } else if (
-            (appStatus?.firstPrefType === type && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
-            (appStatus?.secondPrefType === type && appStatus?.secondPreference && appStatus.secondPreference !== slug)
-          ) {
-            state = "disabled";
-          }
-
+          const isLeft = idx % 2 === 0;
           return (
             <div
               key={`mobile-quest-${idx}`}
@@ -382,30 +466,24 @@ function MobileQuestsView({
             >
               {isLeft ? (
                 <>
-                  {/* Left-pointing sign */}
                   <MobileEdgePipe side="left" />
                   <div className="z-10 ml-1">
                     <MobileQuestSign
                       label={q.title}
                       direction="left"
-                      state={state}
-                      progressStatus={progressStatus}
+                      state="available"
                       onClick={() => onQuestSelect(q, type, slug)}
-                      onClickDisabled={state === "disabled" ? () => onQuestSelect(q, type, slug) : undefined}
                     />
                   </div>
                 </>
               ) : (
                 <>
-                  {/* Right-pointing sign */}
                   <div className="z-10 mr-1">
                     <MobileQuestSign
                       label={q.title}
                       direction="right"
-                      state={state}
-                      progressStatus={progressStatus}
+                      state="available"
                       onClick={() => onQuestSelect(q, type, slug)}
-                      onClickDisabled={state === "disabled" ? () => onQuestSelect(q, type, slug) : undefined}
                     />
                   </div>
                   <MobileEdgePipe side="right" />
@@ -415,34 +493,6 @@ function MobileQuestsView({
           );
         })}
       </div>
-
-      {/* Application Status Card (if user has applied to a dept in this category) */}
-      {appliedQuest && appliedSlug && (
-        <div
-          className="relative z-10 mx-4 mt-3 mb-2 bg-[#B1691F] border-[2px] border-[#D69E60] p-4 flex-shrink-0"
-          style={{ boxShadow: "4px 4px 0px 0px rgba(0,0,0,0.3)" }}
-        >
-          <div className="text-white text-[12px] font-bold tracking-wider mb-3 uppercase text-center leading-tight">
-            Recruitment<br />Status
-          </div>
-          <div className="text-[7px] font-bold uppercase tracking-wider text-white mb-2">
-            YOUR SELECTED QUEST : {appliedQuest.title}
-          </div>
-          <div className="text-[7px] font-bold uppercase tracking-wider text-white">
-            RESULT :{" "}
-            <span
-              className={`${appliedStatus === "passed" || appliedStatus === "active"
-                  ? "text-[#72F418]"
-                  : appliedStatus === "rejected"
-                    ? "text-[#FF4444]"
-                    : "text-[#72F418]" // default to green for in progress
-                }`}
-            >
-              {appliedStatus?.replace("-", " ").toUpperCase() || "IN PROGRESS"}
-            </span>
-          </div>
-        </div>
-      )}
     </MobileBackground>
   );
 }
@@ -463,14 +513,14 @@ interface ApplicationStatus {
   secondPreference?: string;
   secondPrefType?: "tech" | "non-tech";
   firstPrefProgress: {
-    status: "active" | "passed" | "rejected" | "pending";
+    status: "active" | "passed" | "rejected" | "pending" | "accepted" | "failed";
     currentStage: number;
     effectiveCurrentStage?: number;
     stageMasked?: boolean;
     stages: StageProgress[];
   };
   secondPrefProgress: {
-    status: "active" | "passed" | "rejected" | "pending";
+    status: "active" | "passed" | "rejected" | "pending" | "accepted" | "failed";
     currentStage: number;
     effectiveCurrentStage?: number;
     stageMasked?: boolean;
@@ -652,6 +702,54 @@ export default function RecruitmentsPage() {
   const [showFinalPrompt, setShowFinalPrompt] = useState(false);
   const [isConfirmingFinal, setIsConfirmingFinal] = useState(false);
 
+  // Change Department Confirmation Modal State
+  const [changeCategoryModalTarget, setChangeCategoryModalTarget] = useState<"tech" | "non-tech" | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+
+  const handleOpenChangeCategoryModal = (category: "tech" | "non-tech") => {
+    const isFirst = appStatus?.firstPrefType === category;
+    const isSecond = appStatus?.secondPrefType === category;
+    const progress = isFirst
+      ? appStatus?.firstPrefProgress
+      : isSecond
+      ? appStatus?.secondPrefProgress
+      : null;
+
+    if (progress && (progress.status === "passed" || progress.status === "rejected")) {
+      playRetroSound("die");
+      setError("Changing department is disabled as shortlisting for this category has concluded.");
+      return;
+    }
+
+    playRetroSound("die");
+    setChangeCategoryModalTarget(category);
+  };
+
+  const handleConfirmChangeCategory = async () => {
+    if (!changeCategoryModalTarget) return;
+    setIsDeletingCategory(true);
+    try {
+      const res = await fetch("/api/apply/delete-category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: changeCategoryModalTarget }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        playRetroSound("die");
+        setChangeCategoryModalTarget(null);
+        await fetchStatus();
+      } else {
+        setError(data.error || "Failed to delete application.");
+      }
+    } catch (err) {
+      console.error("Failed to delete category application:", err);
+      setError("Network error. Please try again.");
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
+
   const birdPhysicsRef = useRef({
     currentX: 0,
     currentY: 0,
@@ -722,12 +820,20 @@ export default function RecruitmentsPage() {
         setCountdownSettings(configData.countdownSettings || null);
         setIsLoggedIn(!!statusData.user);
 
+        const justFilledSecond =
+          typeof window !== "undefined" &&
+          (sessionStorage.getItem("justFilledSecondDept") === "true" ||
+            searchParams.get("showSummary") === "true");
+
         if (
+          justFilledSecond &&
           statusData.application?.firstPreference &&
-          statusData.application?.secondPreference &&
-          !statusData.application?.isFinalSubmitted
+          statusData.application?.secondPreference
         ) {
           setShowFinalPrompt(true);
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem("justFilledSecondDept");
+          }
         }
       } else {
         if (statusRes.status === 429 || configRes.status === 429) {
@@ -1043,23 +1149,12 @@ export default function RecruitmentsPage() {
       return;
     }
 
-    // Check if this category already has a quest selected → show drop & switch modal
-    if (appStatus?.firstPrefType === type && appStatus?.firstPreference && !isFirstPref) {
-      // They want to switch their first preference
-      const currentTitle = techQuests.find(q => getDeptSlug(q) === appStatus.firstPreference)?.title ||
-        nonTechQuests.find(q => getDeptSlug(q) === appStatus.firstPreference)?.title ||
-        appStatus.firstPreference;
-      playRetroSound("die");
-      setDropQuestTarget({ quest, type, slug, prefSlot: "first", currentQuestTitle: currentTitle });
-      return;
-    }
-    if (appStatus?.secondPrefType === type && appStatus?.secondPreference && !isSecondPref) {
-      // They want to switch their second preference
-      const currentTitle = techQuests.find(q => getDeptSlug(q) === appStatus.secondPreference)?.title ||
-        nonTechQuests.find(q => getDeptSlug(q) === appStatus.secondPreference)?.title ||
-        appStatus.secondPreference;
-      playRetroSound("die");
-      setDropQuestTarget({ quest, type, slug, prefSlot: "second", currentQuestTitle: currentTitle });
+    // Check if this category already has a quest selected → show change department modal
+    if (
+      (appStatus?.firstPrefType === type && appStatus?.firstPreference) ||
+      (appStatus?.secondPrefType === type && appStatus?.secondPreference)
+    ) {
+      handleOpenChangeCategoryModal(type);
       return;
     }
 
@@ -1432,15 +1527,50 @@ export default function RecruitmentsPage() {
           ))}
 
           {/* Green Mario Pipes (Dynamic & Generative) */}
-          {dynamicPipes.map((pipe, idx) => (
-            <RetroPipe
-              key={`pipe-${idx}-${pipe.left}-${pipe.isTop}`}
-              left={`${pipe.left}px`}
-              top={`${pipe.top}px`}
-              height={pipe.height}
-              isTop={pipe.isTop}
-            />
-          ))}
+          {dynamicPipes.map((pipe, idx) => {
+            let effectiveHeight = pipe.height;
+            let effectiveTop = pipe.top;
+
+            const hasTechActive = !!(
+              (appStatus?.firstPrefType === "tech" && appStatus?.firstPreference) ||
+              (appStatus?.secondPrefType === "tech" && appStatus?.secondPreference)
+            );
+            const hasNonTechActive = !!(
+              (appStatus?.firstPrefType === "non-tech" && appStatus?.firstPreference) ||
+              (appStatus?.secondPrefType === "non-tech" && appStatus?.secondPreference)
+            );
+
+            // Adjust top pipes above active roadmap areas so they extend far down into the sky without overlapping stage nodes
+            if (pipe.left === 746 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+              effectiveHeight = 195;
+            }
+            if (pipe.left === 1234 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+              effectiveHeight = 245;
+            }
+            if (pipe.left === 1723 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+              effectiveHeight = 265;
+            }
+
+            // Adjust bottom pipes below non-tech active roadmap so they stay low on ground platform
+            if (pipe.left === 909 && !pipe.isTop && hasNonTechActive) {
+              effectiveTop = 795;
+              effectiveHeight = 130;
+            }
+            if (pipe.left === 1396 && !pipe.isTop && hasNonTechActive) {
+              effectiveTop = 795;
+              effectiveHeight = 130;
+            }
+
+            return (
+              <RetroPipe
+                key={`pipe-${idx}-${pipe.left}-${pipe.isTop}`}
+                left={`${pipe.left}px`}
+                top={`${effectiveTop}px`}
+                height={effectiveHeight}
+                isTop={pipe.isTop}
+              />
+            );
+          })}
 
 
 
@@ -1518,44 +1648,77 @@ export default function RecruitmentsPage() {
             </div>
           </div>
 
-          {/* Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
-          {techQuests.map((q, idx) => {
-            const leftPositions = [350, 830, 1319, 1809, 2300];
-            const slug = getDeptSlug(q);
+          {/* Tech Cards / Active Department + Roadmap */}
+          {(() => {
+            const selectedTechSlug =
+              appStatus?.firstPrefType === "tech"
+                ? appStatus.firstPreference
+                : appStatus?.secondPrefType === "tech"
+                ? appStatus.secondPreference
+                : null;
 
-            let state: "available" | "selected" | "disabled" = "available";
-            let progressStatus = undefined;
+            const selectedTechQuest = selectedTechSlug
+              ? techQuests.find((q) => getDeptSlug(q) === selectedTechSlug)
+              : null;
 
-            if (appStatus?.firstPreference === slug) {
-              state = "selected";
-              progressStatus = appStatus.firstPrefProgress?.status;
-            } else if (appStatus?.secondPreference === slug) {
-              state = "selected";
-              progressStatus = appStatus.secondPrefProgress?.status;
-            } else if (
-              (appStatus?.firstPrefType === "tech" && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
-              (appStatus?.secondPrefType === "tech" && appStatus?.secondPreference && appStatus.secondPreference !== slug)
-            ) {
-              state = "disabled";
+            const selectedTechProgress = selectedTechSlug
+              ? appStatus?.firstPreference === selectedTechSlug
+                ? appStatus?.firstPrefProgress
+                : appStatus?.secondPrefProgress
+              : null;
+
+            if (selectedTechQuest && selectedTechProgress) {
+              const isPending =
+                selectedTechProgress.status !== "passed" &&
+                selectedTechProgress.status !== "accepted" &&
+                selectedTechProgress.status !== "rejected" &&
+                selectedTechProgress.status !== "failed";
+
+              return (
+                <>
+                  {/* Active Department Card */}
+                  <div className="absolute" style={{ left: "370px", top: "220px", zIndex: 20 }}>
+                    <ActiveDepartmentCard
+                      deptTitle={selectedTechQuest.title}
+                      deptSlug={selectedTechSlug!}
+                      statusText={selectedTechProgress.status}
+                      isStage2Pending={isPending}
+                      onEditForm={() => router.push(`/apply/${selectedTechSlug}/quest-1`)}
+                      onChangeDepartment={() => handleOpenChangeCategoryModal("tech")}
+                    />
+                  </div>
+
+                  {/* Recruitment Stages Roadmap */}
+                  <div className="absolute" style={{ left: "720px", top: "211px", zIndex: 20 }}>
+                    <StageRoadmap
+                      stage1Submitted={true}
+                      stage2Status={selectedTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
+                      stage3Unlocked={selectedTechProgress.status === "passed" || selectedTechProgress.status === "accepted"}
+                    />
+                  </div>
+                </>
+              );
             }
 
-            return (
-              <div
-                key={`tech-card-${idx}`}
-                className="absolute"
-                style={{ left: `${leftPositions[idx]}px`, top: "211px", zIndex: 20 }}
-              >
-                <QuestCard
-                  title={q.title}
-                  desc={q.desc || q.subtitle}
-                  state={state}
-                  progressStatus={progressStatus}
-                  onSelect={() => handleOpenPopup(q, "tech", slug)}
-                  onSelectDisabled={state === "disabled" ? () => handleOpenPopup(q, "tech", slug) : undefined}
-                />
-              </div>
-            );
-          })}
+            return techQuests.map((q, idx) => {
+              const leftPositions = [350, 830, 1319, 1809, 2300];
+              const slug = getDeptSlug(q);
+              return (
+                <div
+                  key={`tech-card-${idx}`}
+                  className="absolute"
+                  style={{ left: `${leftPositions[idx]}px`, top: "211px", zIndex: 20 }}
+                >
+                  <QuestCard
+                    title={q.title}
+                    desc={q.desc || q.subtitle}
+                    state="available"
+                    onSelect={() => handleOpenPopup(q, "tech", slug)}
+                  />
+                </div>
+              );
+            });
+          })()}
 
           {/* ================= NON-TECH ROW ================= */}
           {/* Non Tech signboard (arrow shaped) */}
@@ -1604,44 +1767,77 @@ export default function RecruitmentsPage() {
             </div>
           </div>
 
-          {/* Non-Tech Cards (Centered perfectly between exact Figma pipes without overlaps) */}
-          {nonTechQuests.map((q, idx) => {
-            const leftPositions = [450, 993, 1481, 1970];
-            const slug = getDeptSlug(q);
+          {/* Non-Tech Cards / Active Department + Roadmap */}
+          {(() => {
+            const selectedNonTechSlug =
+              appStatus?.firstPrefType === "non-tech"
+                ? appStatus.firstPreference
+                : appStatus?.secondPrefType === "non-tech"
+                ? appStatus.secondPreference
+                : null;
 
-            let state: "available" | "selected" | "disabled" = "available";
-            let progressStatus = undefined;
+            const selectedNonTechQuest = selectedNonTechSlug
+              ? nonTechQuests.find((q) => getDeptSlug(q) === selectedNonTechSlug)
+              : null;
 
-            if (appStatus?.firstPreference === slug) {
-              state = "selected";
-              progressStatus = appStatus.firstPrefProgress?.status;
-            } else if (appStatus?.secondPreference === slug) {
-              state = "selected";
-              progressStatus = appStatus.secondPrefProgress?.status;
-            } else if (
-              (appStatus?.firstPrefType === "non-tech" && appStatus?.firstPreference && appStatus.firstPreference !== slug) ||
-              (appStatus?.secondPrefType === "non-tech" && appStatus?.secondPreference && appStatus.secondPreference !== slug)
-            ) {
-              state = "disabled";
+            const selectedNonTechProgress = selectedNonTechSlug
+              ? appStatus?.firstPreference === selectedNonTechSlug
+                ? appStatus?.firstPrefProgress
+                : appStatus?.secondPrefProgress
+              : null;
+
+            if (selectedNonTechQuest && selectedNonTechProgress) {
+              const isPending =
+                selectedNonTechProgress.status !== "passed" &&
+                selectedNonTechProgress.status !== "accepted" &&
+                selectedNonTechProgress.status !== "rejected" &&
+                selectedNonTechProgress.status !== "failed";
+
+              return (
+                <>
+                  {/* Active Department Card */}
+                  <div className="absolute" style={{ left: "460px", top: "535px", zIndex: 20 }}>
+                    <ActiveDepartmentCard
+                      deptTitle={selectedNonTechQuest.title}
+                      deptSlug={selectedNonTechSlug!}
+                      statusText={selectedNonTechProgress.status}
+                      isStage2Pending={isPending}
+                      onEditForm={() => router.push(`/apply/${selectedNonTechSlug}/quest-1`)}
+                      onChangeDepartment={() => handleOpenChangeCategoryModal("non-tech")}
+                    />
+                  </div>
+
+                  {/* Recruitment Stages Roadmap */}
+                  <div className="absolute" style={{ left: "820px", top: "600px", zIndex: 20 }}>
+                    <StageRoadmap
+                      stage1Submitted={true}
+                      stage2Status={selectedNonTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
+                      stage3Unlocked={selectedNonTechProgress.status === "passed" || selectedNonTechProgress.status === "accepted"}
+                    />
+                  </div>
+                </>
+              );
             }
 
-            return (
-              <div
-                key={`nontech-card-${idx}`}
-                className="absolute"
-                style={{ left: `${leftPositions[idx]}px`, top: "621px", zIndex: 20 }}
-              >
-                <QuestCard
-                  title={q.title}
-                  desc={q.desc || q.subtitle}
-                  state={state}
-                  progressStatus={progressStatus}
-                  onSelect={() => handleOpenPopup(q, "non-tech", slug)}
-                  onSelectDisabled={state === "disabled" ? () => handleOpenPopup(q, "non-tech", slug) : undefined}
-                />
-              </div>
-            );
-          })}
+            return nonTechQuests.map((q, idx) => {
+              const leftPositions = [450, 993, 1481, 1970];
+              const slug = getDeptSlug(q);
+              return (
+                <div
+                  key={`nontech-card-${idx}`}
+                  className="absolute"
+                  style={{ left: `${leftPositions[idx]}px`, top: "621px", zIndex: 20 }}
+                >
+                  <QuestCard
+                    title={q.title}
+                    desc={q.desc || q.subtitle}
+                    state="available"
+                    onSelect={() => handleOpenPopup(q, "non-tech", slug)}
+                  />
+                </div>
+              );
+            });
+          })()}
 
           {/* ================= SCROLLING SOIL GROUND PLATFORM (z-25) ================= */}
           <div className="absolute top-[925px] left-0 w-full h-[300px] z-25 flex flex-col select-none pointer-events-none">
@@ -1797,9 +1993,7 @@ export default function RecruitmentsPage() {
           <FinalPreferenceConfirmationModal
             techPreferenceTitle={techTitle}
             nonTechPreferenceTitle={nonTechTitle}
-            onConfirmFinal={handleConfirmFinal}
-            onCancel={() => setShowFinalPrompt(false)}
-            isSubmitting={isConfirmingFinal}
+            onClose={() => setShowFinalPrompt(false)}
           />
         );
       })()}
@@ -1842,6 +2036,22 @@ export default function RecruitmentsPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* ================= CHANGE DEPARTMENT CONFIRMATION MODAL ================= */}
+      {changeCategoryModalTarget && (
+        <ConfirmationModal
+          title="⚠ CHANGE DEPARTMENT"
+          message="Changing your department will permanently delete your current application for this category."
+          cancelLabel="CANCEL"
+          confirmLabel="CONTINUE"
+          onCancel={() => {
+            playRetroSound("close");
+            setChangeCategoryModalTarget(null);
+          }}
+          onConfirm={handleConfirmChangeCategory}
+          isLoading={isDeletingCategory}
+        />
       )}
 
     </div>

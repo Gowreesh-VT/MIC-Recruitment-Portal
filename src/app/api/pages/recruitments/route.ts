@@ -36,15 +36,15 @@ export async function GET() {
     const countdownTarget = cycle?.countdownTarget
       ? new Date(cycle.countdownTarget).toISOString()
       : cycle?.endAt
-      ? new Date(cycle.endAt).toISOString()
-      : cycle?.startAt
-      ? new Date(cycle.startAt).toISOString()
-      : null;
+        ? new Date(cycle.endAt).toISOString()
+        : cycle?.startAt
+          ? new Date(cycle.startAt).toISOString()
+          : null;
 
     return NextResponse.json({
       success: true,
       title: "Recruitments",
-      subtitle: "CHOOSE THE QUEST SUITS YOU THE MOST",
+      subtitle: "CHOOSE THE QUEST THAT SUITS YOU THE MOST",
       techQuests,
       nonTechQuests,
       countdownSettings: {

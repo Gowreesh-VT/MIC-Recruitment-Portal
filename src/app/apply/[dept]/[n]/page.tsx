@@ -85,18 +85,18 @@ function RetroBackground({ scale }: { scale: number }) {
       }}
     >
       <div className="w-[2865px] h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden">
-        
+
         {/* Small Clouds */}
         <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[300px] left-[1060px] w-[280px] opacity-85 animate-retro-float pixelated" style={{ animationDelay: "0s" }} />
         <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[140px] left-[-40px] w-[320px] opacity-80 animate-retro-float pixelated" style={{ animationDelay: "1s" }} />
         <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[39px] left-[1167px] w-[360px] opacity-90 animate-retro-float pixelated" style={{ animationDelay: "0.5s" }} />
         <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[220px] left-[400px] w-[200px] opacity-70 animate-retro-float pixelated" style={{ animationDelay: "1.2s" }} />
         <img src="/pixel_cloud_small.svg" alt="Cloud" className="absolute top-[180px] left-[1800px] w-[240px] opacity-60 animate-retro-float pixelated" style={{ animationDelay: "0.8s" }} />
-        
+
         {/* Skyline */}
         <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-0 w-[1437px] h-[458px] object-cover opacity-100 pixelated" />
         <img src="/pixel_cloud_large.svg" alt="Skyline" className="absolute top-[566px] left-[1437px] w-[1437px] h-[458px] object-cover opacity-100 pixelated" />
-        
+
         {Array.from({ length: 12 }).map((_, idx) => (
           <img key={idx} src="/city_skyline.svg" alt="Skyline Block" className="absolute top-[631px] w-[246px] h-[249px] opacity-75 pixelated" style={{ left: `${idx * 245}px` }} />
         ))}
@@ -225,7 +225,7 @@ function FieldRenderer({
               const isCheckbox = field.type === "checkbox";
               const arr = isCheckbox ? ((value as string[]) ?? []) : [];
               const checked = isCheckbox ? arr.includes(opt) : value === opt;
-              
+
               return (
                 <label key={opt} className={`flex items-center gap-3 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                   <input
@@ -255,7 +255,7 @@ function FieldRenderer({
 
     case "url": {
       const urls = Array.isArray(value) ? value : (typeof value === "string" && value ? [value] : [""]);
-      
+
       const updateUrl = (index: number, newUrl: string) => {
         const newUrls = [...urls];
         newUrls[index] = newUrl;
@@ -267,7 +267,7 @@ function FieldRenderer({
           onChange([...urls, ""]);
         }
       };
-      
+
       const removeUrl = (index: number) => {
         const newUrls = urls.filter((_, i) => i !== index);
         if (newUrls.length === 0) newUrls.push("");
@@ -298,8 +298,8 @@ function FieldRenderer({
                 {!disabled && (
                   <div className="flex gap-2">
                     {urls.length > 1 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => removeUrl(i)}
                         className="w-[44px] h-[44px] flex-shrink-0 flex items-center justify-center bg-[#FFE4D6] border-[3px] border-black rounded-[8px] hover:bg-[#ffcdc0] transition-colors"
                       >
@@ -307,8 +307,8 @@ function FieldRenderer({
                       </button>
                     )}
                     {i === urls.length - 1 && urls.length < 3 && (
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={addUrl}
                         className="w-[44px] h-[44px] flex-shrink-0 flex items-center justify-center bg-[#FFE4D6] border-[3px] border-black rounded-[8px] hover:bg-[#ffcdc0] transition-colors"
                       >
@@ -569,6 +569,20 @@ export default function StagePage({
       const data = await res.json();
 
       if (res.ok && data.success) {
+        const currentCategory = DEPT_INFO[dept]?.type || "tech";
+        const hasTechApp =
+          (application?.firstPrefType === "tech" && !!application?.firstPreference) ||
+          (application?.secondPrefType === "tech" && !!application?.secondPreference) ||
+          currentCategory === "tech";
+        const hasNonTechApp =
+          (application?.firstPrefType === "non-tech" && !!application?.firstPreference) ||
+          (application?.secondPrefType === "non-tech" && !!application?.secondPreference) ||
+          currentCategory === "non-tech";
+
+        if (hasTechApp && hasNonTechApp && typeof window !== "undefined") {
+          sessionStorage.setItem("justFilledSecondDept", "true");
+        }
+
         if (finalSubmit) {
           setApplication((prev) => (prev ? { ...prev, isFinalSubmitted: true } : prev));
           setIsEditing(false);
@@ -669,14 +683,28 @@ export default function StagePage({
   }
 
   if (submitted) {
+    const currentCategory = DEPT_INFO[dept]?.type || "tech";
+    const oppositeCategory = currentCategory === "tech" ? "non-tech" : "tech";
+    const oppositeCategoryLabel = currentCategory === "tech" ? "Non-Tech" : "Tech";
+
+    const hasTechApp =
+      (application?.firstPrefType === "tech" && !!application?.firstPreference) ||
+      (application?.secondPrefType === "tech" && !!application?.secondPreference) ||
+      currentCategory === "tech";
+
+    const hasNonTechApp =
+      (application?.firstPrefType === "non-tech" && !!application?.firstPreference) ||
+      (application?.secondPrefType === "non-tech" && !!application?.secondPreference) ||
+      currentCategory === "non-tech";
+
+    const hasBothPreferences = hasTechApp && hasNonTechApp;
+
     return (
       <main className={`${pressStart.variable} font-press-start w-full h-[100dvh] overflow-hidden select-none bg-[#DD9955] relative flex justify-center items-center`}>
         <RetroBackground scale={scale} />
-        
+
         <div className="relative z-40 w-full max-w-[650px] px-4" style={{ marginTop: "40px" }}>
-          
           <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
-            
             {/* Ropes */}
             <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ left: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
             <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ right: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
@@ -684,32 +712,73 @@ export default function StagePage({
             {/* Header Bar */}
             <div className="bg-[#A05522] w-full h-[60px] shrink-0 border-b-4 border-black rounded-t-[8px] flex items-center justify-center relative overflow-hidden">
               <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] [background-size:10px_10px]" />
-              <span className="text-black text-[20px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
-                SUCCESS
+              <span className="text-black text-[16px] font-bold tracking-widest relative z-10 drop-shadow-[1px_1px_0px_#fff] uppercase">
+                APPLICATION SUBMITTED
               </span>
               <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-[1px_1px_0px_#fff]" />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-[1px_1px_0px_#fff]" />
             </div>
 
-            <div className="p-8 flex flex-col items-center">
-              <div className="border-[3px] border-black bg-white p-8 relative w-full flex flex-col items-center">
-                <div className="w-20 h-20 bg-[#52AE26] border-4 border-black flex items-center justify-center p-2 mb-6 shadow-[4px_4px_0px_#000]">
-                  <CheckCircle2 className="w-10 h-10 text-white" />
+            <div className="p-6 md:p-8 flex flex-col items-center">
+              <div className="border-[3px] border-black bg-white p-6 md:p-8 relative w-full flex flex-col items-center text-center">
+                <div className="w-16 h-16 bg-[#52AE26] border-4 border-black flex items-center justify-center p-2 mb-4 shadow-[4px_4px_0px_#000]">
+                  <CheckCircle2 className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-[16px] text-center font-bold text-[#A93710] leading-loose drop-shadow-[2px_2px_0px_#fff]">QUEST COMPLETED!</h1>
-                <p className="text-[10px] text-center text-black leading-loose font-bold mt-4">Your application for {deptName} has been received.</p>
-                <button
-                  onClick={() => { playRetroSound(); window.location.href = "/recruitments"; }}
-                  className="mt-8 bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-3 px-8 text-[12px] font-bold tracking-widest transition-transform active:translate-y-1 flex items-center justify-center gap-3"
-                  style={{ boxShadow: "3px 3px 0px 0px #000" }}
-                >
-                  VIEW STATUS
-                  <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-black border-b-[5px] border-b-transparent" />
-                </button>
+
+                <h1 className="text-[13px] md:text-[15px] font-bold text-[#A93710] leading-snug drop-shadow-[1px_1px_0px_#fff] uppercase mb-3">
+                  🎉 Application Submitted Successfully
+                </h1>
+
+                <p className="text-[9px] md:text-[10px] text-black leading-relaxed font-bold max-w-md">
+                  Your application has been submitted successfully.
+                </p>
+
+                {!hasBothPreferences && (
+                  <p className="text-[9px] md:text-[10px] text-black leading-relaxed font-bold mt-3 border-2 border-dashed border-[#A93710] p-3 bg-[#FFF4E6] w-full">
+                    Would you also like to apply for a {oppositeCategoryLabel} department?
+                  </p>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 w-full mt-6">
+                  {!hasBothPreferences ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playRetroSound();
+                          router.push(`/recruitments?view=${oppositeCategory}`);
+                        }}
+                        className="flex-1 bg-[#1093EB] hover:bg-[#16B6F4] text-white border-[3px] border-black py-3 px-4 text-[9px] md:text-[10px] font-bold tracking-wider uppercase transition-transform active:translate-y-0.5 shadow-[3px_3px_0px_0px_#000] cursor-pointer"
+                      >
+                        Apply for {oppositeCategoryLabel}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playRetroSound();
+                          router.push("/");
+                        }}
+                        className="flex-1 bg-[#E29A2B] hover:bg-[#F0AD3D] text-black border-[3px] border-black py-3 px-4 text-[9px] md:text-[10px] font-bold tracking-wider uppercase transition-transform active:translate-y-0.5 shadow-[3px_3px_0px_0px_#000] cursor-pointer"
+                      >
+                        Maybe Later
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playRetroSound();
+                        router.push("/recruitments");
+                      }}
+                      className="w-full bg-[#52AE26] hover:bg-[#60C22B] text-white border-[3px] border-black py-3 px-4 text-[10px] font-bold tracking-wider uppercase transition-transform active:translate-y-0.5 shadow-[3px_3px_0px_0px_#000] cursor-pointer"
+                    >
+                      RETURN TO MAP
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </main>
     );
@@ -721,10 +790,10 @@ export default function StagePage({
 
       {/* Main Hanging Signboard */}
       <div className="relative z-40 w-full max-w-[1000px] px-4 md:px-16" style={{ marginTop: "40px" }}>
-        
+
         {/* Signboard Container */}
         <div className="bg-[#FFE4D6] border-4 border-black rounded-[12px] relative flex flex-col max-h-[85vh]" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>
-          
+
           {/* Ropes */}
           <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ left: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
           <div className="absolute bottom-[100%] w-3 z-[-1]" style={{ right: "10%", height: "100vh", background: "repeating-linear-gradient(to bottom, #CC8844 0, #CC8844 12px, #A05522 12px, #A05522 16px)", borderLeft: "2px solid #000", borderRight: "2px solid #000" }} />
@@ -737,7 +806,7 @@ export default function StagePage({
             </span>
             {/* Header Screws */}
             <div className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 bg-black rounded-full shadow-[1px_1px_0px_#fff]" />
-            
+
             {/* Retro Close Button */}
             <button
               type="button"
@@ -759,7 +828,7 @@ export default function StagePage({
           {/* Form Body */}
           <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar flex-grow">
             <div className="border-[3px] border-black bg-white p-4 md:p-6 relative">
-              
+
               {/* Progress Indicator inside form area (Retro Style) */}
               <div className="absolute top-0 right-0 bg-black text-white px-3 py-1 text-[8px] font-bold uppercase">
                 {stageConfig?.title ? stageConfig.title.toUpperCase() : `STAGE ${stageNum}`}
@@ -779,7 +848,7 @@ export default function StagePage({
                 )}
 
                 {existingSubmission && !isEditing && (
-                   <div className="p-3 mb-6 bg-green-100 border-[3px] border-green-500 flex items-center gap-3 text-xs text-green-700 font-bold uppercase">
+                  <div className="p-3 mb-6 bg-green-100 border-[3px] border-green-500 flex items-center gap-3 text-xs text-green-700 font-bold uppercase">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     SUBMITTED. {cycleOpen && existingSubmission.result === "pending" && "CLICK EDIT TO MODIFY."}
                   </div>
@@ -922,28 +991,6 @@ export default function StagePage({
         }
 
         const isBothPreferences = !!oppositePrefSlug;
-
-        if (isBothPreferences && oppositePrefSlug) {
-          const oppositeDeptInfo = DEPT_INFO[oppositePrefSlug] || {
-            title: oppositePrefSlug.toUpperCase().replace("-", " "),
-            type: currentDeptInfo.type === "tech" ? ("non-tech" as const) : ("tech" as const),
-          };
-
-          const techTitle =
-            currentDeptInfo.type === "tech" ? currentDeptInfo.title : oppositeDeptInfo.title;
-          const nonTechTitle =
-            currentDeptInfo.type === "non-tech" ? currentDeptInfo.title : oppositeDeptInfo.title;
-
-          return (
-            <FinalPreferenceConfirmationModal
-              techPreferenceTitle={techTitle}
-              nonTechPreferenceTitle={nonTechTitle}
-              onConfirmFinal={() => executeSubmission(true)}
-              onCancel={() => executeSubmission(false)}
-              isSubmitting={submitting}
-            />
-          );
-        }
 
         return (
           <PreferenceConfirmationModal
