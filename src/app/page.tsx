@@ -366,21 +366,13 @@ function DesktopHomePage({
 
                 {/* CTA Buttons */}
                 <div className="flex w-full max-w-[700px] gap-5 mt-1">
-                  <button
-                    onClick={() => { playRetroSound("open"); router.push("/recruitments"); }}
-                    className="flex-1 bg-white hover:bg-slate-50 text-black border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center"
-                    style={{ boxShadow: "5px 5px 0px 0px #000" }}
-                  >
-                    VIEW QUESTS
-                  </button>
-
                   {cycleOpen ? (
                     <button
                       onClick={() => {
                         playRetroSound("select");
                         router.push(isLoggedIn ? "/recruitments" : "/login");
                       }}
-                      className="flex-1 bg-[#52AE26] hover:bg-[#62BE36] text-white border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group"
+                      className="w-full bg-[#52AE26] hover:bg-[#62BE36] text-white border-4 border-black py-4 px-6 text-[14px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group cursor-pointer"
                       style={{ boxShadow: "5px 5px 0px 0px #000" }}
                     >
                       START QUEST <span className="group-hover:translate-x-1 transition-transform">►</span>
@@ -388,7 +380,7 @@ function DesktopHomePage({
                   ) : (
                     <button
                       disabled
-                      className="flex-1 bg-slate-300 text-slate-500 border-4 border-black py-4 px-6 text-[12px] font-bold tracking-widest flex items-center justify-center cursor-not-allowed opacity-80"
+                      className="w-full bg-slate-300 text-slate-500 border-4 border-black py-4 px-6 text-[14px] font-bold tracking-widest flex items-center justify-center cursor-not-allowed opacity-80"
                       style={{ boxShadow: "5px 5px 0px 0px #555" }}
                     >
                       QUEST CLOSED ✖
