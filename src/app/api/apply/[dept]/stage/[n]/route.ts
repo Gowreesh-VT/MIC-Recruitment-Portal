@@ -4,7 +4,6 @@ import { dbConnect } from "@/lib/mongodb";
 import Application, { DeptSlug } from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
-import { sendFinalPreferencesConfirmation } from "@/lib/mailer";
 import { validateResponses } from "@/lib/validation";
 import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
 import { validateOrigin } from "@/lib/csrf";
@@ -114,7 +113,6 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     currentStage: progress.currentStage,
     status: progress.status,
     applicantYear: application.year,
-    isFinalSubmitted: application.isFinalSubmitted ?? false,
   });
 }
 
@@ -240,20 +238,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (application.isFinalSubmitted) {
-      return NextResponse.json(
-        { success: false, error: "Your preferences and application have been finalized and locked. Editing is no longer allowed." },
-        { status: 403 }
-      );
-    }
-
     const stageConfig = department.stages.find((s) => s.stage === stageNum);
     if (!stageConfig) {
       return NextResponse.json({ success: false, error: "Stage configuration not found." }, { status: 404 });
     }
 
     const body = await req.json();
-    const { responses, _trap, finalSubmit } = body;
+    const { responses, _trap } = body;
 
     if (_trap) {
       return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
@@ -298,25 +289,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (finalSubmit) {
-      await Application.updateOne(
-        { userId: session.user.id, cycleId: CYCLE_ID },
-        { $set: { isFinalSubmitted: true } }
-      );
 
-      if (application.firstPreference && application.secondPreference) {
-        Promise.all([
-          Department.findOne({ slug: application.firstPreference }).lean(),
-          Department.findOne({ slug: application.secondPreference }).lean(),
-        ]).then(([dept1, dept2]) => {
-          const firstIsTech = application.firstPrefType === "tech";
-          const techName = (firstIsTech ? dept1?.name : dept2?.name) || "Technical";
-          const nonTechName = (firstIsTech ? dept2?.name : dept1?.name) || "Non-Technical";
-
-          sendFinalPreferencesConfirmation(application.userEmail, techName, nonTechName).catch(console.error);
-        }).catch(console.error);
-      }
-    }
 
     return NextResponse.json({
       success: true,
@@ -336,6 +309,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 // PUT — edit an existing pending stage
 export async function PUT(req: NextRequest, { params }: RouteParams) {
   // Same logic as POST but forces update of existing submission
+  const csrfError = validateOrigin(req);
+  if (csrfError) return csrfError;
+
   const { dept, n } = await params;
   const stageNum = parseInt(n, 10);
 
@@ -375,12 +351,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    if (application.isFinalSubmitted) {
-      return NextResponse.json(
-        { success: false, error: "Your preferences and application have been finalized and locked. Editing is no longer allowed." },
-        { status: 403 }
-      );
-    }
+
 
     const progress = isFirst ? application.firstPrefProgress : application.secondPrefProgress;
     const progressKey = isFirst ? "firstPrefProgress" : "secondPrefProgress";
@@ -409,7 +380,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     }
 
     const body = await req.json();
-    const { responses, _trap, finalSubmit } = body;
+    const { responses, _trap } = body;
     if (_trap) return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
 
     // Validate responses and strip unknown fields
@@ -429,12 +400,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       }
     );
 
-    if (finalSubmit) {
-      await Application.updateOne(
-        { userId: session.user.id, cycleId: CYCLE_ID },
-        { $set: { isFinalSubmitted: true } }
-      );
-    }
+
 
     return NextResponse.json({ 
       success: true, 

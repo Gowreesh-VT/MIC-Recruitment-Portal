@@ -6,29 +6,20 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const timestamp = new Date().toISOString();
-  let dbStatus = "disconnected";
+  let isHealthy = false;
 
   try {
     await dbConnect();
-    if (mongoose.connection.readyState === 1) {
-      dbStatus = "connected";
-    } else {
-      dbStatus = `state_${mongoose.connection.readyState}`;
-    }
+    isHealthy = mongoose.connection.readyState === 1;
   } catch (err) {
-    dbStatus = "error";
+    // Log internally — do not surface DB error details in the response
     console.error("[HEALTH] Database connection check failed:", err);
   }
-
-  const isHealthy = dbStatus === "connected";
 
   return NextResponse.json(
     {
       status: isHealthy ? "ok" : "degraded",
       timestamp,
-      services: {
-        database: dbStatus,
-      },
     },
     { status: isHealthy ? 200 : 503 }
   );

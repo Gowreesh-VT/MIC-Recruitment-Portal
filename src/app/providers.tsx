@@ -63,10 +63,10 @@ function PostHogUserIdentify() {
         return null;
       })
       .then((session) => {
-        if (session?.user?.email) {
-          posthogClient.identify(session.user.id || session.user.email, {
-            email: session.user.email,
-            name: session.user.name,
+        if (session?.user?.id) {
+          // Use internal user ID as the identifier — avoids sending PII (email/name)
+          // to a third-party analytics service. Role is kept for segmentation.
+          posthogClient.identify(session.user.id, {
             role: session.user.role,
           });
         } else {
