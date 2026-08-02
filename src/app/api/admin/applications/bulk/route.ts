@@ -78,14 +78,6 @@ export async function POST(req: NextRequest) {
         const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
         targetProgress.status = "passed";
         app.overallStatus = "selected";
-        if (preference === "first" && app.secondPreference) {
-          app.secondPrefProgress.status = "rejected";
-          if (app.secondPrefProgress.stages) {
-            app.secondPrefProgress.stages.forEach((s) => {
-              if (s.result === "pending") s.result = "failed";
-            });
-          }
-        }
       } else {
         // reject
         if (currentStageIdx !== -1) {
@@ -102,30 +94,21 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        if (preference === "first") {
-          app.firstPrefProgress.status = "rejected";
-          if (app.firstPrefProgress.stages) {
-            app.firstPrefProgress.stages.forEach((s) => {
-              if (s.result === "pending") s.result = "failed";
-            });
-          }
-          if (app.secondPreference && (app.secondPreference as string) !== "") {
-            app.activePreference = "second";
-            app.secondPrefProgress.status = "active";
-            app.overallStatus = "in-progress";
-          } else {
-            app.overallStatus = "rejected";
-          }
-        } else {
-          app.secondPrefProgress.status = "rejected";
-          if (app.secondPrefProgress.stages) {
-            app.secondPrefProgress.stages.forEach((s) => {
-              if (s.result === "pending") s.result = "failed";
-            });
-          }
-          if (app.firstPrefProgress.status === "rejected") {
-            app.overallStatus = "rejected";
-          }
+        const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
+        targetProgress.status = "rejected";
+        if (targetProgress.stages) {
+          targetProgress.stages.forEach((s) => {
+            if (s.result === "pending") s.result = "failed";
+          });
+        }
+
+        // Candidate is overall rejected ONLY if both preferences are rejected
+        const firstIsRejected = app.firstPrefProgress.status === "rejected";
+        const hasSecondPref = app.secondPreference && (app.secondPreference as string) !== "";
+        const secondIsRejected = !hasSecondPref || app.secondPrefProgress.status === "rejected";
+
+        if (firstIsRejected && secondIsRejected) {
+          app.overallStatus = "rejected";
         }
       }
 

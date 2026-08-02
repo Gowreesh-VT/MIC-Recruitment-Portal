@@ -54,11 +54,11 @@ export interface IApplication extends Document {
   whyMic: string;
 
   activePreference: "first" | "second";
-  isFinalSubmitted?: boolean;
   overallStatus: OverallStatus;
 
   firstPrefProgress: PrefProgress;
   secondPrefProgress: PrefProgress;
+  savedDepartmentResponses?: Record<string, StageSubmission[]>;
 
   createdAt: Date;
   updatedAt: Date;
@@ -142,10 +142,6 @@ const ApplicationSchema = new Schema<IApplication>(
       enum: ["first", "second"],
       default: "first",
     },
-    isFinalSubmitted: {
-      type: Boolean,
-      default: false,
-    },
     overallStatus: {
       type: String,
       enum: ["in-progress", "selected", "rejected", "waitlisted"],
@@ -155,8 +151,9 @@ const ApplicationSchema = new Schema<IApplication>(
     firstPrefProgress: { type: PrefProgressSchema, default: () => ({}) },
     secondPrefProgress: {
       type: PrefProgressSchema,
-      default: () => ({ status: "pending", currentStage: 1, stages: [] }),
+      default: () => ({ status: "active", currentStage: 1, stages: [] }),
     },
+    savedDepartmentResponses: { type: Schema.Types.Mixed, default: {} },
   },
   { timestamps: true }
 );

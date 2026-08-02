@@ -59,14 +59,14 @@ export async function POST(req: NextRequest) {
 
     if (!application) {
       return NextResponse.json(
-        { success: false, error: "Application not found. Please select your 1st preference first." },
+        { success: false, error: "Application not found. Please select your initial department preference first." },
         { status: 404 }
       );
     }
 
     if (application.secondPreference) {
       return NextResponse.json(
-        { success: false, error: "You have already selected your 2nd preference." },
+        { success: false, error: "You have already selected a department for this track." },
         { status: 409 }
       );
     }
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `You already chose a ${application.firstPrefType} department. Your 2nd preference must be ${application.firstPrefType === "tech" ? "non-tech" : "tech"}.`,
+          error: `You already chose a ${application.firstPrefType} department. Your next choice must be a ${application.firstPrefType === "tech" ? "non-technical" : "technical"} department.`,
         },
         { status: 400 }
       );
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
 
     application.secondPreference = secondPreference;
     application.secondPrefType = secondPrefType;
-    application.secondPrefProgress = { currentStage: 1, status: "pending", stages: [] };
+    application.secondPrefProgress = { currentStage: 1, status: "active", stages: [] };
     
     await application.save();
 

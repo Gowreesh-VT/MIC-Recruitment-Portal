@@ -151,7 +151,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: false, error: "Department not found." }, { status: 404 });
     }
 
-    const { isStageOpen } = await import("@/lib/cycle");
+    const { isCycleOpen, isStageOpen } = await import("@/lib/cycle");
+    if (!isCycleOpen(cycle)) {
+      return NextResponse.json(
+        { success: false, error: "Recruitment is currently closed. Submissions are no longer accepted." },
+        { status: 403 }
+      );
+    }
     if (!isStageOpen(cycle, department, stageNum)) {
       return NextResponse.json(
         { success: false, error: `Stage ${stageNum} is currently closed for this department.` },
@@ -176,26 +182,44 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         deptType &&
         deptType !== application.firstPrefType;
 
+      const savedResponses = (application.savedDepartmentResponses || {}) as Record<string, unknown[]>;
+
       if (canBeFirstPref) {
-        // Drop previous 1st preference and switch to this department ONLY upon actual stage 1 submission
+        const oldDept = application.firstPreference;
+        if (oldDept && application.firstPrefProgress?.stages?.length > 0) {
+          savedResponses[oldDept] = application.firstPrefProgress.stages;
+        }
+
+        const restoredStages = (savedResponses[dept] || []) as typeof application.firstPrefProgress.stages;
+
         application.firstPreference = dept as DeptSlug;
         application.firstPrefType = deptType;
         application.firstPrefProgress = {
           currentStage: 1,
           status: "active",
-          stages: [],
+          stages: restoredStages,
         };
+        application.savedDepartmentResponses = savedResponses as Record<string, typeof application.firstPrefProgress.stages>;
+        application.markModified("savedDepartmentResponses");
         await application.save();
         isFirst = true;
       } else if (canBeSecondPref) {
-        // Drop previous 2nd preference (if any) and switch to this department ONLY upon actual stage 1 submission
+        const oldDept = application.secondPreference;
+        if (oldDept && application.secondPrefProgress?.stages?.length > 0) {
+          savedResponses[oldDept] = application.secondPrefProgress.stages;
+        }
+
+        const restoredStages = (savedResponses[dept] || []) as typeof application.secondPrefProgress.stages;
+
         application.secondPreference = dept as DeptSlug;
         application.secondPrefType = deptType;
         application.secondPrefProgress = {
           currentStage: 1,
           status: "active",
-          stages: [],
+          stages: restoredStages,
         };
+        application.savedDepartmentResponses = savedResponses as Record<string, typeof application.secondPrefProgress.stages>;
+        application.markModified("savedDepartmentResponses");
         await application.save();
         isSecond = true;
       } else {
@@ -335,7 +359,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
     }
 
-    const { isStageOpen } = await import("@/lib/cycle");
+    const { isCycleOpen, isStageOpen } = await import("@/lib/cycle");
+    if (!isCycleOpen(cycle)) {
+      return NextResponse.json(
+        { success: false, error: "Recruitment is currently closed. Edits are no longer accepted." },
+        { status: 403 }
+      );
+    }
     if (!isStageOpen(cycle, department, stageNum)) {
       return NextResponse.json(
         { success: false, error: `Stage ${stageNum} is closed. Editing is no longer available.` },

@@ -149,25 +149,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Perform the switch: replace preference and reset progress for that slot
+    // Ensure savedDepartmentResponses map exists
+    const savedResponses = (application.savedDepartmentResponses || {}) as Record<string, unknown[]>;
+
     if (prefSlot === "first") {
+      const oldDept = application.firstPreference;
+      if (oldDept && application.firstPrefProgress?.stages?.length > 0) {
+        savedResponses[oldDept] = application.firstPrefProgress.stages;
+      }
+
+      const restoredStages = (savedResponses[newDepartment] || []) as typeof application.firstPrefProgress.stages;
+
       application.firstPreference = newDepartment as DeptSlug;
       application.firstPrefType = newDeptType;
       application.firstPrefProgress = {
-        currentStage: 1,
+        currentStage: restoredStages.length > 0 ? 1 : 1,
         status: "active",
-        stages: [],
+        stages: restoredStages,
       };
     } else {
+      const oldDept = application.secondPreference;
+      if (oldDept && application.secondPrefProgress?.stages?.length > 0) {
+        savedResponses[oldDept] = application.secondPrefProgress.stages;
+      }
+
+      const restoredStages = (savedResponses[newDepartment] || []) as typeof application.secondPrefProgress.stages;
+
       application.secondPreference = newDepartment as DeptSlug;
       application.secondPrefType = newDeptType;
       application.secondPrefProgress = {
-        currentStage: 1,
+        currentStage: restoredStages.length > 0 ? 1 : 1,
         status: "active",
-        stages: [],
+        stages: restoredStages,
       };
     }
 
+    application.savedDepartmentResponses = savedResponses as Record<string, typeof application.firstPrefProgress.stages>;
+    application.markModified("savedDepartmentResponses");
     await application.save();
 
     return NextResponse.json({

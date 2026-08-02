@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       activePreference: "first",
       overallStatus: "in-progress",
       firstPrefProgress: { currentStage: 1, status: "active", stages: [] },
-      secondPrefProgress: { currentStage: 1, status: "pending", stages: [] },
+      secondPrefProgress: { currentStage: 1, status: "active", stages: [] },
     });
 
     return NextResponse.json(

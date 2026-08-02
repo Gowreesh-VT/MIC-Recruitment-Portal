@@ -90,7 +90,6 @@ export async function GET() {
 
   const processedApplication = {
     ...application,
-    isFinalSubmitted: application.isFinalSubmitted ?? false,
     firstPreference: application.firstPreference,
     firstPrefType: application.firstPrefType,
     firstPrefProgress: processProgress(application.firstPrefProgress, dept1),

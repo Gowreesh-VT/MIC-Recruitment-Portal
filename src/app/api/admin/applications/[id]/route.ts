@@ -155,15 +155,6 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).status = "passed";
     application.overallStatus = "selected";
-
-    if (preference === "first" && application.secondPreference) {
-      application.secondPrefProgress.status = "rejected";
-      if (application.secondPrefProgress.stages) {
-        application.secondPrefProgress.stages.forEach((s) => {
-          if (s.result === "pending") s.result = "failed";
-        });
-      }
-    }
   } else {
     // reject
     const targetProgress = preference === "first"
@@ -188,20 +179,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // If rejected from first preference, activate second (if they have one)
-    if (preference === "first") {
-      if (application.secondPreference && (application.secondPreference as string) !== "") {
-        application.activePreference = "second";
-        application.secondPrefProgress.status = "active";
-        application.overallStatus = "in-progress";
-      } else {
-        application.overallStatus = "rejected";
-      }
-    } else {
-      // Rejected from second preference — check if both are now rejected
-      if (application.firstPrefProgress.status === "rejected") {
-        application.overallStatus = "rejected";
-      }
+    // Candidate is overall rejected ONLY if both preferences are rejected
+    const firstIsRejected = application.firstPrefProgress.status === "rejected";
+    const hasSecondPref = application.secondPreference && (application.secondPreference as string) !== "";
+    const secondIsRejected = !hasSecondPref || application.secondPrefProgress.status === "rejected";
+
+    if (firstIsRejected && secondIsRejected) {
+      application.overallStatus = "rejected";
     }
   }
 
