@@ -10,6 +10,7 @@ import posthog from "posthog-js";
 import RetroLoader from "@/components/RetroLoader";
 import { playRetroSound } from "@/lib/audio";
 import { validateResponses } from "@/lib/validation";
+import { getCanonicalDeptSlug } from "@/lib/constants";
 import PreferenceConfirmationModal from "@/components/PreferenceConfirmationModal";
 import FinalPreferenceConfirmationModal from "@/components/FinalPreferenceConfirmationModal";
 
@@ -174,7 +175,7 @@ function FieldRenderer({
     case "textarea":
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug whitespace-pre-line">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </div>
           <textarea
@@ -194,7 +195,7 @@ function FieldRenderer({
     case "select":
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug whitespace-pre-line">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </div>
           <select
@@ -217,7 +218,7 @@ function FieldRenderer({
     case "checkbox":
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug whitespace-pre-line">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </div>
           <div className={`p-4 border-[3px] border-[#C85A28] rounded-[8px] space-y-2 ${disabled ? 'bg-slate-100 opacity-70' : 'bg-white'}`}>
@@ -275,14 +276,14 @@ function FieldRenderer({
       };
 
       return (
-        <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+        <div className="flex flex-col gap-2 w-full">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug whitespace-pre-line">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </div>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 w-full">
             {urls.map((u, i) => (
-              <div key={i} className="flex gap-2 items-center">
-                <div className="relative flex-grow">
+              <div key={i} className="flex gap-2 items-center w-full">
+                <div className="relative flex-1 w-full min-w-0">
                   {icon}
                   <input
                     id={i === 0 ? field.id : `${field.id}-${i}`}
@@ -296,7 +297,7 @@ function FieldRenderer({
                   />
                 </div>
                 {!disabled && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     {urls.length > 1 && (
                       <button
                         type="button"
@@ -329,7 +330,7 @@ function FieldRenderer({
     default:
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-[11px] font-bold text-black uppercase leading-snug">
+          <div className="text-[11px] font-bold text-black uppercase leading-snug whitespace-pre-line">
             {field.label} {field.required && <span className="text-red-500">*</span>}
           </div>
           <div className="relative">
@@ -357,7 +358,8 @@ export default function StagePage({
 }: {
   params: Promise<{ dept: string; n: string }>;
 }) {
-  const { dept, n } = use(params);
+  const { dept: rawDept, n } = use(params);
+  const dept = getCanonicalDeptSlug(rawDept);
   const stageNum = parseInt((n || "").replace("quest-", "").replace("stage-", ""), 10);
   const router = useRouter();
 
@@ -453,14 +455,14 @@ export default function StagePage({
             }
           }
 
-          // 2. Auto-fill from Google Account (only if not already filled by step 1)
+          // 2. Auto-fill from Google Account ONLY for explicit personal name/email fields
           if (userData) {
             fetchedStageConfig.formFields.forEach(field => {
-              const labelUpper = field.label.toUpperCase();
-              if (labelUpper.includes("NAME") && userData.name && !initialResponses[field.id]) {
+              const fieldId = field.id.toLowerCase();
+              if ((fieldId === "fullname" || fieldId === "applicantname" || fieldId === "name") && userData.name && !initialResponses[field.id]) {
                 initialResponses[field.id] = userData.name;
               }
-              if (labelUpper.includes("EMAIL") && userData.email && !initialResponses[field.id]) {
+              if ((fieldId === "email" || fieldId === "useremail" || fieldId === "applicantemail") && userData.email && !initialResponses[field.id]) {
                 initialResponses[field.id] = userData.email;
               }
             });
@@ -870,7 +872,7 @@ export default function StagePage({
                   return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                       {activeFormFields.map((field) => (
-                        <div key={field.id} className={field.type === "textarea" ? "md:col-span-2" : ""}>
+                        <div key={field.id} className={(field.type === "textarea" || field.type === "url" || field.type === "radio" || field.type === "checkbox") ? "md:col-span-2" : ""}>
                           <FieldRenderer
                             field={field}
                             value={responses[field.id]}
