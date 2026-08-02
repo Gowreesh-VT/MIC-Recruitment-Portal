@@ -26,6 +26,15 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   }
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Validate the id is a proper MongoDB ObjectId before querying.
+  // Arbitrary strings passed to findById() cause a Mongoose CastError.
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return NextResponse.json(
+      { success: false, error: "Invalid application ID." },
+      { status: 400 }
+    );
+  }
+
   await dbConnect();
 
   const application = await Application.findById(id).lean();
