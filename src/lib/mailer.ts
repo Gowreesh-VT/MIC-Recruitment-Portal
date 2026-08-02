@@ -3,21 +3,10 @@ import { dbConnect } from "@/lib/mongodb";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import EmailLog from "@/models/EmailLog";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import { escapeHtml } from "@/lib/escapeHtml";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared Layout
-// ─────────────────────────────────────────────────────────────────────────────
+export { escapeHtml };
 
-/**
- * Wraps any email content in the shared MIC header + footer shell.
- *
- * @param heroColor     Accent color for the hero banner  (e.g. '#14b8a6')
- * @param heroIcon      Large emoji/symbol shown in the hero (e.g. '✦')
- * @param heroLabel     Small badge text above the title   (e.g. 'STAGE CLEARED')
- * @param heroTitle     Main bold hero title               (e.g. 'LEVEL UP!')
- * @param heroSubtitle  Smaller subtitle under title       (e.g. 'Quest Advanced')
- * @param body          Inner HTML content block
- */
 function buildEmailHtml({
   heroColor,
   heroIcon,
@@ -151,157 +140,92 @@ function buildEmailHtml({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reusable body components
+// Transporter & Email Dispatcher
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Standard paragraph text */
-function para(text: string, color = '#d1d5db'): string {
-  return `<p style="margin:0 0 16px 0;font-size:14px;line-height:1.8;color:${color};">${text}</p>`;
-}
+function getTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
 
-/** A highlighted info-card row (label + value) */
-function infoRow(label: string, value: string, accentColor: string): string {
-  return `
-  <tr>
-    <td style="padding:10px 14px;border-bottom:1px solid #1f2937;color:#6b7280;font-size:11px;letter-spacing:1px;text-transform:uppercase;width:36%;vertical-align:middle;">
-      ${escapeHtml(label)}
-    </td>
-    <td style="padding:10px 14px;border-bottom:1px solid #1f2937;color:${accentColor};font-size:13px;font-weight:bold;vertical-align:middle;">
-      ${escapeHtml(value)}
-    </td>
-  </tr>`;
-}
-
-/** A bordered info card containing info rows */
-function infoCard(rows: string, accentColor: string): string {
-  return `
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
-         style="margin:20px 0;border:1px solid ${accentColor};border-radius:2px;border-collapse:collapse;overflow:hidden;">
-    ${rows}
-  </table>`;
-}
-
-/** CTA button */
-function ctaButton(text: string, href: string, accentColor: string): string {
-  return `
-  <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;">
-    <tr>
-      <td style="border-radius:2px;background-color:${accentColor};">
-        <a href="${href}" target="_blank"
-           style="display:inline-block;padding:12px 28px;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:bold;letter-spacing:3px;color:#000;text-decoration:none;text-transform:uppercase;">
-          ${escapeHtml(text)}
-        </a>
-      </td>
-    </tr>
-  </table>`;
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Email: Final Preferences Confirmation
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Escape HTML special characters to prevent XSS when embedding
- * user-supplied or admin-supplied strings in HTML email bodies.
- */
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
-
-export async function sendFinalPreferencesConfirmation(
-  userEmail: string,
-  techPrefName: string,
-  nonTechPrefName: string
-) {
-  const smtpEmail = process.env.SMTP_EMAIL;
-  const smtpPassword = process.env.SMTP_PASSWORD;
-
-  // Guard: only create a transporter when credentials are confirmed present.
-  // Previously the transporter was created at module load with potentially
-  // undefined credentials, causing a silent misconfiguration at startup.
-  if (!smtpEmail || !smtpPassword) {
-    console.warn(`[MAILER] Skipping final preferences email for ${userEmail}. SMTP credentials not set.`);
-    return;
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: smtpEmail, pass: smtpPassword },
-  });
-
-  try {
-    await dbConnect();
-    const cycle = await RecruitmentCycle.findOne({ cycleId: ACTIVE_CYCLE_ID }).lean();
-    if (cycle && cycle.emailNotificationsEnabled === false) {
-      console.log(`[MAILER] Email delivery is disabled in Admin Settings. Skipping final preferences email for ${userEmail}.`);
-      return;
-    }
-  } catch (dbErr) {
-    console.error('[MAILER] Error checking recruitment cycle email settings:', dbErr);
-  }
-
-  const ACCENT = '#1093EB'; // Blue retro accent
-
-  const body = [
-    para('Hello Challenger,'),
-    para('Your final recruitment preferences have been successfully confirmed and locked for evaluation. Here is a summary of your chosen quest pathways:'),
-    infoCard(
-      infoRow('Tech Preference', techPrefName, ACCENT) +
-      infoRow('Non-Tech Preference', nonTechPrefName, ACCENT) +
-      infoRow('Application Status', 'Finalized & Locked', ACCENT),
-      ACCENT
-    ),
-    para('Editing for your application is now closed. Our domain evaluation boards are reviewing your responses and code. Stay tuned for results!'),
-    ctaButton('VIEW APPLICATION STATUS', 'https://recruitments.microsoftinnovations.club/recruitments', ACCENT),
-    para('Best of luck on your recruitment journey &mdash; MIC Core Team', '#6b7280'),
-  ].join('');
-
-  const subject = '⚡ Quest Locked: Final Recruitment Preferences Confirmed!';
-  const htmlBody = buildEmailHtml({
-    heroColor: ACCENT,
-    heroIcon: '⚡',
-    heroLabel: 'Preferences Finalized',
-    heroTitle: 'Quest Locked',
-    heroSubtitle: 'Final Preferences Confirmed',
-    body,
-  });
-
-  try {
-    await transporter.sendMail({
-      from: `"MIC Recruitment" <${smtpEmail}>`,
-      to: userEmail,
-      subject,
-      html: htmlBody,
+  if (host && user && pass) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
     });
-    // Log successful delivery to EmailLog for admin visibility in production
+  }
+  return null;
+}
+
+export interface SendMailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  templateKey?: string;
+  senderEmail?: string;
+}
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  templateKey = 'generic',
+  senderEmail = process.env.SMTP_FROM || 'noreply@micvitc.com',
+}: SendMailOptions): Promise<{ success: boolean; error?: string }> {
+  await dbConnect();
+
+  // Check if automated email delivery is enabled in global cycle settings
+  const cycle = await RecruitmentCycle.findOne({ cycleId: ACTIVE_CYCLE_ID });
+  if (cycle && cycle.emailNotificationsEnabled === false) {
+    console.log(`[MAILER SKIPPED] Automated email delivery is disabled in cycle settings.`);
+    return { success: false, error: 'Email delivery disabled in admin cycle settings.' };
+  }
+
+  const transporter = getTransporter();
+
+  try {
+    if (transporter) {
+      await transporter.sendMail({
+        from: senderEmail,
+        to,
+        subject,
+        html,
+      });
+    } else {
+      console.log(`[MAILER SIMULATED MODE] To: ${to} | Subject: ${subject}`);
+    }
+
     await EmailLog.create({
-      recipientEmail: userEmail,
-      senderEmail: smtpEmail,
+      recipientEmail: to,
+      senderEmail,
       subject,
-      body: htmlBody,
-      templateUsed: 'final-preferences-confirmation',
+      body: html,
+      templateUsed: templateKey,
       status: 'success',
     });
-  } catch (error) {
-    console.error('[MAILER] Failed to send final preferences confirmation email:', error);
-    // Log failed delivery so admins can diagnose issues in production
+
+    return { success: true };
+  } catch (err: unknown) {
+    const errorDetails = err instanceof Error ? err.message : String(err);
+    console.error(`[MAILER ERROR] Failed sending to ${to}:`, errorDetails);
+
     try {
       await EmailLog.create({
-        recipientEmail: userEmail,
-        senderEmail: smtpEmail,
+        recipientEmail: to,
+        senderEmail,
         subject,
-        body: htmlBody,
-        templateUsed: 'final-preferences-confirmation',
+        body: html,
+        templateUsed: templateKey,
         status: 'failed',
-        errorDetails: error instanceof Error ? error.message : String(error),
+        errorDetails,
       });
     } catch (logErr) {
-      console.error('[MAILER] Failed to write EmailLog entry:', logErr);
+      console.error('[MAILER ERROR] Failed to record EmailLog:', logErr);
     }
+
+    return { success: false, error: errorDetails };
   }
 }
