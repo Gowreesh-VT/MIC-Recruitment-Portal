@@ -5,7 +5,7 @@ import Application, { DeptSlug } from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import { validateResponses } from "@/lib/validation";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug } from "@/lib/constants";
 import { validateOrigin } from "@/lib/csrf";
 
 
@@ -21,8 +21,9 @@ interface RouteParams {
 
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const { dept, n } = await params;
-  const stageNum = parseInt(n, 10);
+  const { dept: rawDept, n } = await params;
+  const dept = getCanonicalDeptSlug(rawDept);
+  const stageNum = parseInt((n || "").replace("quest-", "").replace("stage-", ""), 10);
 
   if (isNaN(stageNum) || stageNum < 1) {
     return NextResponse.json({ success: false, error: "Invalid stage number." }, { status: 400 });
@@ -121,8 +122,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const csrfError = validateOrigin(req);
   if (csrfError) return csrfError;
 
-  const { dept, n } = await params;
-  const stageNum = parseInt(n, 10);
+  const { dept: rawDept, n } = await params;
+  const dept = getCanonicalDeptSlug(rawDept);
+  const stageNum = parseInt((n || "").replace("quest-", "").replace("stage-", ""), 10);
 
   if (isNaN(stageNum) || stageNum < 1) {
     return NextResponse.json({ success: false, error: "Invalid stage number." }, { status: 400 });

@@ -29,3 +29,20 @@ export const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
   entrepreneurship: "non-tech",
   "content-media": "non-tech",
 };
+
+/**
+ * Normalises any department slug alias to its canonical database slug.
+ */
+export function getCanonicalDeptSlug(slug?: string | null): DeptSlug {
+  const s = (slug || "").toLowerCase().trim();
+  if (s === "cybersecurity" || s === "cyber") return "cyber-security";
+  if (s === "social-media" || s === "media" || s === "content-and-media") return "content-media";
+  if (s === "cp" || s === "competitive-programming") return "competitive-coding";
+  if (s === "uiux" || s === "ui/ux") return "ui-ux";
+  if (s === "aiml" || s === "ai/ml") return "ai-ml";
+  if (s === "dev" || s === "web-dev") return "development";
+  if (s === "mgmt") return "management";
+  if (s === "ep") return "entrepreneurship";
+  return s as DeptSlug;
+}
+
