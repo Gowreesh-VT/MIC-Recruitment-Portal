@@ -8,6 +8,7 @@ import { BarChart3, Users, Settings, LogOut, TrendingUp, PanelLeftClose, PanelLe
 import { Button } from "@/components/ui/button";
 import { Press_Start_2P } from "next/font/google";
 import { playRetroSound } from "@/lib/audio";
+import ConfirmationModal from "@/components/ConfirmationModal";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -25,6 +26,7 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
   const pathname = usePathname();
   const [coins, setCoins] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
 
   useEffect(() => {
     const loadCoins = () => {
@@ -155,7 +157,7 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
         <div className="p-4 border-t-4 border-black bg-zinc-950">
           <Button
             variant="ghost"
-            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            onClick={() => setShowSignOutModal(true)}
             className="w-full justify-start gap-3 px-3.5 py-2.5 text-sm font-bold text-zinc-400 hover:bg-rose-500/10 hover:text-rose-400 transition-all cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
@@ -180,6 +182,20 @@ export function AdminLayout({ children, activePage }: AdminLayoutProps) {
       <main className={`flex-1 min-h-screen flex flex-col bg-black transition-all duration-300 ${isSidebarOpen ? "ml-56" : "ml-0"}`}>
         {children}
       </main>
+
+      {showSignOutModal && (
+        <ConfirmationModal
+          title="⚠ SIGN OUT"
+          message="Are you sure you want to sign out of the Admin Portal?"
+          cancelLabel="CANCEL"
+          confirmLabel="YES, SIGN OUT"
+          onCancel={() => setShowSignOutModal(false)}
+          onConfirm={() => {
+            setShowSignOutModal(false);
+            signOut({ callbackUrl: "/admin/login" });
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -12,7 +12,6 @@ import { playRetroSound } from "@/lib/audio";
 import { validateResponses } from "@/lib/validation";
 import { getCanonicalDeptSlug } from "@/lib/constants";
 import PreferenceConfirmationModal from "@/components/PreferenceConfirmationModal";
-import FinalPreferenceConfirmationModal from "@/components/FinalPreferenceConfirmationModal";
 
 
 const pressStart = Press_Start_2P({
@@ -53,7 +52,6 @@ interface StageSubmission {
 
 interface ApplicationStatus {
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
-  isFinalSubmitted?: boolean;
   firstPreference: string;
   firstPrefType?: "tech" | "non-tech";
   secondPreference?: string;
@@ -540,7 +538,7 @@ export default function StagePage({
     setShowConfirmModal(true);
   };
 
-  const executeSubmission = async (finalSubmit = false) => {
+  const executeSubmission = async () => {
     setShowConfirmModal(false);
     setSubmitting(true);
 
@@ -566,7 +564,7 @@ export default function StagePage({
       const res = await fetch(`/api/apply/${dept}/stage/${stageNum}`, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ responses, _trap: "", finalSubmit }),
+        body: JSON.stringify({ responses, _trap: "" }),
       });
       const data = await res.json();
 
@@ -583,11 +581,6 @@ export default function StagePage({
 
         if (hasTechApp && hasNonTechApp && typeof window !== "undefined") {
           sessionStorage.setItem("justFilledSecondDept", "true");
-        }
-
-        if (finalSubmit) {
-          setApplication((prev) => (prev ? { ...prev, isFinalSubmitted: true } : prev));
-          setIsEditing(false);
         }
         posthog.capture("Stage Submitted", {
           department: dept,
@@ -867,7 +860,7 @@ export default function StagePage({
                   const isFirst = application?.firstPreference === dept;
                   const prefProgress = isFirst ? application?.firstPrefProgress : application?.secondPrefProgress;
                   const currentPrefStatus = prefProgress?.status;
-                  const isReadOnly = application?.isFinalSubmitted || (existingSubmission !== null && !isEditing) || currentPrefStatus === "passed" || currentPrefStatus === "rejected";
+                  const isReadOnly = (existingSubmission !== null && !isEditing) || currentPrefStatus === "passed" || currentPrefStatus === "rejected";
 
                   return (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
@@ -888,7 +881,7 @@ export default function StagePage({
                 })()}
 
                 <div className="mt-10 flex flex-col items-center gap-4 pb-2">
-                  {(!existingSubmission || isEditing) && cycleOpen && !application?.isFinalSubmitted && (
+                  {(!existingSubmission || isEditing) && cycleOpen && (
                     <>
 
 
@@ -924,17 +917,11 @@ export default function StagePage({
                   )}
                   {existingSubmission && !isEditing && (
                     <div className="flex flex-col items-center gap-4">
-                      {application?.isFinalSubmitted && (
-                        <div className="p-3 bg-amber-100 border-[3px] border-amber-500 flex items-center gap-3 text-xs text-amber-900 font-bold uppercase text-center">
-                          <AlertTriangle className="h-4 w-4 shrink-0" />
-                          PREFERENCES & RESPONSES FINALIZED. EDITING LOCKED.
-                        </div>
-                      )}
                       {(() => {
                         const isFirst = application?.firstPreference === dept;
                         const prefProgress = isFirst ? application?.firstPrefProgress : application?.secondPrefProgress;
                         const currentPrefStatus = prefProgress?.status;
-                        const canEdit = cycleOpen && !application?.isFinalSubmitted && existingSubmission.result === "pending" && currentPrefStatus !== "passed" && currentPrefStatus !== "rejected";
+                        const canEdit = cycleOpen && existingSubmission.result === "pending" && currentPrefStatus !== "passed" && currentPrefStatus !== "rejected";
                         return canEdit ? (
                           <button
                             type="button"
@@ -998,7 +985,7 @@ export default function StagePage({
           <PreferenceConfirmationModal
             roleTitle={currentDeptInfo.title}
             deptType={currentDeptInfo.type}
-            onConfirm={() => executeSubmission(false)}
+            onConfirm={() => executeSubmission()}
             onCancel={() => setShowConfirmModal(false)}
           />
         );

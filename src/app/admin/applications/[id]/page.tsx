@@ -308,7 +308,6 @@ function PrefPanel({
 
   const canAct =
     progress.status === "active" &&
-    overallStatus === "in-progress" &&
     (!currentStageSubmission || currentStageSubmission.result === "pending");
 
   return (

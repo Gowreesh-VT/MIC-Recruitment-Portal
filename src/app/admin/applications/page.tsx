@@ -10,6 +10,12 @@ import {
   Loader2,
   ArrowUpDown,
   Download,
+  Mail,
+  Send,
+  CheckCircle2,
+  Sparkles,
+  AlertCircle,
+  Eye,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,11 +32,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertDialog, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EMAIL_PRESETS, PresetKey, getPresetEmailContent } from "@/lib/templates/email";
 
 interface Application {
   _id: string;
   userEmail: string;
   userName?: string;
+  fullName?: string;
   firstPreference: string;
   secondPreference: string;
   firstPrefType: string;
@@ -99,6 +107,51 @@ export default function AdminApplicationsPage() {
   const [bulkConfirm, setBulkConfirm] = useState<"advance" | "reject" | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  // Mail Presets state
+  const [showPresetModal, setShowPresetModal] = useState(false);
+  const [selectedPresetKey, setSelectedPresetKey] = useState<PresetKey>("response_saved");
+  const [presetNote, setPresetNote] = useState("");
+  const [presetSending, setPresetSending] = useState(false);
+  const [presetTab, setPresetTab] = useState<"recipients" | "preview">("recipients");
+  const [presetTargetScope, setPresetTargetScope] = useState<"selected" | "all">("selected");
+
+  const handleSendPresetEmails = async () => {
+    const targetCandidates = presetTargetScope === "selected" && selectedIds.length > 0
+      ? selectedIds
+      : applications.map(a => a._id);
+
+    if (targetCandidates.length === 0) {
+      alert("No candidates selected to send email to.");
+      return;
+    }
+
+    setPresetSending(true);
+    try {
+      const res = await fetch("/api/admin/mail/send-preset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          presetKey: selectedPresetKey,
+          candidateIds: targetCandidates,
+          customNote: presetNote,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        alert(`Success: ${data.message}`);
+        setShowPresetModal(false);
+        setPresetNote("");
+      } else {
+        alert(`Error: ${data.error || "Failed to dispatch emails"}`);
+      }
+    } catch {
+      alert("Failed to communicate with mail server.");
+    } finally {
+      setPresetSending(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -256,6 +309,52 @@ export default function AdminApplicationsPage() {
           </Select>
         </div>
 
+        {/* Quick Mail Presets Bar */}
+        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                <Mail className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-wider">Quick Mail Presets</h3>
+                <p className="text-[11px] text-zinc-500">Dispatch pre-designed HTML emails to verified candidates</p>
+              </div>
+            </div>
+            {selectedIds.length > 0 && (
+              <Badge variant="outline" className="bg-teal-500/10 border-teal-500/30 text-teal-400 font-mono text-[10px] uppercase">
+                {selectedIds.length} candidate(s) selected
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {(Object.keys(EMAIL_PRESETS) as PresetKey[]).map((key) => {
+              const preset = EMAIL_PRESETS[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPresetKey(key);
+                    setPresetTargetScope(selectedIds.length > 0 ? "selected" : "all");
+                    setShowPresetModal(true);
+                  }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  style={{
+                    borderColor: `${preset.color}40`,
+                    backgroundColor: `${preset.color}10`,
+                    color: '#f9fafb',
+                  }}
+                >
+                  <span>{preset.icon}</span>
+                  <span className="font-semibold">{preset.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Applications List Table */}
         <Card className="overflow-hidden">
           <CardContent className="p-0">
@@ -408,6 +507,18 @@ export default function AdminApplicationsPage() {
               className="h-9 text-xs"
             >
               Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPresetTargetScope("selected");
+                setShowPresetModal(true);
+              }}
+              className="h-9 text-xs font-bold border-teal-500/40 text-teal-400 hover:bg-teal-500/10 flex items-center gap-1.5"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Mail Preset ({selectedIds.length})
             </Button>
             <Button
               variant="destructive"
@@ -872,6 +983,245 @@ export default function AdminApplicationsPage() {
                 Download CSV
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Preset Email Modal */}
+      <Dialog open={showPresetModal} onOpenChange={setShowPresetModal}>
+        <DialogContent className="sm:max-w-2xl bg-zinc-950 border-zinc-800 text-zinc-100 p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
+                <Mail className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                  Send Preset Email
+                </DialogTitle>
+                <DialogDescription className="text-xs text-zinc-400 mt-0.5">
+                  Select a template preset, verify recipients, and dispatch HTML email
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-5 py-3">
+            {/* Target Scope Selection */}
+            <div className="flex items-center justify-between bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-teal-400" />
+                <span className="text-xs font-semibold text-zinc-300">Target Recipients:</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant={presetTargetScope === "selected" ? "emerald" : "outline"}
+                  size="sm"
+                  onClick={() => setPresetTargetScope("selected")}
+                  disabled={selectedIds.length === 0}
+                  className="h-7 text-xs px-3"
+                >
+                  Selected ({selectedIds.length})
+                </Button>
+                <Button
+                  type="button"
+                  variant={presetTargetScope === "all" ? "emerald" : "outline"}
+                  size="sm"
+                  onClick={() => setPresetTargetScope("all")}
+                  className="h-7 text-xs px-3"
+                >
+                  All Visible ({applications.length})
+                </Button>
+              </div>
+            </div>
+
+            {/* Preset Key Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                1. Select Email Preset
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {(Object.keys(EMAIL_PRESETS) as PresetKey[]).map((key) => {
+                  const p = EMAIL_PRESETS[key];
+                  const isSelected = selectedPresetKey === key;
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => setSelectedPresetKey(key)}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 select-none ${
+                        isSelected
+                          ? "bg-teal-500/10 border-teal-500 text-white shadow-[0_0_12px_rgba(20,184,166,0.15)]"
+                          : "bg-zinc-900/40 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                      }`}
+                    >
+                      <span className="text-xl mt-0.5">{p.icon}</span>
+                      <div>
+                        <div className="font-bold text-xs flex items-center gap-2">
+                          {p.label}
+                          {isSelected && (
+                            <Badge variant="outline" className="bg-teal-500/20 text-teal-300 border-teal-500/40 text-[9px] py-0">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 mt-0.5">{p.description}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Note Input */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                <span>2. Custom Reviewer Note (Optional)</span>
+                <span className="text-[10px] text-zinc-500 lowercase font-normal">Included in template note block</span>
+              </label>
+              <Input
+                type="text"
+                placeholder="e.g. Please bring your student ID card for Stage 2..."
+                value={presetNote}
+                onChange={(e) => setPresetNote(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 text-xs"
+              />
+            </div>
+
+            {/* Tabs: Recipients vs Live Preview */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setPresetTab("recipients")}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 ${
+                    presetTab === "recipients"
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Verified Recipients (
+                  {(presetTargetScope === "selected" && selectedIds.length > 0
+                    ? selectedIds
+                    : applications.map((a) => a._id)
+                  ).length}
+                  )
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPresetTab("preview")}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2 ${
+                    presetTab === "preview"
+                      ? "bg-zinc-800 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Template Preview
+                </button>
+              </div>
+
+              {presetTab === "recipients" ? (
+                <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                  {(presetTargetScope === "selected" && selectedIds.length > 0
+                    ? applications.filter((a) => selectedIds.includes(a._id))
+                    : applications
+                  ).map((app) => (
+                    <div
+                      key={app._id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-800/60 text-xs"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <div className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="font-semibold text-zinc-200 truncate">
+                          {app.fullName || app.userName || app.userEmail}
+                        </span>
+                        <span className="text-zinc-500 font-mono text-[10px]">({app.userEmail})</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] text-zinc-400 border-zinc-800 uppercase shrink-0">
+                        {app.firstPreference}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
+                  <div className="text-xs text-zinc-400 font-semibold border-b border-zinc-800/80 pb-2 flex items-center justify-between">
+                    <span>
+                      Subject:{" "}
+                      <strong className="text-white">
+                        {
+                          getPresetEmailContent({
+                            presetKey: selectedPresetKey,
+                            candidateName: "Student Name",
+                            departmentName: "Development",
+                            applicationId: "MIC-12345",
+                            customNote: presetNote,
+                          }).subject
+                        }
+                      </strong>
+                    </span>
+                    <Badge
+                      variant="outline"
+                      style={{
+                        borderColor: EMAIL_PRESETS[selectedPresetKey].color,
+                        color: EMAIL_PRESETS[selectedPresetKey].color,
+                      }}
+                    >
+                      {EMAIL_PRESETS[selectedPresetKey].badge}
+                    </Badge>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto rounded bg-black/40 p-2 border border-zinc-900">
+                    <iframe
+                      srcDoc={
+                        getPresetEmailContent({
+                          presetKey: selectedPresetKey,
+                          candidateName: "Alex Morgan",
+                          departmentName: "Development",
+                          applicationId: "MIC-2026-001",
+                          customNote: presetNote || undefined,
+                        }).html
+                      }
+                      className="w-full h-56 border-0 rounded"
+                      title="Email Preview"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Footer buttons */}
+          <div className="flex items-center justify-between pt-4 border-t border-zinc-900">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowPresetModal(false)}
+              className="px-4 font-semibold rounded-xl h-9 text-xs border-zinc-800 text-zinc-300 hover:bg-zinc-900"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handleSendPresetEmails}
+              disabled={presetSending}
+              className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold px-6 rounded-xl h-10 text-xs flex items-center gap-2 shadow-[0_0_15px_rgba(20,184,166,0.25)] transition-all cursor-pointer"
+            >
+              {presetSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending Emails...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Send Mail to Verified Candidates
+                </>
+              )}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

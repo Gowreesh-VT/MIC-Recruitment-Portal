@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { Press_Start_2P } from "next/font/google";
 import DepartmentPopup, { DepartmentData } from "@/components/DepartmentPopup";
-import FinalPreferenceConfirmationModal from "@/components/FinalPreferenceConfirmationModal";
 import RetroLoader from "@/components/RetroLoader";
 import posthog from "posthog-js";
 import MobileBackground from "@/components/MobileBackground";
@@ -14,6 +13,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import { playRetroSound } from "@/lib/audio";
 import ApplicationProgressCard from "@/components/ApplicationProgressCard";
 import ConfirmationModal from "@/components/ConfirmationModal";
+import ChangeDepartmentModal from "@/components/ChangeDepartmentModal";
 import ActiveDepartmentCard from "@/components/ActiveDepartmentCard";
 import StageRoadmap from "@/components/StageRoadmap";
 
@@ -519,7 +519,6 @@ interface StageProgress {
 
 interface ApplicationStatus {
   overallStatus: "in-progress" | "selected" | "rejected" | "waitlisted";
-  isFinalSubmitted?: boolean;
   firstPreference: string;
   firstPrefType: "tech" | "non-tech";
   secondPreference?: string;
@@ -716,7 +715,7 @@ export default function RecruitmentsPage() {
 
   // Change Department Confirmation Modal State
   const [changeCategoryModalTarget, setChangeCategoryModalTarget] = useState<"tech" | "non-tech" | null>(null);
-  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [isSwitchingDepartment, setIsSwitchingDepartment] = useState(false);
 
   const handleOpenChangeCategoryModal = (category: "tech" | "non-tech") => {
     const isFirst = appStatus?.firstPrefType === category;
@@ -737,28 +736,29 @@ export default function RecruitmentsPage() {
     setChangeCategoryModalTarget(category);
   };
 
-  const handleConfirmChangeCategory = async () => {
-    if (!changeCategoryModalTarget) return;
-    setIsDeletingCategory(true);
+  const handleSwitchDepartment = async (newDeptSlug: string) => {
+    if (!changeCategoryModalTarget || !appStatus) return;
+    const prefSlot = appStatus.firstPrefType === changeCategoryModalTarget ? "first" : "second";
+    setIsSwitchingDepartment(true);
     try {
-      const res = await fetch("/api/apply/delete-category", {
+      const res = await fetch("/api/apply/switch-pref", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category: changeCategoryModalTarget }),
+        body: JSON.stringify({ newDepartment: newDeptSlug, prefSlot }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        playRetroSound("die");
+        playRetroSound("jump");
         setChangeCategoryModalTarget(null);
         await fetchStatus();
       } else {
-        setError(data.error || "Failed to delete application.");
+        setError(data.error || "Failed to switch department.");
       }
     } catch (err) {
-      console.error("Failed to delete category application:", err);
+      console.error("Failed to switch department:", err);
       setError("Network error. Please try again.");
     } finally {
-      setIsDeletingCategory(false);
+      setIsSwitchingDepartment(false);
     }
   };
 
@@ -832,21 +832,6 @@ export default function RecruitmentsPage() {
         setCountdownSettings(configData.countdownSettings || null);
         setIsLoggedIn(!!statusData.user);
 
-        const justFilledSecond =
-          typeof window !== "undefined" &&
-          (sessionStorage.getItem("justFilledSecondDept") === "true" ||
-            searchParams.get("showSummary") === "true");
-
-        if (
-          justFilledSecond &&
-          statusData.application?.firstPreference &&
-          statusData.application?.secondPreference
-        ) {
-          setShowFinalPrompt(true);
-          if (typeof window !== "undefined") {
-            sessionStorage.removeItem("justFilledSecondDept");
-          }
-        }
       } else {
         if (statusRes.status === 429 || configRes.status === 429) {
           setError("API RATE LIMIT EXCEEDED. PLEASE WAIT A MOMENT AND TRY AGAIN.");
@@ -861,22 +846,6 @@ export default function RecruitmentsPage() {
       setIsLoadingApp(false);
     }
   }, []);
-
-  const handleConfirmFinal = async () => {
-    setIsConfirmingFinal(true);
-    try {
-      const res = await fetch("/api/apply/confirm-final", { method: "POST" });
-      if (res.ok) {
-        playRetroSound("point");
-        setAppStatus((prev) => (prev ? { ...prev, isFinalSubmitted: true } : prev));
-        setShowFinalPrompt(false);
-      }
-    } catch (err) {
-      console.error("Failed to confirm final preferences:", err);
-    } finally {
-      setIsConfirmingFinal(false);
-    }
-  };
 
   // Fetch application status
   useEffect(() => {
@@ -1981,34 +1950,7 @@ export default function RecruitmentsPage() {
         </div>
       )}
 
-      {/* ================= FINAL PREFERENCE CONFIRMATION OVERLAY ================= */}
-      {showFinalPrompt && (appStatus?.firstPreference || appStatus?.secondPreference) && (() => {
-        let techSlug: string | undefined = undefined;
-        let nonTechSlug: string | undefined = undefined;
 
-        if (appStatus?.firstPreference) {
-          if (appStatus.firstPrefType === "tech") techSlug = appStatus.firstPreference;
-          else if (appStatus.firstPrefType === "non-tech") nonTechSlug = appStatus.firstPreference;
-        }
-        if (appStatus?.secondPreference) {
-          if (appStatus.secondPrefType === "tech") techSlug = appStatus.secondPreference;
-          else if (appStatus.secondPrefType === "non-tech") nonTechSlug = appStatus.secondPreference;
-        }
-
-        const techQuest = techQuests.find((q) => getDeptSlug(q) === techSlug);
-        const nonTechQuest = nonTechQuests.find((q) => getDeptSlug(q) === nonTechSlug);
-
-        const techTitle = techQuest?.title || techSlug?.toUpperCase().replace("-", " ") || "Not Selected";
-        const nonTechTitle = nonTechQuest?.title || nonTechSlug?.toUpperCase().replace("-", " ") || "Not Selected";
-
-        return (
-          <FinalPreferenceConfirmationModal
-            techPreferenceTitle={techTitle}
-            nonTechPreferenceTitle={nonTechTitle}
-            onClose={() => setShowFinalPrompt(false)}
-          />
-        );
-      })()}
 
       {/* ================= INSTRUCTIONS POPUP OVERLAY ================= */}
       {showInstructions && (
@@ -2051,20 +1993,31 @@ export default function RecruitmentsPage() {
       )}
 
       {/* ================= CHANGE DEPARTMENT CONFIRMATION MODAL ================= */}
-      {changeCategoryModalTarget && (
-        <ConfirmationModal
-          title="⚠ CHANGE DEPARTMENT"
-          message="Changing your department will permanently delete your current application for this category."
-          cancelLabel="CANCEL"
-          confirmLabel="CONTINUE"
-          onCancel={() => {
-            playRetroSound("close");
-            setChangeCategoryModalTarget(null);
-          }}
-          onConfirm={handleConfirmChangeCategory}
-          isLoading={isDeletingCategory}
-        />
-      )}
+      {changeCategoryModalTarget && (() => {
+        const isFirst = appStatus?.firstPrefType === changeCategoryModalTarget;
+        const currentDeptSlug = isFirst ? appStatus?.firstPreference : appStatus?.secondPreference;
+        const availableQuests = changeCategoryModalTarget === "tech" ? techQuests : nonTechQuests;
+        const deptOptions = availableQuests.map((q) => ({
+          slug: getDeptSlug(q),
+          name: q.title,
+          description: q.desc || q.subtitle,
+        }));
+
+        return (
+          <ChangeDepartmentModal
+            isOpen={true}
+            trackType={changeCategoryModalTarget}
+            currentDeptSlug={currentDeptSlug || ""}
+            availableDepartments={deptOptions}
+            onConfirm={handleSwitchDepartment}
+            onClose={() => {
+              playRetroSound("close");
+              setChangeCategoryModalTarget(null);
+            }}
+            loading={isSwitchingDepartment}
+          />
+        );
+      })()}
 
     </div>
   );

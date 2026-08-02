@@ -19,6 +19,7 @@ import {
 import { Press_Start_2P } from "next/font/google";
 import BackButton from "@/components/BackButton";
 import MobileBackground from "@/components/MobileBackground";
+import ConfirmationModal from "@/components/ConfirmationModal";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -116,8 +117,15 @@ function ProfilePage() {
     }
   }, [status, router]);
 
-  const handleSignOut = () => {
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+
+  const handleSignOutClick = () => {
     playRetroSound("kick");
+    setShowSignOutModal(true);
+  };
+
+  const handleConfirmSignOut = () => {
+    setShowSignOutModal(false);
     signOut({ callbackUrl: "/" });
   };
 
@@ -230,7 +238,7 @@ function ProfilePage() {
           session={session}
           appStatus={appStatus}
           router={router}
-          onSignOut={handleSignOut}
+          onSignOut={handleSignOutClick}
           isEditing={isEditing}
           editForm={editForm}
           saving={saving}
@@ -249,7 +257,7 @@ function ProfilePage() {
           session={session}
           appStatus={appStatus}
           router={router}
-          onSignOut={handleSignOut}
+          onSignOut={handleSignOutClick}
           isEditing={isEditing}
           editForm={editForm}
           saving={saving}
@@ -261,6 +269,17 @@ function ProfilePage() {
           onSaveEdit={handleSaveEdit}
         />
       </div>
+
+      {showSignOutModal && (
+        <ConfirmationModal
+          title="⚠ SIGN OUT"
+          message="Are you sure you want to sign out of your account?"
+          cancelLabel="CANCEL"
+          confirmLabel="YES, SIGN OUT"
+          onCancel={() => setShowSignOutModal(false)}
+          onConfirm={handleConfirmSignOut}
+        />
+      )}
     </div>
   );
 }
@@ -630,25 +649,6 @@ function MobileProfileView({
               )}
             </div>
 
-            {/* Preference 1 Timeline */}
-            {appStatus.firstPreference && appStatus.firstPrefProgress && (
-              <MobileTimelineCard
-                title="1ST PREFERENCE"
-                prefName={appStatus.firstPreference}
-                prefStatus={appStatus.firstPrefProgress.status}
-                stages={appStatus.firstPrefProgress.stages}
-              />
-            )}
-
-            {/* Preference 2 Timeline (if present) */}
-            {appStatus.secondPreference && appStatus.secondPrefProgress && (
-              <MobileTimelineCard
-                title="2ND PREFERENCE"
-                prefName={appStatus.secondPreference}
-                prefStatus={appStatus.secondPrefProgress.status}
-                stages={appStatus.secondPrefProgress.stages}
-              />
-            )}
           </>
         )}
       </div>
@@ -1282,146 +1282,8 @@ function DesktopProfileView({
               </div>
             </div>
 
-            {/* Timelines (1st Preference & 2nd Preference) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-10">
-              {appStatus.firstPreference && appStatus.firstPrefProgress && (
-                <DesktopTimelineCard
-                  title="1ST PREFERENCE QUEST LOG"
-                  prefName={appStatus.firstPreference}
-                  prefStatus={appStatus.firstPrefProgress.status}
-                  stages={appStatus.firstPrefProgress.stages}
-                />
-              )}
-
-              {appStatus.secondPreference && appStatus.secondPrefProgress && (
-                <DesktopTimelineCard
-                  title="2ND PREFERENCE QUEST LOG"
-                  prefName={appStatus.secondPreference}
-                  prefStatus={appStatus.secondPrefProgress.status}
-                  stages={appStatus.secondPrefProgress.stages}
-                />
-              )}
-            </div>
           </>
         )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Desktop Preference Timeline Component ── */
-function DesktopTimelineCard({
-  title,
-  prefName,
-  prefStatus,
-  stages,
-}: {
-  title: string;
-  prefName: string;
-  prefStatus: string;
-  stages: StageProgress[];
-}) {
-  return (
-    <div
-      className="bg-[#FFE4D6] border-4 border-black rounded-[12px] shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)] overflow-hidden space-y-0"
-    >
-      {/* Top Wooden Header */}
-      <div className="bg-[#A93710] border-b-4 border-black p-4 px-6 flex items-center justify-between">
-        <div>
-          <p className="text-[9px] font-bold text-white/70 uppercase tracking-widest">
-            {title}
-          </p>
-          <h2 className="text-[15px] font-black text-white uppercase tracking-wider drop-shadow-[1px_1px_0px_#000]">
-            {prefName.replace("-", " ")}
-          </h2>
-        </div>
-        <div
-          className={`px-3 py-1.5 border-2 border-black text-[10px] uppercase font-bold tracking-widest shadow-[2px_2px_0px_0px_#000] ${
-            prefStatus === "active"
-              ? "bg-[#1093EB] text-white"
-              : prefStatus === "passed"
-              ? "bg-[#72F418] text-black"
-              : prefStatus === "rejected"
-              ? "bg-[#FF4444] text-white"
-              : "bg-slate-300 text-black"
-          }`}
-        >
-          {prefStatus}
-        </div>
-      </div>
-
-      <div className="p-6 md:p-8 space-y-6">
-        <div className="relative pl-6 border-l-4 border-black space-y-8 pt-2">
-          {stages.length === 0 ? (
-            <div className="text-[10px] text-black/70 uppercase tracking-widest">
-              No stages submitted yet.
-            </div>
-          ) : (
-            stages.map((stage, idx) => (
-              <div key={idx} className="relative">
-                {/* Timeline Dot */}
-                <div
-                  className={`absolute -left-[37px] top-1.5 h-6 w-6 border-3 border-black shadow-[2px_2px_0px_0px_#000] ${
-                    stage.result === "passed"
-                      ? "bg-[#72F418]"
-                      : stage.result === "failed" || prefStatus === "rejected"
-                      ? "bg-[#FF4444]"
-                      : "bg-[#FBBF24]"
-                  }`}
-                />
-
-                <div
-                  className="bg-white border-4 border-black p-5 space-y-4 shadow-[4px_4px_0px_0px_#000] rounded-[6px]"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b-2 border-dashed border-black/20 pb-3">
-                    <h3 className="text-[12px] font-bold text-black uppercase tracking-widest">
-                      Stage {stage.stage} Submitted
-                    </h3>
-                    <span className="text-[10px] text-black/60 font-semibold uppercase tracking-widest">
-                      {new Date(stage.submittedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {stage.result === "passed" ? (
-                      <>
-                        <CheckCircle2 className="h-5 w-5 text-[#52AE26]" />
-                        <span className="text-[11px] font-bold text-[#52AE26] uppercase tracking-widest">
-                          PASSED
-                        </span>
-                      </>
-                    ) : stage.result === "failed" || prefStatus === "rejected" ? (
-                      <>
-                        <XCircle className="h-5 w-5 text-[#FF4444]" />
-                        <span className="text-[11px] font-bold text-[#FF4444] uppercase tracking-widest">
-                          NOT SELECTED
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="h-5 w-5 text-[#D97706]" />
-                        <span className="text-[11px] font-bold text-[#D97706] uppercase tracking-widest">
-                          UNDER REVIEW
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {stage.adminNote && (
-                    <div className="mt-3 p-4 bg-[#FFF4E6] border-2 border-black shadow-[2px_2px_0px_0px_#000] rounded-sm">
-                      <p className="text-[9px] text-[#A93710] font-bold uppercase tracking-widest mb-2 font-press-start">
-                        ADMIN NOTE:
-                      </p>
-                      <p className="text-[11px] text-black leading-relaxed uppercase font-sans font-semibold">
-                        {stage.adminNote}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
       </div>
     </div>
   );
