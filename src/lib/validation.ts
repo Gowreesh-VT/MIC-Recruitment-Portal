@@ -213,7 +213,9 @@ export const applyInitSchema = z.object({
   }),
   fullName: z.string().min(1, "Full Name is required."),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits."),
-  regNo: z.string().min(1, "Registration Number is required."),
+  regNo: z.string()
+    .min(1, "Registration Number is required.")
+    .regex(/^[0-9]{2}[A-Z]{3}[0-9]{4}$/, "Registration number must be a valid VIT format (e.g., 21BCE1234)."),
   year: z.string().min(1, "Year of Study is required."),
   branch: z.string().optional().nullable(),
   whyMic: z.string().min(1, "This field is required."),
@@ -223,7 +225,10 @@ export const applyInitSchema = z.object({
 export const updateProfileSchema = z.object({
   fullName: z.string().min(1, "Full Name is required.").max(100, "Full Name must not exceed 100 characters."),
   phone: z.string().regex(/^[0-9]{10}$/, "Phone must be exactly 10 digits with no spaces or special characters."),
-  regNo: z.string().min(1, "Registration Number is required.").max(50, "Registration Number must not exceed 50 characters."),
+  regNo: z.string()
+    .min(1, "Registration Number is required.")
+    .max(50, "Registration Number must not exceed 50 characters.")
+    .regex(/^[0-9]{2}[A-Z]{3}[0-9]{4}$/, "Registration number must be a valid VIT format (e.g., 21BCE1234)."),
   year: z.string().min(1, "Year of Study is required."),
   branch: z.string().optional().nullable(),
   whyMic: z.string().min(1, "Why MIC answer is required.").max(2000, "Why MIC answer must not exceed 2000 characters."),

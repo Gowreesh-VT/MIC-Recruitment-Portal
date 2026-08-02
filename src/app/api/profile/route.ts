@@ -4,8 +4,12 @@ import { dbConnect } from "@/lib/mongodb";
 import Application from "@/models/Application";
 import { updateProfileSchema } from "@/lib/validation";
 import { ACTIVE_CYCLE_ID } from "@/lib/constants";
+import { validateOrigin } from "@/lib/csrf";
 
 export async function PATCH(req: NextRequest) {
+  const csrfError = validateOrigin(req);
+  if (csrfError) return csrfError;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });

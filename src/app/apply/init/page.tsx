@@ -67,6 +67,25 @@ function RetroBackground({ scale }: { scale: number }) {
   );
 }
 
+/**
+ * VIT student Google display names often look like "Hari Prasad 24BCE1234".
+ * This function detects a trailing VIT reg number (e.g. 24BCE1234 / 22MCA5678)
+ * and separates it from the actual name so both fields can be pre-filled.
+ *
+ * Returns { name, regNo } — regNo is empty string if no pattern was found.
+ */
+function parseVitName(rawName: string): { name: string; regNo: string } {
+  // Matches: 2 digits + 2-4 uppercase letters + 3-4 digits at the end of the string
+  const vitRegNoPattern = /\b(\d{2}[A-Z]{2,4}\d{3,4})\s*$/;
+  const match = rawName.match(vitRegNoPattern);
+  if (match) {
+    const regNo = match[1];
+    const name = rawName.slice(0, match.index).trim();
+    return { name, regNo };
+  }
+  return { name: rawName.trim(), regNo: "" };
+}
+
 function InitPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -103,7 +122,14 @@ function InitPageContent() {
             return;
           }
           if (data.user?.name) {
-            setFormData(prev => ({ ...prev, fullName: data.user.name }));
+            // VIT Google accounts often include the reg number in the display name,
+            // e.g. "Hari Prasad 24BCE1234" → fullName: "Hari Prasad", regNo: "24BCE1234"
+            const { name, regNo } = parseVitName(data.user.name);
+            setFormData(prev => ({
+              ...prev,
+              fullName: name,
+              ...(regNo ? { regNo } : {}),
+            }));
           }
         }
       } catch (err) {
