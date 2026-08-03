@@ -5,7 +5,7 @@ import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug } from "@/models/Application";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug, getDeptSlugVariants } from "@/lib/constants";
 import { z } from "zod";
 import { validateOrigin } from "@/lib/csrf";
 
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify the new department is active
-    const dept = await Department.findOne({ slug: newDepartment, isActive: true });
+    const dept = await Department.findOne({ slug: { $in: getDeptSlugVariants(newDepartment) }, isActive: true });
     if (!dept) {
       return NextResponse.json(
         { success: false, error: "The selected department is not currently available." },

@@ -16,6 +16,7 @@ import ConfirmationModal from "@/components/ConfirmationModal";
 import ChangeDepartmentModal from "@/components/ChangeDepartmentModal";
 import ActiveDepartmentCard from "@/components/ActiveDepartmentCard";
 import StageRoadmap from "@/components/StageRoadmap";
+import { getCanonicalDeptSlug } from "@/lib/constants";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -24,14 +25,25 @@ const pressStart = Press_Start_2P({
 });
 
 const ROLE_TO_SLUG: Record<string, string> = {
+  Development: "development",
+  "Competitive Coding": "competitive-coding",
   "UI/UX": "ui-ux",
   "AI/ML": "ai-ml",
+  "Cyber Security": "cyber-security",
+  Design: "design",
+  Management: "management",
+  Entrepreneurship: "entrepreneurship",
   "Content & Media": "content-media",
+  "Social Media": "content-media",
+  Media: "content-media",
 };
 
 export function getDeptSlug(q: DepartmentData): string {
-  return q.slug || (q.role ? (ROLE_TO_SLUG[q.role] ?? q.role.toLowerCase().replace(/\s+/g, "-")) : "");
+  if (q.slug) return getCanonicalDeptSlug(q.slug);
+  if (q.role) return ROLE_TO_SLUG[q.role] ?? getCanonicalDeptSlug(q.role);
+  return "";
 }
+
 
 interface QuestCardProps {
   title: string;

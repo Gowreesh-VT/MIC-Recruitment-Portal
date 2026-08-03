@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 
+import { getCanonicalDeptSlug } from "@/lib/constants";
+
 export interface DepartmentData {
   slug?: string;
   title: string;
@@ -25,7 +27,10 @@ const ROLE_TO_SLUG: Record<string, string> = {
   Management: "management",
   Entrepreneurship: "entrepreneurship",
   "Content & Media": "content-media",
+  "Social Media": "content-media",
+  Media: "content-media",
 };
+
 
 interface DepartmentPopupProps {
   department: DepartmentData | null;
@@ -240,8 +245,10 @@ export default function DepartmentPopup({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (department.stage1Open === false) return;
-                  const slug = department.slug || ROLE_TO_SLUG[department.role] || department.role.toLowerCase().replace(/\s+/g, "-");
+                  const rawSlug = department.slug || ROLE_TO_SLUG[department.role] || department.role;
+                  const slug = getCanonicalDeptSlug(rawSlug);
                   onApply(slug, deptType);
+
                 }}
                 className={`w-full sm:w-auto border-2 sm:border-4 border-black py-2.5 px-4 sm:py-3 sm:px-6 text-[9px] sm:text-[10px] font-bold text-black uppercase tracking-wider whitespace-nowrap transition-all ${
                   department.stage1Open === false 

@@ -5,7 +5,7 @@ import Application, { DeptSlug } from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import { validateResponses } from "@/lib/validation";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug, getDeptSlugVariants } from "@/lib/constants";
 import { validateOrigin } from "@/lib/csrf";
 
 
@@ -38,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   const [application, department, cycle] = await Promise.all([
     Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
-    Department.findOne({ slug: dept }),
+    Department.findOne({ slug: { $in: getDeptSlugVariants(dept) } }),
     RecruitmentCycle.findOne({ cycleId: CYCLE_ID }),
   ]);
 
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const [application, department, cycle] = await Promise.all([
       Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
-      Department.findOne({ slug: dept }),
+      Department.findOne({ slug: { $in: getDeptSlugVariants(dept) } }),
       RecruitmentCycle.findOne({ cycleId: CYCLE_ID })
     ]);
 
@@ -351,7 +351,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     const [application, department, cycle] = await Promise.all([
       Application.findOne({ userId: session.user.id, cycleId: CYCLE_ID }),
-      Department.findOne({ slug: dept }),
+      Department.findOne({ slug: { $in: getDeptSlugVariants(dept) } }),
       RecruitmentCycle.findOne({ cycleId: CYCLE_ID })
     ]);
 

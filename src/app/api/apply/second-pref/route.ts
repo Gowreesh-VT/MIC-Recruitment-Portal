@@ -5,11 +5,9 @@ import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug } from "@/models/Application";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug, getDeptSlugVariants } from "@/lib/constants";
 import { z } from "zod";
 import { validateOrigin } from "@/lib/csrf";
-
-
 
 const secondPrefSchema = z.object({
   secondPreference: z.enum([
@@ -72,6 +70,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (body && typeof body.secondPreference === "string") {
+      body.secondPreference = getCanonicalDeptSlug(body.secondPreference);
+    }
     const parseResult = secondPrefSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
@@ -113,7 +114,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify department exists and is active
-    const dept = await Department.findOne({ slug: secondPreference, isActive: true });
+    const dept = await Department.findOne({ slug: { $in: getDeptSlugVariants(secondPreference) }, isActive: true });
+
 
     if (!dept) {
       return NextResponse.json(

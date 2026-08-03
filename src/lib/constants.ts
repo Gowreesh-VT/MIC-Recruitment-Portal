@@ -35,14 +35,82 @@ export const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
  */
 export function getCanonicalDeptSlug(slug?: string | null): DeptSlug {
   const s = (slug || "").toLowerCase().trim();
-  if (s === "cybersecurity" || s === "cyber") return "cyber-security";
-  if (s === "social-media" || s === "media" || s === "content-and-media") return "content-media";
-  if (s === "cp" || s === "competitive-programming") return "competitive-coding";
-  if (s === "uiux" || s === "ui/ux") return "ui-ux";
-  if (s === "aiml" || s === "ai/ml") return "ai-ml";
-  if (s === "dev" || s === "web-dev") return "development";
-  if (s === "mgmt") return "management";
-  if (s === "ep") return "entrepreneurship";
+  if (
+    s === "cybersecurity" ||
+    s === "cyber" ||
+    s === "cyber-security" ||
+    s === "cyber security"
+  ) return "cyber-security";
+  if (
+    s === "social-media" ||
+    s === "social media" ||
+    s === "social_media" ||
+    s === "social" ||
+    s === "media" ||
+    s === "content-and-media" ||
+    s === "content & media" ||
+    s === "content media" ||
+    s === "content-media"
+  ) return "content-media";
+  if (
+    s === "cp" ||
+    s === "competitive-programming" ||
+    s === "competitive programming" ||
+    s === "competitive coding" ||
+    s === "competitive-coding"
+  ) return "competitive-coding";
+  if (
+    s === "uiux" ||
+    s === "ui/ux" ||
+    s === "ui-ux" ||
+    s === "ui ux"
+  ) return "ui-ux";
+  if (
+    s === "aiml" ||
+    s === "ai/ml" ||
+    s === "ai-ml" ||
+    s === "ai ml"
+  ) return "ai-ml";
+  if (
+    s === "dev" ||
+    s === "web-dev" ||
+    s === "web dev" ||
+    s === "development"
+  ) return "development";
+  if (s === "mgmt" || s === "management") return "management";
+  if (s === "ep" || s === "entrepreneurship") return "entrepreneurship";
+  if (s === "design") return "design";
   return s as DeptSlug;
 }
+
+/**
+ * Returns all possible slug variants for a given canonical department slug.
+ * Useful for DB queries to match both legacy and canonical department slugs.
+ */
+export function getDeptSlugVariants(slug?: string | null): string[] {
+  const canonical = getCanonicalDeptSlug(slug);
+  switch (canonical) {
+    case "content-media":
+      return ["content-media", "social-media", "media", "content-and-media", "social media", "content & media"];
+    case "cyber-security":
+      return ["cyber-security", "cybersecurity", "cyber", "cyber security"];
+    case "competitive-coding":
+      return ["competitive-coding", "competitive-programming", "cp", "competitive coding"];
+    case "ui-ux":
+      return ["ui-ux", "uiux", "ui/ux", "ui ux"];
+    case "ai-ml":
+      return ["ai-ml", "aiml", "ai/ml", "ai ml"];
+    case "development":
+      return ["development", "dev", "web-dev", "web dev"];
+    case "management":
+      return ["management", "mgmt"];
+    case "entrepreneurship":
+      return ["entrepreneurship", "ep"];
+    case "design":
+      return ["design"];
+    default:
+      return [canonical];
+  }
+}
+
 

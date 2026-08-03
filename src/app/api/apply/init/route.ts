@@ -6,7 +6,7 @@ import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug } from "@/models/Application";
 import { applyInitSchema } from "@/lib/validation";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug, getDeptSlugVariants } from "@/lib/constants";
 import { validateOrigin } from "@/lib/csrf";
 
 const CYCLE_ID = ACTIVE_CYCLE_ID;
@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (body && typeof body.firstPreference === "string") {
+      body.firstPreference = getCanonicalDeptSlug(body.firstPreference);
+    }
     const parseResult = applyInitSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
@@ -72,7 +75,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify department exists and is active
-    const dept1 = await Department.findOne({ slug: firstPreference, isActive: true });
+    const dept1 = await Department.findOne({ slug: { $in: getDeptSlugVariants(firstPreference) }, isActive: true });
+
 
     if (!dept1) {
       return NextResponse.json(
