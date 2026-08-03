@@ -35,7 +35,7 @@ export default function RecruitmentTimeline({
           }`}
           title="Stage 1 — Form Submitted"
         >
-          ✔
+          1
         </div>
 
         {/* Stage 2 Node */}
@@ -49,7 +49,7 @@ export default function RecruitmentTimeline({
           }`}
           title={`Stage 2 — Shortlisting (${isStage2Passed ? "Accepted" : isStage2Failed ? "Rejected" : "Pending"})`}
         >
-          {isStage2Passed ? "✔" : isStage2Failed ? "❌" : "⏳"}
+          2
         </div>
 
         {/* Stage 3 Node */}
@@ -59,7 +59,7 @@ export default function RecruitmentTimeline({
           }`}
           title={`Stage 3 — Interview (${stage3Unlocked ? "Unlocked" : "Locked"})`}
         >
-          {stage3Unlocked ? "🔓" : "🔒"}
+          3
         </div>
       </div>
 

@@ -53,16 +53,16 @@ export default function ApplicationProgressCard({
           {/* Stage Status Summary Text */}
           <div className="text-[9px] font-bold uppercase tracking-wider text-black w-full flex justify-center items-center py-0.5">
             {isStage2Failed ? (
-              <span className="text-[#DC2626] font-black flex items-center gap-1">
-                ❌ APPLICATION REJECTED
+              <span className="text-[#DC2626] font-black flex items-center justify-center">
+                APPLICATION REJECTED
               </span>
             ) : isStage2Passed ? (
-              <span className="text-[#52AE26] font-black flex items-center gap-1">
-                ✔ SHORTLISTED FOR INTERVIEW
+              <span className="text-[#52AE26] font-black flex items-center justify-center">
+                SHORTLISTED FOR INTERVIEW
               </span>
             ) : (
-              <span className="text-[#B87B21] font-black flex items-center gap-1">
-                ⏳ STAGE 2 — SHORTLISTING
+              <span className="text-[#B87B21] font-black flex items-center justify-center">
+                STAGE 2 — SHORTLISTING
               </span>
             )}
           </div>

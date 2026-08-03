@@ -41,13 +41,12 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center justify-center font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
             stage1Submitted
               ? "bg-[#52AE26] text-white"
               : "bg-[#E29A2B] text-black"
           }`}
         >
-          <span>{stage1Submitted ? "✔" : "✏"}</span>
           <span className="text-[7.5px] uppercase tracking-wider">
             {stage1Submitted ? "CLEARED" : "PENDING"}
           </span>
@@ -80,15 +79,11 @@ export default function StageRoadmap({
             STAGE 1
           </div>
           <div
-            className={`font-black text-[9px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1 ${
+            className={`font-black text-[9px] tracking-tight uppercase leading-tight flex items-center justify-center ${
               stage1Submitted ? "text-[#52AE26]" : "text-[#E29A2B]"
             }`}
           >
-            {stage1Submitted ? (
-              <><span>✔</span> FORM SUBMITTED</>
-            ) : (
-              <>✏ FORM PENDING</>
-            )}
+            {stage1Submitted ? "FORM SUBMITTED" : "FORM PENDING"}
           </div>
         </div>
       </div>
@@ -100,7 +95,7 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center justify-center font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
             isStage2Passed
               ? "bg-[#52AE26] text-white"
               : isStage2Failed
@@ -108,7 +103,6 @@ export default function StageRoadmap({
               : "bg-gray-400 text-black opacity-90"
           }`}
         >
-          <span>{isStage2Passed ? "✔" : isStage2Failed ? "❌" : "🔒"}</span>
           <span className="text-[7.5px] uppercase tracking-wider">
             {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : "LOCKED"}
           </span>
@@ -155,7 +149,7 @@ export default function StageRoadmap({
                 : "text-gray-600"
             }`}
           >
-            {isStage2Passed ? "✔ ACCEPTED" : isStage2Failed ? "❌ REJECTED" : "SHORTLISTING"}
+            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : "SHORTLISTING"}
           </div>
         </div>
       </div>
@@ -167,11 +161,10 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center justify-center font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
             stage3Unlocked ? "bg-[#1093EB] text-white" : "bg-gray-400 text-black opacity-80"
           }`}
         >
-          <span>{stage3Unlocked ? "🔓" : "🔒"}</span>
           <span className="text-[7.5px] uppercase tracking-wider">
             {stage3Unlocked ? "UNLOCKED" : "LOCKED"}
           </span>
@@ -206,7 +199,7 @@ export default function StageRoadmap({
               stage3Unlocked ? "text-[#1093EB]" : "text-gray-600"
             }`}
           >
-            {stage3Unlocked ? "🔓 INTERVIEW" : "INTERVIEW"}
+            INTERVIEW
           </div>
         </div>
       </div>
@@ -238,13 +231,12 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center gap-1 font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center justify-center font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
             stage1Submitted
               ? "bg-[#52AE26] text-white"
               : "bg-[#E29A2B] text-black"
           }`}
         >
-          <span>{stage1Submitted ? "✔" : "✏"}</span>
           <span className="text-[7px] uppercase tracking-wider">
             {stage1Submitted ? "CLEARED" : "PENDING"}
           </span>
@@ -277,15 +269,11 @@ export default function StageRoadmap({
             STAGE 1
           </div>
           <div
-            className={`font-black text-[8px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1 ${
+            className={`font-black text-[8px] tracking-tight uppercase leading-tight flex items-center justify-center ${
               stage1Submitted ? "text-[#52AE26]" : "text-[#E29A2B]"
             }`}
           >
-            {stage1Submitted ? (
-              <><span>✔</span> SUBMITTED</>
-            ) : (
-              <>✏ PENDING</>
-            )}
+            {stage1Submitted ? "SUBMITTED" : "PENDING"}
           </div>
         </div>
       </div>
@@ -297,7 +285,7 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center gap-1 font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center justify-center font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
             isStage2Passed
               ? "bg-[#52AE26] text-white"
               : isStage2Failed
@@ -305,7 +293,6 @@ export default function StageRoadmap({
               : "bg-gray-400 text-black opacity-90"
           }`}
         >
-          <span>{isStage2Passed ? "✔" : isStage2Failed ? "❌" : "🔒"}</span>
           <span className="text-[7px] uppercase tracking-wider">
             {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : "LOCKED"}
           </span>
@@ -352,7 +339,7 @@ export default function StageRoadmap({
                 : "text-gray-600"
             }`}
           >
-            {isStage2Passed ? "✔ ACCEPTED" : isStage2Failed ? "❌ REJECTED" : "SHORTLISTING"}
+            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : "SHORTLISTING"}
           </div>
         </div>
       </div>
@@ -364,11 +351,10 @@ export default function StageRoadmap({
       >
         {/* Flag Banner */}
         <div
-          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center gap-1 font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
+          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center justify-center font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
             stage3Unlocked ? "bg-[#1093EB] text-white" : "bg-gray-400 text-black opacity-80"
           }`}
         >
-          <span>{stage3Unlocked ? "🔓" : "🔒"}</span>
           <span className="text-[7px] uppercase tracking-wider">
             {stage3Unlocked ? "UNLOCKED" : "LOCKED"}
           </span>
@@ -403,7 +389,7 @@ export default function StageRoadmap({
               stage3Unlocked ? "text-[#1093EB]" : "text-gray-600"
             }`}
           >
-            {stage3Unlocked ? "🔓 INTERVIEW" : "INTERVIEW"}
+            INTERVIEW
           </div>
         </div>
       </div>
