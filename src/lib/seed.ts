@@ -8,11 +8,12 @@ import dotenv from "dotenv";
 import path from "path";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // We import directly so this script can run standalone
 async function run() {
   const uri = process.env.MONGO_URL || process.env.MONGODB_URI;
-  if (!uri) throw new Error("MONGO_URL is not set in .env.local");
+  if (!uri) throw new Error("MONGO_URL or MONGODB_URI is not set in .env or .env.local");
 
   await mongoose.connect(uri);
   console.log("✅ Connected to MongoDB");
@@ -533,9 +534,9 @@ async function run() {
             },
             {
               id: "techStack",
-              label: "What's your tech stack of choice right now? (HTML/CSS, JS, React, Node, Express, MongoDB, SQL/Postgres, Next.js, Tailwind, React Native, Flutter, Kotlin, Swift, MetaMask, Remix, …)",
+              label: "What's your tech stack of choice right now?",
               type: "text" as const,
-              placeholder: "e.g. React, Node.js, TailwindCSS",
+              placeholder: "e.g. React, Node.js, Next.js, TailwindCSS, Flutter, etc.",
               required: true,
               subDomain: "common",
               targetYears: ["all"],
@@ -555,31 +556,6 @@ async function run() {
               label: "Portfolio / Personal Website URL",
               type: "url" as const,
               placeholder: "https://yourportfolio.dev",
-              required: false,
-              subDomain: "common",
-              targetYears: ["all"],
-            },
-            {
-              id: "projectPdf",
-              label: "Task Project / Documentation URL (Google Drive, Notion, etc.)",
-              type: "url" as const,
-              placeholder: "https://drive.google.com/...",
-              required: true,
-              subDomain: "common",
-              targetYears: ["all"],
-            },
-            {
-              id: "taskGithubUrl",
-              label: "GitHub Repository URL for the task",
-              type: "url" as const,
-              required: true,
-              subDomain: "common",
-              targetYears: ["all"],
-            },
-            {
-              id: "taskDeployedUrl",
-              label: "Deployed Project Link (if applicable)",
-              type: "url" as const,
               required: false,
               subDomain: "common",
               targetYears: ["all"],
