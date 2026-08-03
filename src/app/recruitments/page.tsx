@@ -267,6 +267,7 @@ function MobileQuestsView({
   quests,
   appStatus,
   onQuestSelect,
+  onChangeDepartment,
   playSound,
   router,
   isLoggedIn,
@@ -276,6 +277,7 @@ function MobileQuestsView({
   quests: DepartmentData[];
   appStatus: ApplicationStatus | null;
   onQuestSelect: (q: DepartmentData, type: "tech" | "non-tech", slug: string) => void;
+  onChangeDepartment?: () => void;
   playSound: (t: "select" | "jump" | "open" | "close" | "die" | "point") => void;
   router: ReturnType<typeof useRouter>;
   isLoggedIn?: boolean;
@@ -380,7 +382,13 @@ function MobileQuestsView({
             isStage2Pending={isPending}
             hasSubmission={mobileHasSubmission}
             onEditForm={() => router.push(`/apply/${appliedSlug}/quest-1`)}
-            onChangeDepartment={() => onQuestSelect(appliedQuest, type, appliedSlug)}
+            onChangeDepartment={() => {
+              if (onChangeDepartment) {
+                onChangeDepartment();
+              } else {
+                onQuestSelect(appliedQuest, type, appliedSlug);
+              }
+            }}
           />
 
           <StageRoadmap
@@ -574,8 +582,6 @@ export default function RecruitmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
-  // Mobile view: "tech" | "non-tech" — read from ?view= query param
-  const mobileView = (searchParams.get("view") as "tech" | "non-tech" | null) ?? "tech";
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentData | null>(null);
   const [birdScore, setBirdScore] = useState(0);
   const [isDead, setIsDead] = useState(false);
@@ -687,6 +693,8 @@ export default function RecruitmentsPage() {
 
   // Application State
   const [appStatus, setAppStatus] = useState<ApplicationStatus | null>(null);
+  // Mobile view: "tech" | "non-tech" — read from ?view= query param
+  const mobileView = (searchParams.get("view") as "tech" | "non-tech" | null) ?? "tech";
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [isLoadingApp, setIsLoadingApp] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1211,6 +1219,7 @@ export default function RecruitmentsPage() {
           quests={mobileView === "tech" ? techQuests : nonTechQuests}
           appStatus={appStatus}
           onQuestSelect={handleOpenPopup}
+          onChangeDepartment={() => handleOpenChangeCategoryModal(mobileView)}
           playSound={playRetroSound}
           router={router}
           isLoggedIn={isLoggedIn}
@@ -1270,6 +1279,35 @@ export default function RecruitmentsPage() {
             </div>
           </div>
         )}
+        {/* Change Department Modal (Mobile) */}
+        {changeCategoryModalTarget && (() => {
+          const currentDeptSlug = changeCategoryModalTarget === "tech"
+            ? appStatus?.firstPreference || ""
+            : appStatus?.secondPreference || "";
+
+          const availableQuests = changeCategoryModalTarget === "tech" ? techQuests : nonTechQuests;
+
+          const deptOptions = availableQuests.map((q) => ({
+            slug: getDeptSlug(q),
+            name: q.title,
+            description: q.desc || q.subtitle,
+          }));
+
+          return (
+            <ChangeDepartmentModal
+              isOpen={true}
+              trackType={changeCategoryModalTarget}
+              currentDeptSlug={currentDeptSlug || ""}
+              availableDepartments={deptOptions}
+              onConfirm={handleSwitchDepartment}
+              onClose={() => {
+                playRetroSound("close");
+                setChangeCategoryModalTarget(null);
+              }}
+              loading={isSwitchingDepartment}
+            />
+          );
+        })()}
         {error && (
           <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
             <div className="bg-[#FFE4D6] border-4 border-black p-8 max-w-lg w-full relative flex flex-col items-center gap-6" style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}>

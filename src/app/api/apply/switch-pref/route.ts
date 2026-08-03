@@ -5,7 +5,7 @@ import Application from "@/models/Application";
 import Department from "@/models/Department";
 import RecruitmentCycle from "@/models/RecruitmentCycle";
 import type { DeptSlug } from "@/models/Application";
-import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP } from "@/lib/constants";
+import { ACTIVE_CYCLE_ID, DEPT_TYPE_MAP, getCanonicalDeptSlug } from "@/lib/constants";
 import { z } from "zod";
 import { validateOrigin } from "@/lib/csrf";
 
@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (body && typeof body.newDepartment === "string") {
+      body.newDepartment = getCanonicalDeptSlug(body.newDepartment);
+    }
     const parseResult = switchPrefSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(

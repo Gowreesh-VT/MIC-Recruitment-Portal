@@ -375,6 +375,7 @@ export default function StagePage({
   const [submitted, setSubmitted] = useState(false);
   const [deptName, setDeptName] = useState("");
   const [application, setApplication] = useState<ApplicationStatus | null>(null);
+  const currentCategory = DEPT_INFO[dept]?.type || "tech";
   const [applicantYear, setApplicantYear] = useState<string>("");
   // Turnstile — token verified server-side before each submission
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -632,7 +633,7 @@ export default function StagePage({
                 <h1 className="text-[10px] text-center font-bold text-[#A93710] leading-loose">EVALUATION IN PROGRESS</h1>
                 <p className="text-[8px] text-center text-black leading-loose font-bold">{lockError}</p>
                 <button
-                  onClick={() => { playRetroSound(); router.push("/recruitments"); }}
+                  onClick={() => { playRetroSound(); router.push(`/recruitments?view=${currentCategory}`); }}
                   className="mt-4 bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-2.5 px-6 text-[8px] font-bold tracking-widest transition-transform active:translate-y-1"
                   style={{ boxShadow: "3px 3px 0px 0px #000" }}
                 >
@@ -663,7 +664,7 @@ export default function StagePage({
                 <h1 className="text-[12px] text-center font-bold text-[#A93710] leading-loose">STAGE {stageNum} IS NOT CONFIGURED</h1>
                 <p className="text-[9px] text-center text-black leading-loose font-bold">This stage does not exist or has not been set up yet.</p>
                 <button
-                  onClick={() => { playRetroSound(); router.push("/recruitments"); }}
+                  onClick={() => { playRetroSound(); router.push(`/recruitments?view=${currentCategory}`); }}
                   className="mt-4 bg-[#FFE4D6] hover:bg-[#FFDED6] text-black border-[3px] border-black rounded-[20px] py-2.5 px-6 text-[10px] font-bold tracking-widest transition-transform active:translate-y-1"
                   style={{ boxShadow: "3px 3px 0px 0px #000" }}
                 >
@@ -751,7 +752,7 @@ export default function StagePage({
                         type="button"
                         onClick={() => {
                           playRetroSound();
-                          router.push("/");
+                          router.push(`/recruitments?view=${currentCategory}`);
                         }}
                         className="flex-1 bg-[#E29A2B] hover:bg-[#F0AD3D] text-black border-[3px] border-black py-3 px-4 text-[9px] md:text-[10px] font-bold tracking-wider uppercase transition-transform active:translate-y-0.5 shadow-[3px_3px_0px_0px_#000] cursor-pointer"
                       >
@@ -763,7 +764,7 @@ export default function StagePage({
                       type="button"
                       onClick={() => {
                         playRetroSound();
-                        router.push("/recruitments");
+                        router.push(`/recruitments?view=${currentCategory}`);
                       }}
                       className="w-full bg-[#52AE26] hover:bg-[#60C22B] text-white border-[3px] border-black py-3 px-4 text-[10px] font-bold tracking-wider uppercase transition-transform active:translate-y-0.5 shadow-[3px_3px_0px_0px_#000] cursor-pointer"
                     >
@@ -807,7 +808,7 @@ export default function StagePage({
               type="button"
               onClick={() => {
                 playRetroSound();
-                router.push("/recruitments");
+                router.push(`/recruitments?view=${currentCategory}`);
               }}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-30 cursor-pointer hover:scale-110 active:scale-95 transition-transform duration-100 flex items-center justify-center select-none"
               title="Close"
