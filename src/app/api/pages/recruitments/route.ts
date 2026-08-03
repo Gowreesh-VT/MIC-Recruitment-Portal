@@ -10,7 +10,7 @@ export async function GET() {
   try {
     await dbConnect();
     const [departments, cycle] = await Promise.all([
-      Department.find({ isActive: true }).lean(),
+      Department.find({ isActive: true }).sort({ name: 1 }).lean(),
       RecruitmentCycle.findOne({ cycleId: ACTIVE_CYCLE_ID }).lean(),
     ]);
 

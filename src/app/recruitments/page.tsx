@@ -300,6 +300,10 @@ function MobileQuestsView({
       appliedStatus !== "rejected" &&
       appliedStatus !== "failed";
 
+    const mobileHasSubmission = (isFirstPref
+      ? (appStatus?.firstPrefProgress.stages || [])
+      : (appStatus?.secondPrefProgress.stages || [])
+    ).some((s: { submittedAt?: Date | string }) => !!s.submittedAt);
     return (
       <MobileBackground>
         {/* Top pipe */}
@@ -374,12 +378,13 @@ function MobileQuestsView({
             deptSlug={appliedSlug}
             statusText={appliedStatus}
             isStage2Pending={isPending}
+            hasSubmission={mobileHasSubmission}
             onEditForm={() => router.push(`/apply/${appliedSlug}/quest-1`)}
             onChangeDepartment={() => onQuestSelect(appliedQuest, type, appliedSlug)}
           />
 
           <StageRoadmap
-            stage1Submitted={true}
+            stage1Submitted={mobileHasSubmission}
             stage2Status={appliedStatus as "pending" | "accepted" | "rejected" | "passed" | "failed"}
             stage3Unlocked={appliedStatus === "passed" || appliedStatus === "accepted"}
             isVertical={true}
@@ -750,7 +755,13 @@ export default function RecruitmentsPage() {
       if (res.ok && data.success) {
         playRetroSound("jump");
         setChangeCategoryModalTarget(null);
-        await fetchStatus();
+        // Redirect directly to the new department's form so the user is
+        // forced to complete it — status stays "active" until they submit.
+        if (data.redirectTo) {
+          router.push(data.redirectTo);
+        } else {
+          router.push(`/apply/${newDeptSlug}/quest-1`);
+        }
       } else {
         setError(data.error || "Failed to switch department.");
       }
@@ -1655,6 +1666,10 @@ export default function RecruitmentsPage() {
                 selectedTechProgress.status !== "rejected" &&
                 selectedTechProgress.status !== "failed";
 
+              const techHasSubmission = (selectedTechProgress.stages || []).some(
+                (s: { submittedAt?: Date | string }) => !!s.submittedAt
+              );
+
               return (
                 <>
                   {/* Active Department Card */}
@@ -1664,6 +1679,7 @@ export default function RecruitmentsPage() {
                       deptSlug={selectedTechSlug!}
                       statusText={selectedTechProgress.status}
                       isStage2Pending={isPending}
+                      hasSubmission={techHasSubmission}
                       onEditForm={() => router.push(`/apply/${selectedTechSlug}/quest-1`)}
                       onChangeDepartment={() => handleOpenChangeCategoryModal("tech")}
                     />
@@ -1672,7 +1688,7 @@ export default function RecruitmentsPage() {
                   {/* Recruitment Stages Roadmap */}
                   <div className="absolute" style={{ left: "720px", top: "211px", zIndex: 20 }}>
                     <StageRoadmap
-                      stage1Submitted={true}
+                      stage1Submitted={techHasSubmission}
                       stage2Status={selectedTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
                       stage3Unlocked={selectedTechProgress.status === "passed" || selectedTechProgress.status === "accepted"}
                     />
@@ -1683,12 +1699,16 @@ export default function RecruitmentsPage() {
 
             return techQuests.map((q, idx) => {
               const leftPositions = [350, 830, 1319, 1809, 2300];
+              // Fallback: if more quests than positions, space dynamically from last defined position
+              const left = idx < leftPositions.length
+                ? leftPositions[idx]
+                : (leftPositions[leftPositions.length - 1] ?? 350) + (idx - leftPositions.length + 1) * 490;
               const slug = getDeptSlug(q);
               return (
                 <div
                   key={`tech-card-${idx}`}
                   className="absolute"
-                  style={{ left: `${leftPositions[idx]}px`, top: "211px", zIndex: 20 }}
+                  style={{ left: `${left}px`, top: "211px", zIndex: 20 }}
                 >
                   <QuestCard
                     title={q.title}
@@ -1774,6 +1794,10 @@ export default function RecruitmentsPage() {
                 selectedNonTechProgress.status !== "rejected" &&
                 selectedNonTechProgress.status !== "failed";
 
+              const nonTechHasSubmission = (selectedNonTechProgress.stages || []).some(
+                (s: { submittedAt?: Date | string }) => !!s.submittedAt
+              );
+
               return (
                 <>
                   {/* Active Department Card */}
@@ -1783,6 +1807,7 @@ export default function RecruitmentsPage() {
                       deptSlug={selectedNonTechSlug!}
                       statusText={selectedNonTechProgress.status}
                       isStage2Pending={isPending}
+                      hasSubmission={nonTechHasSubmission}
                       onEditForm={() => router.push(`/apply/${selectedNonTechSlug}/quest-1`)}
                       onChangeDepartment={() => handleOpenChangeCategoryModal("non-tech")}
                     />
@@ -1791,7 +1816,7 @@ export default function RecruitmentsPage() {
                   {/* Recruitment Stages Roadmap */}
                   <div className="absolute" style={{ left: "820px", top: "600px", zIndex: 20 }}>
                     <StageRoadmap
-                      stage1Submitted={true}
+                      stage1Submitted={nonTechHasSubmission}
                       stage2Status={selectedNonTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
                       stage3Unlocked={selectedNonTechProgress.status === "passed" || selectedNonTechProgress.status === "accepted"}
                     />
@@ -1802,12 +1827,16 @@ export default function RecruitmentsPage() {
 
             return nonTechQuests.map((q, idx) => {
               const leftPositions = [450, 993, 1481, 1970];
+              // Fallback: if more quests than positions, space dynamically from last defined position
+              const left = idx < leftPositions.length
+                ? leftPositions[idx]
+                : (leftPositions[leftPositions.length - 1] ?? 450) + (idx - leftPositions.length + 1) * 490;
               const slug = getDeptSlug(q);
               return (
                 <div
                   key={`nontech-card-${idx}`}
                   className="absolute"
-                  style={{ left: `${leftPositions[idx]}px`, top: "621px", zIndex: 20 }}
+                  style={{ left: `${left}px`, top: "621px", zIndex: 20 }}
                 >
                   <QuestCard
                     title={q.title}

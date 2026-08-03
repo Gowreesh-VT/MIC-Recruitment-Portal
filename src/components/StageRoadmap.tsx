@@ -40,19 +40,37 @@ export default function StageRoadmap({
         style={{ left: "107px", top: "0px" }}
       >
         {/* Flag Banner */}
-        <div className="bg-[#52AE26] border-2 border-black rounded-[4px] px-2 py-1 flex items-center gap-1 text-white font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative">
-          <span>✔</span>
-          <span className="text-[7.5px] uppercase tracking-wider">CLEARED</span>
+        <div
+          className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center gap-1 font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
+            stage1Submitted
+              ? "bg-[#52AE26] text-white"
+              : "bg-[#E29A2B] text-black"
+          }`}
+        >
+          <span>{stage1Submitted ? "✔" : "✏"}</span>
+          <span className="text-[7.5px] uppercase tracking-wider">
+            {stage1Submitted ? "CLEARED" : "PENDING"}
+          </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-3 bg-black" />
         </div>
 
         {/* Node Platform */}
         <div className="flex flex-col items-center mt-1">
-          <div className="w-12 h-12 bg-white border-4 border-[#52AE26] rounded-full flex items-center justify-center text-[#52AE26] font-bold text-[18px] shadow-[3px_3px_0px_#000] relative z-10 transition-transform group-hover:scale-105">
+          <div
+            className={`w-12 h-12 bg-white border-4 rounded-full flex items-center justify-center font-bold text-[18px] shadow-[3px_3px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
+              stage1Submitted
+                ? "border-[#52AE26] text-[#52AE26]"
+                : "border-[#E29A2B] text-[#E29A2B]"
+            }`}
+          >
             1
           </div>
-          <div className="w-16 h-3 bg-[#52AE26] border-2 border-black rounded-t-full -mt-2.5 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[2px_2px_0px_#000]">
-            <div className="w-full h-1 bg-[#72F418]" />
+          <div
+            className={`w-16 h-3 border-2 border-black rounded-t-full -mt-2.5 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[2px_2px_0px_#000] ${
+              stage1Submitted ? "bg-[#52AE26]" : "bg-[#E29A2B]"
+            }`}
+          >
+            <div className={`w-full h-1 ${stage1Submitted ? "bg-[#72F418]" : "bg-[#F0AD3D]"}`} />
           </div>
         </div>
 
@@ -61,8 +79,16 @@ export default function StageRoadmap({
           <div className="text-[#B87B21] font-bold text-[8.5px] tracking-wider uppercase mb-0.5">
             STAGE 1
           </div>
-          <div className="text-[#52AE26] font-black text-[9px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1">
-            <span>✔</span> FORM SUBMITTED
+          <div
+            className={`font-black text-[9px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1 ${
+              stage1Submitted ? "text-[#52AE26]" : "text-[#E29A2B]"
+            }`}
+          >
+            {stage1Submitted ? (
+              <><span>✔</span> FORM SUBMITTED</>
+            ) : (
+              <>✏ FORM PENDING</>
+            )}
           </div>
         </div>
       </div>
@@ -211,19 +237,37 @@ export default function StageRoadmap({
         style={{ left: "15px", top: "0px" }}
       >
         {/* Flag Banner */}
-        <div className="bg-[#52AE26] border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center gap-1 text-white font-bold text-[9px] shadow-[2px_2px_0px_#000] relative">
-          <span>✔</span>
-          <span className="text-[7px] uppercase tracking-wider">CLEARED</span>
+        <div
+          className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center gap-1 font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
+            stage1Submitted
+              ? "bg-[#52AE26] text-white"
+              : "bg-[#E29A2B] text-black"
+          }`}
+        >
+          <span>{stage1Submitted ? "✔" : "✏"}</span>
+          <span className="text-[7px] uppercase tracking-wider">
+            {stage1Submitted ? "CLEARED" : "PENDING"}
+          </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-2 bg-black" />
         </div>
 
         {/* Node Platform */}
         <div className="flex flex-col items-center mt-0.5">
-          <div className="w-10 h-10 bg-white border-3 border-[#52AE26] rounded-full flex items-center justify-center text-[#52AE26] font-bold text-[15px] shadow-[2px_2px_0px_#000] relative z-10 transition-transform group-hover:scale-105">
+          <div
+            className={`w-10 h-10 bg-white border-3 rounded-full flex items-center justify-center font-bold text-[15px] shadow-[2px_2px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
+              stage1Submitted
+                ? "border-[#52AE26] text-[#52AE26]"
+                : "border-[#E29A2B] text-[#E29A2B]"
+            }`}
+          >
             1
           </div>
-          <div className="w-13 h-2 bg-[#52AE26] border-2 border-black rounded-t-full -mt-2 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[1.5px_1.5px_0px_#000]">
-            <div className="w-full h-1 bg-[#72F418]" />
+          <div
+            className={`w-13 h-2 border-2 border-black rounded-t-full -mt-2 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[1.5px_1.5px_0px_#000] ${
+              stage1Submitted ? "bg-[#52AE26]" : "bg-[#E29A2B]"
+            }`}
+          >
+            <div className={`w-full h-1 ${stage1Submitted ? "bg-[#72F418]" : "bg-[#F0AD3D]"}`} />
           </div>
         </div>
 
@@ -232,8 +276,16 @@ export default function StageRoadmap({
           <div className="text-[#B87B21] font-bold text-[7.5px] tracking-wider uppercase mb-0.5">
             STAGE 1
           </div>
-          <div className="text-[#52AE26] font-black text-[8px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1">
-            <span>✔</span> SUBMITTED
+          <div
+            className={`font-black text-[8px] tracking-tight uppercase leading-tight flex items-center justify-center gap-1 ${
+              stage1Submitted ? "text-[#52AE26]" : "text-[#E29A2B]"
+            }`}
+          >
+            {stage1Submitted ? (
+              <><span>✔</span> SUBMITTED</>
+            ) : (
+              <>✏ PENDING</>
+            )}
           </div>
         </div>
       </div>

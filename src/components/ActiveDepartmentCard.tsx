@@ -5,6 +5,7 @@ export interface ActiveDepartmentCardProps {
   deptSlug: string;
   statusText?: string;
   isStage2Pending: boolean;
+  hasSubmission?: boolean; // false = user switched dept but hasn't submitted the new form yet
   onEditForm: () => void;
   onChangeDepartment: () => void;
 }
@@ -13,6 +14,7 @@ export default function ActiveDepartmentCard({
   deptTitle,
   statusText = "ACTIVE",
   isStage2Pending,
+  hasSubmission = true,
   onEditForm,
   onChangeDepartment,
 }: ActiveDepartmentCardProps) {
@@ -48,14 +50,16 @@ export default function ActiveDepartmentCard({
               <span className="text-gray-600">STATUS: </span>
               <span
                 className={
-                  statusText.toUpperCase() === "REJECTED"
+                  !hasSubmission
+                    ? "text-[#E29A2B]"
+                    : statusText.toUpperCase() === "REJECTED"
                     ? "text-[#DC2626]"
                     : statusText.toUpperCase() === "ACCEPTED" || statusText.toUpperCase() === "PASSED"
                     ? "text-[#52AE26]"
                     : "text-[#52AE26]"
                 }
               >
-                {statusText.toUpperCase()}
+                {!hasSubmission ? "FORM INCOMPLETE" : statusText.toUpperCase()}
               </span>
             </div>
           </div>
@@ -71,12 +75,14 @@ export default function ActiveDepartmentCard({
               disabled={!isStage2Pending}
               className={`flex-1 py-2 px-2 border-2 border-black rounded-[4px] text-[9px] font-bold uppercase tracking-wider transition-transform active:translate-y-0.5 shadow-[2px_2px_0px_#000] cursor-pointer ${
                 isStage2Pending
-                  ? "bg-[#1093EB] hover:bg-[#16B6F4] text-white"
+                  ? hasSubmission
+                    ? "bg-[#1093EB] hover:bg-[#16B6F4] text-white"
+                    : "bg-[#E29A2B] hover:bg-[#F0AD3D] text-black animate-pulse"
                   : "bg-gray-300 text-gray-600 cursor-not-allowed opacity-60"
               }`}
-              title={isStage2Pending ? "Edit application form" : "Editing is disabled for this status"}
+              title={isStage2Pending ? (hasSubmission ? "Edit application form" : "Complete your application form") : "Editing is disabled for this status"}
             >
-              EDIT FORM
+              {hasSubmission ? "EDIT FORM" : "COMPLETE FORM"}
             </button>
 
             <button
@@ -98,3 +104,4 @@ export default function ActiveDepartmentCard({
     </div>
   );
 }
+
