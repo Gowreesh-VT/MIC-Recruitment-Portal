@@ -9,6 +9,7 @@ export const authConfig = {
       clientId: process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,
       clientSecret:
         process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
     }),
   ],
   callbacks: {
@@ -53,6 +54,7 @@ export const authConfig = {
   // Generate with: openssl rand -base64 32
   secret: process.env.AUTH_SECRET,
   pages: {
+    signIn: "/login",
     error: "/auth/error", // Custom error page for blocked sign-ins
   },
 } satisfies NextAuthConfig;

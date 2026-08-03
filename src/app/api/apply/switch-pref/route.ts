@@ -158,12 +158,21 @@ export async function POST(req: NextRequest) {
         savedResponses[oldDept] = application.firstPrefProgress.stages;
       }
 
-      const restoredStages = (savedResponses[newDepartment] || []) as typeof application.firstPrefProgress.stages;
+      // Restore previously saved stages for the new dept, but only if they
+      // have a pending result — i.e. not yet reviewed by an admin.
+      // If stages were reviewed (passed/failed), start fresh so the user
+      // must re-submit the form for the new department.
+      const rawRestoredStages = (savedResponses[newDepartment] || []) as typeof application.firstPrefProgress.stages;
+      const restoredStages = rawRestoredStages.filter(
+        (s) => !s.result || s.result === "pending"
+      );
 
       application.firstPreference = newDepartment as DeptSlug;
       application.firstPrefType = newDeptType;
       application.firstPrefProgress = {
-        currentStage: restoredStages.length > 0 ? 1 : 1,
+        currentStage: 1,
+        // Use "active" so the form page is accessible immediately.
+        // Status moves to "pending" once the user submits stage 1.
         status: "active",
         stages: restoredStages,
       };
@@ -173,12 +182,15 @@ export async function POST(req: NextRequest) {
         savedResponses[oldDept] = application.secondPrefProgress.stages;
       }
 
-      const restoredStages = (savedResponses[newDepartment] || []) as typeof application.secondPrefProgress.stages;
+      const rawRestoredStages = (savedResponses[newDepartment] || []) as typeof application.secondPrefProgress.stages;
+      const restoredStages = rawRestoredStages.filter(
+        (s) => !s.result || s.result === "pending"
+      );
 
       application.secondPreference = newDepartment as DeptSlug;
       application.secondPrefType = newDeptType;
       application.secondPrefProgress = {
-        currentStage: restoredStages.length > 0 ? 1 : 1,
+        currentStage: 1,
         status: "active",
         stages: restoredStages,
       };
@@ -193,6 +205,8 @@ export async function POST(req: NextRequest) {
       message: `Switched ${prefSlot} preference to ${newDepartment}.`,
       newDepartment,
       prefSlot,
+      // Tell the frontend to redirect to the new department's form immediately
+      redirectTo: `/apply/${newDepartment}/quest-1`,
     });
   } catch (err) {
     console.error("Error switching preference:", err);
