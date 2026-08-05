@@ -8,6 +8,7 @@ import TurnstileWidget from "@/components/TurnstileWidget";
 import posthog from "posthog-js";
 import RetroLoader from "@/components/RetroLoader";
 import { playRetroSound } from "@/lib/audio";
+import RetroToast from "@/components/RetroToast";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -95,7 +96,6 @@ function InitPageContent() {
   const [showLoader, setShowLoader] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isErrorExpanded, setIsErrorExpanded] = useState(true);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [captchaError, setCaptchaError] = useState(false);
 
@@ -259,31 +259,7 @@ function InitPageContent() {
               <form onSubmit={handleSubmit} className="mt-4">
                 <input type="text" name="_trap" className="hidden" tabIndex={-1} aria-hidden="true" />
 
-                {error && (
-                  <div className="mb-6 border-[3px] border-red-600 bg-red-50 shadow-[4px_4px_0px_#000] overflow-hidden rounded-[8px]">
-                    <button
-                      type="button"
-                      onClick={() => setIsErrorExpanded((prev) => !prev)}
-                      className="w-full bg-[#DC2626] text-white p-3 flex items-center justify-between font-bold text-xs uppercase tracking-wider cursor-pointer hover:bg-red-700 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 shrink-0 animate-bounce" />
-                        <span>Validation Error — Attention Required</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[9px] bg-red-900/70 px-2 py-1 rounded border border-white/40">
-                        <span>{isErrorExpanded ? "COLLAPSE" : "EXPAND"}</span>
-                        {isErrorExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                      </div>
-                    </button>
-
-                    {isErrorExpanded && (
-                      <div className="p-4 bg-red-50 text-red-900 text-xs font-bold font-sans uppercase border-t-2 border-red-600 leading-relaxed flex items-start gap-2.5">
-                        <span className="text-red-600 text-base leading-none">►</span>
-                        <div className="flex-1">{error}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <RetroToast message={error} type="error" onClose={() => setError("")} />
 
                 <div className="space-y-6">
                   {/* Full Name */}
