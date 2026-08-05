@@ -14,7 +14,7 @@ export function validateResponses(
   const activeFields = formFields.filter((field) => {
     // 1. Sub-domain check
     if (field.subDomain && field.subDomain !== "common" && field.subDomain !== "all") {
-      if (selectedTrack && field.subDomain !== selectedTrack) {
+      if (!selectedTrack || field.subDomain !== selectedTrack) {
         return false;
       }
     }

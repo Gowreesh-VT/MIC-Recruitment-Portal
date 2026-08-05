@@ -416,7 +416,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     if (_trap) return NextResponse.json({ success: false, error: "Bad request." }, { status: 400 });
 
     // Validate responses and strip unknown fields
-    const validationResult = validateResponses(stageConfig.formFields, responses ?? {});
+    const validationResult = validateResponses(stageConfig.formFields, responses ?? {}, { year: application.year });
     if (validationResult.error) {
       return NextResponse.json({ success: false, error: validationResult.error }, { status: 400 });
     }
