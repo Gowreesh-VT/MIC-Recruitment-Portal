@@ -90,7 +90,7 @@ export function validateResponses(
       // GitHub: must be a valid URL pointing to github.com or *.github.io
       const githubSchema = strSchema
         .max(2000, `"${field.label}" URL is too long.`)
-        .url(`"${field.label}" must be a valid URL (e.g., https://github.com/username/repo).`)
+        .url(`"${field.label}" must be a valid URL (e.g., https://github.com/username).`)
         .refine(val => {
           try {
             const url = new URL(val);
@@ -101,11 +101,11 @@ export function validateResponses(
             );
             if (!isGithub) return false;
             const parts = url.pathname.split("/").filter(Boolean);
-            return parts.length >= 2;
+            return parts.length >= 1;
           } catch {
             return false;
           }
-        }, `"${field.label}" must be a valid GitHub repository URL (e.g., https://github.com/username/repo).`);
+        }, `"${field.label}" must be a valid GitHub URL (e.g., https://github.com/username).`);
 
       const githubArraySchema = z.array(githubSchema);
       fieldSchema = field.required
