@@ -590,6 +590,50 @@ const STATIC_PIPES: PipeData[] = [
   { left: 2375, top: 602, height: 301, isTop: false },
 ];
 
+function getEffectivePipeDimensions(
+  pipe: PipeData,
+  appStatus: ApplicationStatus | null
+): { effectiveTop: number; effectiveHeight: number } {
+  let effectiveHeight = pipe.height;
+  let effectiveTop = pipe.top;
+
+  const hasTechActive = !!(
+    (appStatus?.firstPrefType === "tech" && appStatus?.firstPreference) ||
+    (appStatus?.secondPrefType === "tech" && appStatus?.secondPreference)
+  );
+  const hasNonTechActive = !!(
+    (appStatus?.firstPrefType === "non-tech" && appStatus?.firstPreference) ||
+    (appStatus?.secondPrefType === "non-tech" && appStatus?.secondPreference)
+  );
+
+  // Top pipe above Active Department card (left === 169)
+  if (pipe.left === 169 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+    effectiveHeight = 220;
+  }
+  // Adjust top pipes above active roadmap areas so they don't hit the bird or overlap stage nodes
+  if (pipe.left === 746 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+    effectiveHeight = 195;
+  }
+  if (pipe.left === 1234 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+    effectiveHeight = 245;
+  }
+  if (pipe.left === 1723 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
+    effectiveHeight = 265;
+  }
+
+  // Adjust bottom pipes below non-tech active roadmap so they stay low on ground platform
+  if (pipe.left === 909 && !pipe.isTop && hasNonTechActive) {
+    effectiveTop = 795;
+    effectiveHeight = 130;
+  }
+  if (pipe.left === 1396 && !pipe.isTop && hasNonTechActive) {
+    effectiveTop = 795;
+    effectiveHeight = 130;
+  }
+
+  return { effectiveTop, effectiveHeight };
+}
+
 export default function RecruitmentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -618,6 +662,7 @@ export default function RecruitmentsPage() {
   const canvasWidthRef = useRef(2865);
   const targetScrollXRef = useRef(0);
   const isKeyScrollingRef = useRef(false);
+  const appStatusRef = useRef<ApplicationStatus | null>(null);
 
   // Instructions Popup State
   const [showInstructions, setShowInstructions] = useState(false);
@@ -855,6 +900,7 @@ export default function RecruitmentsPage() {
         const configData = await configRes.json();
 
         setAppStatus(statusData.application);
+        appStatusRef.current = statusData.application;
         setUser(statusData.user);
         setTechQuests(configData.techQuests || []);
         setNonTechQuests(configData.nonTechQuests || []);
@@ -984,8 +1030,9 @@ export default function RecruitmentsPage() {
             const bBottom = birdBottom - paddingY;
 
             for (const pipe of currentPipesRef.current) {
+              const { effectiveTop, effectiveHeight } = getEffectivePipeDimensions(pipe, appStatusRef.current);
               if (bRight > pipe.left && bLeft < (pipe.left + 52)) {
-                if (bBottom > pipe.top && bTop < (pipe.top + pipe.height)) {
+                if (bBottom > effectiveTop && bTop < (effectiveTop + effectiveHeight)) {
                   p.isDead = true;
                   p.velocityY = 0; // stop upward/downward velocity
                   setIsDead(true);
@@ -1570,38 +1617,7 @@ export default function RecruitmentsPage() {
 
           {/* Green Mario Pipes (Dynamic & Generative) */}
           {dynamicPipes.map((pipe, idx) => {
-            let effectiveHeight = pipe.height;
-            let effectiveTop = pipe.top;
-
-            const hasTechActive = !!(
-              (appStatus?.firstPrefType === "tech" && appStatus?.firstPreference) ||
-              (appStatus?.secondPrefType === "tech" && appStatus?.secondPreference)
-            );
-            const hasNonTechActive = !!(
-              (appStatus?.firstPrefType === "non-tech" && appStatus?.firstPreference) ||
-              (appStatus?.secondPrefType === "non-tech" && appStatus?.secondPreference)
-            );
-
-            // Adjust top pipes above active roadmap areas so they extend far down into the sky without overlapping stage nodes
-            if (pipe.left === 746 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
-              effectiveHeight = 195;
-            }
-            if (pipe.left === 1234 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
-              effectiveHeight = 245;
-            }
-            if (pipe.left === 1723 && pipe.isTop && (hasTechActive || hasNonTechActive)) {
-              effectiveHeight = 265;
-            }
-
-            // Adjust bottom pipes below non-tech active roadmap so they stay low on ground platform
-            if (pipe.left === 909 && !pipe.isTop && hasNonTechActive) {
-              effectiveTop = 795;
-              effectiveHeight = 130;
-            }
-            if (pipe.left === 1396 && !pipe.isTop && hasNonTechActive) {
-              effectiveTop = 795;
-              effectiveHeight = 130;
-            }
+            const { effectiveTop, effectiveHeight } = getEffectivePipeDimensions(pipe, appStatus);
 
             return (
               <RetroPipe
