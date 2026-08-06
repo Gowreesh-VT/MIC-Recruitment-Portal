@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Leaderboard from "@/models/Leaderboard";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { auth } from "@/auth";
 
 export async function GET(request: Request) {
   try {
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
     const totalPages = Math.ceil(totalCount / limit) || 1;
 
     // Fetch entries for current page
+    // Tie-break logic: Sort by score DESC, then createdAt ASC (first to achieve score wins ties)
     const entries = await Leaderboard.find(filter, "anonymousName score createdAt")
       .sort({ score: -1, createdAt: 1 })
       .skip(skip)
@@ -59,7 +61,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { anonymousName, realName, score } = body;
+    const { anonymousName, score } = body;
 
     // Validate score requirement (> 20)
     const numericScore = Math.floor(Number(score));
@@ -84,6 +86,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Automatically retrieve real name from user session if authenticated
+    let userRealName: string | undefined;
+    try {
+      const session = await auth();
+      if (session?.user?.name || session?.user?.email) {
+        userRealName = session.user.name || session.user.email || undefined;
+      }
+    } catch (authError) {
+      // Session lookup fallback
+    }
+
     // Validate and sanitize anonymous identity
     let cleanName = typeof anonymousName === "string" ? anonymousName.trim() : "";
     if (!cleanName || !cleanName.startsWith("Anonymous ")) {
@@ -91,24 +104,37 @@ export async function POST(request: Request) {
     }
     cleanName = escapeHtml(cleanName.slice(0, 50));
 
-    // Sanitize real name (saved privately in DB, never served in public GET API)
-    const cleanRealName =
-      typeof realName === "string" && realName.trim()
-        ? escapeHtml(realName.trim().slice(0, 100))
-        : undefined;
+    const cleanRealName = userRealName ? escapeHtml(userRealName.slice(0, 100)) : undefined;
 
     await dbConnect();
 
-    // Create entry in MongoDB
-    const newEntry = await Leaderboard.create({
-      anonymousName: cleanName,
-      realName: cleanRealName,
-      score: numericScore,
-    });
+    // Upsert logic: Update existing user's entry if higher score, otherwise create new row
+    let entryDoc = await Leaderboard.findOne({ anonymousName: cleanName });
 
-    // Calculate player's current rank among all qualifying entries
+    if (entryDoc) {
+      // Update if new score is higher than saved personal best
+      if (numericScore > entryDoc.score) {
+        entryDoc.score = numericScore;
+        if (cleanRealName && !entryDoc.realName) {
+          entryDoc.realName = cleanRealName;
+        }
+        await entryDoc.save();
+      }
+    } else {
+      // Create new leaderboard row
+      entryDoc = await Leaderboard.create({
+        anonymousName: cleanName,
+        realName: cleanRealName,
+        score: numericScore,
+      });
+    }
+
+    // Calculate rank with tie-breaking logic (higher score OR same score with earlier createdAt timestamp)
     const higherScoresCount = await Leaderboard.countDocuments({
-      score: { $gt: numericScore },
+      $or: [
+        { score: { $gt: entryDoc.score } },
+        { score: entryDoc.score, createdAt: { $lt: entryDoc.createdAt } },
+      ],
     });
     const rank = higherScoresCount + 1;
 
@@ -116,10 +142,10 @@ export async function POST(request: Request) {
       success: true,
       rank,
       entry: {
-        id: newEntry._id.toString(),
+        id: entryDoc._id.toString(),
         anonymousName: cleanName,
-        score: numericScore,
-        createdAt: newEntry.createdAt,
+        score: entryDoc.score,
+        createdAt: entryDoc.createdAt,
       },
     });
   } catch (error: any) {

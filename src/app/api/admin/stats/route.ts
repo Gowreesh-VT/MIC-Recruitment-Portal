@@ -85,6 +85,74 @@ export async function GET() {
         },
       },
     ]),
+    Application.aggregate([
+      { $match: { cycleId: ACTIVE_CYCLE_ID } },
+      {
+        $facet: {
+          byFirst: [
+            {
+              $group: {
+                _id: "$firstPreference",
+                total: { $sum: 1 },
+                stage1Completed: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $filter: {
+                                input: { $ifNull: ["$firstPrefProgress.stages", []] },
+                                as: "s",
+                                cond: { $eq: ["$$s.stage", 1] },
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          bySecond: [
+            { $match: { secondPreference: { $exists: true, $ne: null } } },
+            {
+              $group: {
+                _id: "$secondPreference",
+                total: { $sum: 1 },
+                stage1Completed: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $filter: {
+                                input: { $ifNull: ["$secondPrefProgress.stages", []] },
+                                as: "s",
+                                cond: { $eq: ["$$s.stage", 1] },
+                              },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]),
   ]);
 
   // Extract fulfilled values with safe fallbacks so a single failed aggregation
@@ -104,6 +172,7 @@ export async function GET() {
   const byStage          = get<unknown[]>(7, []);
   const departmentsList  = get<unknown[]>(8, []);
   const acceptedByDept   = get<unknown[]>(9, []);
+  const stage1ByDept     = get<{ byFirst: unknown[]; bySecond: unknown[] }[]>(10, [{ byFirst: [], bySecond: [] }]);
 
 
   return NextResponse.json({
@@ -120,6 +189,7 @@ export async function GET() {
       byStage,
       departmentsList,
       acceptedByDept,
+      stage1ByDept: stage1ByDept[0],
     },
   });
 }
