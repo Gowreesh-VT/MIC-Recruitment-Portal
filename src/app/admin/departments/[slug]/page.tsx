@@ -20,6 +20,8 @@ const DEPTS = [
   { slug: "management", name: "Management", type: "non-tech" },
   { slug: "entrepreneurship", name: "Entrepreneurship", type: "non-tech" },
   { slug: "content-media", name: "Content & Media", type: "non-tech" },
+  { slug: "iot", name: "IoT", type: "tech" },
+  { slug: "outreach", name: "Outreach", type: "non-tech" },
 ];
 
 interface FormField {

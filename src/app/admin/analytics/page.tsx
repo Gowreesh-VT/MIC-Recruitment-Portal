@@ -69,6 +69,8 @@ const DEPT_NAMES: Record<string, string> = {
   management: "Management",
   entrepreneurship: "Entrepreneurship",
   "content-media": "Content & Media",
+  iot: "IoT",
+  outreach: "Outreach",
 };
 
 const DEPT_SHORT_NAMES: Record<string, string> = {
@@ -81,6 +83,8 @@ const DEPT_SHORT_NAMES: Record<string, string> = {
   management: "Mgmt",
   entrepreneurship: "EP",
   "content-media": "Media",
+  iot: "IoT",
+  outreach: "Outreach",
 };
 
 export default function AdvancedAnalyticsPage() {
@@ -172,8 +176,8 @@ export default function AdvancedAnalyticsPage() {
   const overallStage1Pct = grandTotalRegistrations > 0 ? Math.round((grandTotalStage1Completed / grandTotalRegistrations) * 100) : 0;
 
   // Calculate Tech vs Non-Tech Application Split
-  const techDepts = ["development", "competitive-coding", "ui-ux", "ai-ml", "cyber-security"];
-  const nonTechDepts = ["design", "management", "entrepreneurship", "content-media"];
+  const techDepts = ["development", "competitive-coding", "ui-ux", "ai-ml", "cyber-security", "iot"];
+  const nonTechDepts = ["design", "management", "entrepreneurship", "content-media", "outreach"];
 
   const techCount = (stats?.byDepartment?.byFirst ?? [])
     .filter((d) => techDepts.includes(d._id))

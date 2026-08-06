@@ -68,6 +68,8 @@ const DEPT_NAMES: Record<string, string> = {
   management: "Management",
   entrepreneurship: "Entrepreneurship",
   "content-media": "Content & Media",
+  iot: "IoT",
+  outreach: "Outreach",
 };
 
 export default function AdminDashboard() {
