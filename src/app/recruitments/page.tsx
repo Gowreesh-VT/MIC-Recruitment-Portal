@@ -307,6 +307,9 @@ function MobileQuestsView({
   const appliedStatus = isFirstPref
     ? appStatus?.firstPrefProgress.status
     : appStatus?.secondPrefProgress.status;
+  const appliedCurrentStage = isFirstPref
+    ? (appStatus?.firstPrefProgress.currentStage ?? 1)
+    : (appStatus?.secondPrefProgress.currentStage ?? 1);
 
   if (appliedQuest && appliedSlug && appliedStatus) {
     const isPending =
@@ -408,6 +411,7 @@ function MobileQuestsView({
             stage1Submitted={mobileHasSubmission}
             stage2Status={appliedStatus as "pending" | "accepted" | "rejected" | "passed" | "failed"}
             stage3Unlocked={appliedStatus === "passed" || appliedStatus === "accepted"}
+            currentStage={appliedCurrentStage}
             isVertical={true}
           />
         </div>
@@ -744,20 +748,16 @@ export default function RecruitmentsPage() {
     }
   };
 
-  const handleScoreSubmit = async () => {
-    if (birdScore <= 20 || isSubmittingScore || scoreSubmitted) return;
+  const handleScoreSubmit = useCallback(async (scoreToSubmit: number) => {
+    if (scoreToSubmit <= 20 || isSubmittingScore || scoreSubmitted) return;
     setIsSubmittingScore(true);
-    if (typeof window !== "undefined" && playerRealName) {
-      localStorage.setItem("flappy_bird_real_name", playerRealName);
-    }
     try {
       const res = await fetch("/api/leaderboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           anonymousName: playerAnonName,
-          realName: playerRealName,
-          score: birdScore,
+          score: scoreToSubmit,
         }),
       });
       const data = await res.json();
@@ -767,11 +767,17 @@ export default function RecruitmentsPage() {
         playRetroSound("point");
       }
     } catch (err) {
-      console.error("Score submission error:", err);
+      console.error("Auto score submission error:", err);
     } finally {
       setIsSubmittingScore(false);
     }
-  };
+  }, [playerAnonName, isSubmittingScore, scoreSubmitted]);
+
+  useEffect(() => {
+    if (gameStatus === "dead" && birdScore > 20 && !scoreSubmitted && !isSubmittingScore) {
+      handleScoreSubmit(birdScore);
+    }
+  }, [gameStatus, birdScore, scoreSubmitted, isSubmittingScore, handleScoreSubmit]);
 
   const flapBird = () => {
     const p = birdPhysicsRef.current;
@@ -1832,6 +1838,7 @@ export default function RecruitmentsPage() {
                       stage1Submitted={techHasSubmission}
                       stage2Status={selectedTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
                       stage3Unlocked={selectedTechProgress.status === "passed" || selectedTechProgress.status === "accepted"}
+                      currentStage={selectedTechProgress.currentStage ?? 1}
                     />
                   </div>
                 </>
@@ -1960,6 +1967,7 @@ export default function RecruitmentsPage() {
                       stage1Submitted={nonTechHasSubmission}
                       stage2Status={selectedNonTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
                       stage3Unlocked={selectedNonTechProgress.status === "passed" || selectedNonTechProgress.status === "accepted"}
+                      currentStage={selectedNonTechProgress.currentStage ?? 1}
                     />
                   </div>
                 </>
@@ -2109,56 +2117,22 @@ export default function RecruitmentsPage() {
               </div>
             </div>
 
-            {/* Score eligibility (>20) & score submission section */}
+            {/* Auto submission rank banner for score > 20 */}
             {birdScore > 20 && (
-              <div className="w-full flex flex-col gap-2 my-1">
-                {/* Real Name Input (Private in DB for Admins) */}
-                {!scoreSubmitted && (
-                  <div className="w-full flex flex-col gap-1 text-left bg-white/70 border border-black/40 p-2">
-                    <label className="text-[9px] font-extrabold uppercase tracking-wider text-black/80 flex items-center justify-between">
-                      <span>Your Name (Private):</span>
-                      <span className="text-[8px] text-[#A93710] font-extrabold">🔒 Admin Only DB</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={playerRealName}
-                      onChange={(e) => {
-                        setPlayerRealName(e.target.value);
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("flappy_bird_real_name", e.target.value);
-                        }
-                      }}
-                      placeholder="Enter your real name (stored privately)"
-                      maxLength={60}
-                      className="bg-white border border-black p-1.5 text-[10.5px] font-bold text-black focus:outline-none focus:ring-1 focus:ring-[#A93710]"
-                    />
-                  </div>
-                )}
-
-                {scoreSubmitted ? (
-                  <div className="bg-emerald-100 border-2 border-emerald-600 text-emerald-900 p-2.5 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <div className="w-full my-0.5">
+                {scoreSubmitted && (
+                  <div className="bg-emerald-100 border-2 border-emerald-600 text-emerald-900 p-2.5 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#000]">
                     <span>🎉</span>
                     <span>
-                      {submitSuccessRank ? `RANKED #${submitSuccessRank} ON LEADERBOARD!` : "SCORE SUBMITTED!"}
+                      {submitSuccessRank ? `RANKED #${submitSuccessRank} ON LEADERBOARD!` : "LEADERBOARD UPDATED!"}
                     </span>
                   </div>
-                ) : (
-                  <button
-                    onClick={handleScoreSubmit}
-                    disabled={isSubmittingScore}
-                    className="w-full bg-[#A93710] hover:bg-red-700 text-white border-4 border-black py-2.5 text-[10.5px] font-black uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {isSubmittingScore ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        SUBMITTING...
-                      </>
-                    ) : (
-                      <>
-                        🏆 SUBMIT SCORE TO LEADERBOARD!
-                      </>
-                    )}
-                  </button>
+                )}
+                {isSubmittingScore && !scoreSubmitted && (
+                  <div className="bg-amber-100 border-2 border-amber-600 text-amber-900 p-2 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-2">
+                    <div className="w-3.5 h-3.5 border-2 border-amber-900 border-t-transparent rounded-full animate-spin"></div>
+                    SAVING HIGH SCORE...
+                  </div>
                 )}
               </div>
             )}
