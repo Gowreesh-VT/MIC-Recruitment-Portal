@@ -1261,6 +1261,197 @@ async function run() {
         },
       ],
     },
+
+    {
+      slug: "iot",
+      name: "IoT",
+      type: "tech" as const,
+      totalStages: 1,
+      desc: "EMBEDDED SYSTEMS, MICROCONTROLLERS, SENSORS, FIRMWARE, AND HARDWARE-TO-CLOUD INTEGRATION",
+      tagline:
+        "CONNECTING THE PHYSICAL WORLD TO THE DIGITAL REALM THROUGH HARDWARE, FIRMWARE, AND EDGE COMPUTING",
+      description:
+        "FASCINATED BY EMBEDDED SYSTEMS, ARDUINO, ESP32, SENSORS, AND AUTOMATION? JOIN THE IOT DEPARTMENT TO BUILD SMART DEVICES, HARDWARE PROTOTYPES, AND CONNECTED EDGE SYSTEMS.",
+      skills: "EMBEDDED C/C++ · ARDUINO/ESP32 · CIRCUIT DESIGN · MQTT/HTTP · FIRMWARE",
+      iconType: "iot",
+      stageToggles: { "1": true, "2": false, "3": false },
+      stages: [
+        {
+          stage: 1,
+          title: "IoT Domain Questions",
+          description:
+            "Tell us about your hardware experience, tinkering mindset, and technical skills.",
+          formFields: [
+            {
+              id: "iot_q1",
+              label: "Why do you want to join the IoT Department?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "iot_q2",
+              label:
+                "Why did you choose IoT over other tech domains like Web Development, AI/ML, or Cyber Security?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "iot_q3",
+              label:
+                "What do you hope to learn and contribute if you are selected for the IoT team?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "iot_q4",
+              label:
+                "If you are assigned an IoT component, sensor, or protocol you have never used before, how would you approach learning and integrating it?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "iot_q5",
+              label:
+                "What microcontrollers, boards, or development platforms (e.g., Arduino, ESP32, Raspberry Pi) are you most comfortable working with, and what communication protocols have you used?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "iot_q6",
+              label:
+                "Where do your primary strengths lie: circuit design/hardware assembly, firmware development, or cloud/backend integration?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "iot_q7",
+              label:
+                "Hardware projects rarely work on the first try, and components can fail right before a deadline. How do you handle high-pressure failures, and how do you keep your cool when troubleshooting under tight timelines?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "iot_q8",
+              label:
+                "How do you approach optimizing code and power consumption for resource-constrained edge devices?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "iot_q9",
+              label:
+                "Give one practical IoT project idea that our club could build for campus automation or a hackathon showcase.",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "iot_q10",
+              label:
+                "What technical skills do you bring to the team, and how do you plan to upskill in areas where you lack experience?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "iot_q11",
+              label:
+                "Commitment: I understand that being part of the IoT Department requires hands-on involvement in lab sessions, project builds, hardware maintenance, and event prep.",
+              type: "radio" as const,
+              options: ["I Agree", "I Do Not Agree"],
+              required: true,
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      slug: "outreach",
+      name: "Outreach",
+      type: "non-tech" as const,
+      totalStages: 1,
+      desc: "COMMUNITY BUILDING, PUBLIC RELATIONS, SPONSORSHIPS, AND INTER-CLUB COLLABORATIONS",
+      tagline:
+        "CONNECTING MIC TO THE WORLD, BUILDING THRIVING COMMUNITIES, AND DRIVING STRATEGIC PARTNERSHIPS",
+      description:
+        "PASSIONATE ABOUT COMMUNITY ENGAGEMENT, PARTNERSHIPS, AND SPONSORSHIPS? JOIN THE OUTREACH DEPARTMENT TO EXPAND MIC'S REACH, DRIVE COLLABORATIONS, AND CONNECT WITH THE TECH ECOSYSTEM.",
+      skills: "COMMUNITY MANAGEMENT · SPONSORSHIPS · PR · NETWORKING",
+      iconType: "outreach",
+      stageToggles: { "1": true, "2": false, "3": false },
+      stages: [
+        {
+          stage: 1,
+          title: "Outreach Domain Questions",
+          description:
+            "Tell us about your community mindset, networking skills, and collaboration ideas.",
+          formFields: [
+            {
+              id: "outreach_q1",
+              label: "What do you think outreach is and why are you interested in joining it?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "outreach_q2",
+              label:
+                "Do you have any prior experience with being the community manager of a team or a brand? How do you think it affects the community's image?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "outreach_q3",
+              label: "How will you benefit from being a part of outreach department?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "outreach_q4",
+              label:
+                "Outreach involves building a community, maintaining it and boasting collaborations. Give some ideas you have regarding it.",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "outreach_q5",
+              label:
+                "Collaborations and Sponsorship is a key role for a community to function and is also a part of outreach process. Explain why you align with this responsibility.",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "outreach_q6",
+              label:
+                "This will be our team of connecting MIC to everyone. Give one idea that we can work on to engage as a tech community.",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "outreach_q7",
+              label:
+                "Commitment: I understand that being a part of this department requires regular participation in meetings, events and department activities.",
+              type: "radio" as const,
+              options: ["I Agree", "I Do Not Agree"],
+              required: true,
+            },
+          ],
+        },
+      ],
+    },
   ];
 
   // -------------------------------------------------------------------------
@@ -1313,6 +1504,16 @@ async function run() {
       title: "Content & Media Task",
       description: "Create a 60-second video trailer promoting MIC recruitments. Write a copy deck with 3 sample Instagram posts and captions.",
       pdf: `${TASKS_BASE}/media-task.pdf`,
+    },
+    iot: {
+      title: "IoT Task",
+      description: "Design and simulate an ESP32/Arduino circuit with temperature/humidity sensors and relay actuation. Create firmware in Wokwi/Tinkercad with MQTT telemetry.",
+      pdf: `${TASKS_BASE}/iot-task.pdf`,
+    },
+    outreach: {
+      title: "Outreach Task",
+      description: "Draft an outreach campaign proposal for an inter-college tech summit. Include 3 sponsor pitch emails, a community growth strategy, and a collaboration roadmap.",
+      pdf: `${TASKS_BASE}/outreach-task.pdf`,
     },
   };
 

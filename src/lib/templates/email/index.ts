@@ -77,6 +77,8 @@ const DEPT_MAP: Record<string, string> = {
   management: "Management",
   entrepreneurship: "Entrepreneurship",
   "content-media": "Content & Media",
+  iot: "IoT",
+  outreach: "Outreach",
 };
 
 export function formatDepartmentName(dept?: string): string {
