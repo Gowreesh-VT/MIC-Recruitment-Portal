@@ -53,13 +53,18 @@ function buildEmailHtml({
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td>
-                    <!-- Wordmark -->
-                    <div style="font-size:18px;font-weight:bold;letter-spacing:6px;color:${heroColor};text-transform:uppercase;line-height:1;">
-                      MIC
-                    </div>
-                    <div style="font-size:9px;letter-spacing:4px;color:#4b5563;text-transform:uppercase;margin-top:5px;line-height:1;">
-                      MICROSOFT INNOVATIONS CLUB &bull; VIT CHENNAI
-                    </div>
+                    <!-- Logo + Wordmark -->
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://h8z6stjynz.ufs.sh/f/nEev6VX4XfKENEfmQvcJYjwsBLCbSNUMGi76gpR4tA0OayfV" alt="MIC Logo" width="36" height="36" style="display:block;width:36px;height:36px;border-radius:4px;border:0;" />
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <div style="font-size:16px;font-weight:bold;letter-spacing:3px;color:#ffffff;text-transform:uppercase;">MIC</div>
+                          <div style="font-size:9px;letter-spacing:1px;color:#9ca3af;text-transform:uppercase;margin-top:2px;">MICROSOFT INNOVATIONS CLUB &bull; VIT CHENNAI</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                   <td align="right" valign="middle">
                     <!-- Season tag -->
@@ -173,7 +178,7 @@ export async function sendEmail({
   subject,
   html,
   templateKey = 'generic',
-  senderEmail = process.env.SMTP_FROM || 'noreply@micvitc.com',
+  senderEmail = process.env.SMTP_FROM || 'noreply@microsoftinnovations.club',
 }: SendMailOptions): Promise<{ success: boolean; error?: string }> {
   await dbConnect();
 

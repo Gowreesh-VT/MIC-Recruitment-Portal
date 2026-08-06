@@ -36,8 +36,17 @@ export function buildApplicationReceivedEmail({
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                 <tr>
                   <td>
-                    <div style="font-size:18px;font-weight:bold;letter-spacing:4px;color:#3b82f6;text-transform:uppercase;">MIC</div>
-                    <div style="font-size:9px;letter-spacing:2px;color:#6b7280;text-transform:uppercase;margin-top:4px;">MICROSOFT INNOVATIONS CLUB &bull; VIT CHENNAI</div>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:12px;">
+                          <img src="https://h8z6stjynz.ufs.sh/f/nEev6VX4XfKENEfmQvcJYjwsBLCbSNUMGi76gpR4tA0OayfV" alt="MIC Logo" width="36" height="36" style="display:block;width:36px;height:36px;border-radius:4px;border:0;" />
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <div style="font-size:16px;font-weight:bold;letter-spacing:3px;color:#ffffff;text-transform:uppercase;">MIC</div>
+                          <div style="font-size:9px;letter-spacing:1px;color:#9ca3af;text-transform:uppercase;margin-top:2px;">MICROSOFT INNOVATIONS CLUB &bull; VIT CHENNAI</div>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                   <td align="right">
                     <span style="background-color:#1e293b;border:1px solid #3b82f6;border-radius:2px;color:#60a5fa;font-size:9px;letter-spacing:1px;padding:4px 8px;text-transform:uppercase;">RECRUITMENT 2026</span>
@@ -48,11 +57,7 @@ export function buildApplicationReceivedEmail({
           </tr>
           <tr>
             <td style="background-color:#111827;padding:32px;text-align:center;">
-              <div style="display:inline-block;width:60px;height:60px;border-radius:50%;background-color:#0d0d0d;border:2px solid #3b82f6;line-height:60px;text-align:center;font-size:26px;margin-bottom:16px;">
-                📩
-              </div>
-              <br/>
-              <span style="background-color:#3b82f6;color:#000;font-size:9px;font-weight:bold;letter-spacing:2px;padding:3px 10px;text-transform:uppercase;border-radius:2px;">RESPONSE CONFIRMED</span>
+              <span style="background-color:#3b82f6;color:#000;font-size:9px;font-weight:bold;letter-spacing:2px;padding:3px 10px;text-transform:uppercase;border-radius:2px;">RESPONSE LOGGED</span>
               <div style="font-size:22px;font-weight:bold;color:#f9fafb;letter-spacing:2px;margin-top:12px;text-transform:uppercase;">Application Received!</div>
               <div style="font-size:12px;color:#9ca3af;margin-top:6px;">Your submission has been securely recorded into our system.</div>
             </td>
