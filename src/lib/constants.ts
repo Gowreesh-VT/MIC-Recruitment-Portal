@@ -28,6 +28,8 @@ export const DEPT_TYPE_MAP: Record<DeptSlug, PrefType> = {
   management: "non-tech",
   entrepreneurship: "non-tech",
   "content-media": "non-tech",
+  iot: "tech",
+  outreach: "non-tech",
 };
 
 /**
@@ -80,6 +82,8 @@ export function getCanonicalDeptSlug(slug?: string | null): DeptSlug {
   if (s === "mgmt" || s === "management") return "management";
   if (s === "ep" || s === "entrepreneurship") return "entrepreneurship";
   if (s === "design") return "design";
+  if (s === "iot" || s === "internet-of-things" || s === "internet of things") return "iot";
+  if (s === "outreach" || s === "community") return "outreach";
   return s as DeptSlug;
 }
 
@@ -108,6 +112,10 @@ export function getDeptSlugVariants(slug?: string | null): string[] {
       return ["entrepreneurship", "ep"];
     case "design":
       return ["design"];
+    case "iot":
+      return ["iot", "internet-of-things", "internet of things"];
+    case "outreach":
+      return ["outreach", "community"];
     default:
       return [canonical];
   }

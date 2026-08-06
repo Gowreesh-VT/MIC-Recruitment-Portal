@@ -7,7 +7,7 @@ export interface DepartmentData {
   slug?: string;
   title: string;
   role: string;
-  iconType: "uiux" | "dev" | "cc" | "aiml" | "cyber" | "design" | "mgmt" | "ep" | "media";
+  iconType: "uiux" | "dev" | "cc" | "aiml" | "cyber" | "design" | "mgmt" | "ep" | "media" | "iot" | "outreach";
   tagline: string;
   subtitle: string;
   description: string;
@@ -29,6 +29,9 @@ const ROLE_TO_SLUG: Record<string, string> = {
   "Content & Media": "content-media",
   "Social Media": "content-media",
   Media: "content-media",
+  IoT: "iot",
+  "Internet of Things": "iot",
+  Outreach: "outreach",
 };
 
 

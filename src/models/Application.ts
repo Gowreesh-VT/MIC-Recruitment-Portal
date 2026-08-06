@@ -9,7 +9,9 @@ export type DeptSlug =
   | "design"
   | "management"
   | "entrepreneurship"
-  | "content-media";
+  | "content-media"
+  | "iot"
+  | "outreach";
 
 export type PrefType = "tech" | "non-tech";
 export type StageResult = "pending" | "passed" | "failed";
@@ -104,6 +106,8 @@ const DEPT_SLUGS: DeptSlug[] = [
   "management",
   "entrepreneurship",
   "content-media",
+  "iot",
+  "outreach",
 ];
 
 const ApplicationSchema = new Schema<IApplication>(
