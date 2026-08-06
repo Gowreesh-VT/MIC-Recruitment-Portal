@@ -115,7 +115,12 @@ function ResponseViewer({
     <div className="space-y-4">
       {entries.map(([key, val], idx) => {
         const valStr = Array.isArray(val) ? val.join(", ") : String(val ?? "—");
-        const isUrl = valStr.startsWith("http://") || valStr.startsWith("https://");
+
+        // Split on commas (with optional spaces) and check each token for URL-ness
+        const parts = valStr.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+        const isAllUrls = parts.length > 0 && parts.every((p) => p.startsWith("http://") || p.startsWith("https://"));
+        const isSingleUrl = parts.length === 1 && isAllUrls;
+        const isMultiUrl = parts.length > 1 && isAllUrls;
 
         return (
           <div key={key} className="space-y-2">
@@ -128,16 +133,31 @@ function ResponseViewer({
               </p>
             </div>
             <div className="text-sm text-zinc-100 bg-zinc-900/70 border border-zinc-800/80 rounded-xl p-4 leading-relaxed text-left break-words">
-              {isUrl ? (
+              {isSingleUrl ? (
                 <a
-                  href={valStr}
+                  href={parts[0]}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-teal-400 hover:text-teal-350 underline font-bold inline-flex items-center gap-1.5 flex-wrap"
+                  className="text-teal-400 hover:text-teal-300 underline font-bold inline-flex items-center gap-1.5 flex-wrap"
                 >
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                  <span>{valStr}</span>
+                  <span>{parts[0]}</span>
                 </a>
+              ) : isMultiUrl ? (
+                <div className="flex flex-col gap-2">
+                  {parts.map((url, i) => (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-400 hover:text-teal-300 underline font-bold inline-flex items-center gap-1.5 flex-wrap"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                      <span>{url}</span>
+                    </a>
+                  ))}
+                </div>
               ) : (
                 <p className="whitespace-pre-wrap font-sans text-zinc-200">{valStr}</p>
               )}
