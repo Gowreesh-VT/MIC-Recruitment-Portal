@@ -48,6 +48,8 @@ interface DeptStats {
   totalApplicants: number;
   selected: number;
   conversionRate: string;
+  stage1CompletedTotal?: number;
+  stage1CompletionRate?: string;
   byStage: Record<number, number>;
 }
 
@@ -238,12 +240,12 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
         </div>
 
         {/* Analytics Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="bg-zinc-950/40 backdrop-blur-md border-zinc-800/50 overflow-hidden relative group">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Total Applicants</p>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Total Registered</p>
                 {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <p className="text-3xl font-black text-white">{stats?.totalApplicants || 0}</p>}
               </div>
               <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -256,11 +258,31 @@ export default function DepartmentConfigPage({ params }: { params: Promise<{ slu
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Selected Rate</p>
-                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <p className="text-3xl font-black text-emerald-400">{stats?.conversionRate || "0"}%</p>}
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Stage 1 Completed</p>
+                {statsLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-zinc-700" />
+                ) : (
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-3xl font-black text-emerald-400">{stats?.stage1CompletedTotal || 0}</p>
+                    <span className="text-xs text-zinc-500 font-bold">({stats?.stage1CompletionRate || "0"}%)</span>
+                  </div>
+                )}
               </div>
               <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                <Target className="h-5 w-5 text-emerald-400" />
+                <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-zinc-950/40 backdrop-blur-md border-zinc-800/50 overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardContent className="p-5 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-extrabold mb-1.5">Selected Rate</p>
+                {statsLoading ? <Loader2 className="h-6 w-6 animate-spin text-zinc-700" /> : <p className="text-3xl font-black text-teal-400">{stats?.conversionRate || "0"}%</p>}
+              </div>
+              <div className="h-10 w-10 rounded-full bg-teal-500/10 flex items-center justify-center">
+                <Target className="h-5 w-5 text-teal-400" />
               </div>
             </CardContent>
           </Card>

@@ -124,6 +124,22 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       count: y.count,
     }));
 
+    // Stage 1 form completion count for this department
+    const stage1CompletedFirst = await Application.countDocuments({
+      cycleId: ACTIVE_CYCLE_ID,
+      firstPreference: dept,
+      "firstPrefProgress.stages": { $elemMatch: { stage: 1 } },
+    });
+
+    const stage1CompletedSecond = await Application.countDocuments({
+      cycleId: ACTIVE_CYCLE_ID,
+      secondPreference: dept,
+      "secondPrefProgress.stages": { $elemMatch: { stage: 1 } },
+    });
+
+    const stage1CompletedTotal = stage1CompletedFirst + stage1CompletedSecond;
+    const stage1CompletionRate = totalApplicants > 0 ? ((stage1CompletedTotal / totalApplicants) * 100).toFixed(1) : "0";
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -132,6 +148,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         totalApplicants,
         firstPrefCount,
         secondPrefCount,
+        stage1CompletedTotal,
+        stage1CompletedFirst,
+        stage1CompletedSecond,
+        stage1CompletionRate,
         acceptedCount: selected,
         selected,
         conversionRate: totalApplicants > 0 ? ((selected / totalApplicants) * 100).toFixed(1) : "0",
