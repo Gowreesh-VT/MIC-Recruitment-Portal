@@ -293,7 +293,7 @@ function PrefPanel({
   progress: PrefProgress;
   deptSlug: string;
   label: string;
-  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject", note: string) => void;
+  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject" | "select", note: string) => void;
   acting: boolean;
   overallStatus: string;
   deptStages?: StageConfig[];
@@ -424,14 +424,25 @@ function PrefPanel({
                 Reject Candidate
               </Button>
 
-              <Button
-                variant="emerald"
-                onClick={() => onActionTrigger(prefKey, "advance", note)}
-                disabled={acting}
-                className="flex-1 font-bold h-11 cursor-pointer"
-              >
-                Advance Candidate
-              </Button>
+              {progress.currentStage >= 3 ? (
+                <Button
+                  variant="emerald"
+                  onClick={() => onActionTrigger(prefKey, "select", note)}
+                  disabled={acting}
+                  className="flex-1 font-bold h-11 cursor-pointer"
+                >
+                  ✓ Select Candidate
+                </Button>
+              ) : (
+                <Button
+                  variant="emerald"
+                  onClick={() => onActionTrigger(prefKey, "advance", note)}
+                  disabled={acting}
+                  className="flex-1 font-bold h-11 cursor-pointer"
+                >
+                  Advance Candidate
+                </Button>
+              )}
             </div>
           </div>
         )}
@@ -469,7 +480,7 @@ export default function ApplicantDetailPage({
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     preference: "first" | "second";
-    action: "advance" | "reject";
+    action: "advance" | "reject" | "select";
     note: string;
   } | null>(null);
 
@@ -504,7 +515,7 @@ export default function ApplicantDetailPage({
 
   const handleActionConfirmTrigger = (
     preference: "first" | "second",
-    action: "advance" | "reject",
+    action: "advance" | "reject" | "select",
     note: string
   ) => {
     setConfirmDialog({
@@ -716,13 +727,27 @@ export default function ApplicantDetailPage({
         isOpen={confirmDialog?.isOpen ?? false}
         onClose={() => setConfirmDialog(null)}
         onConfirm={handleActionExecute}
-        title={confirmDialog?.action === "advance" ? "Advance Candidate?" : "Reject Candidate?"}
+        title={
+          confirmDialog?.action === "select"
+            ? "Select Candidate?"
+            : confirmDialog?.action === "advance"
+            ? "Advance Candidate?"
+            : "Reject Candidate?"
+        }
         description={
-          confirmDialog?.action === "advance"
+          confirmDialog?.action === "select"
+            ? `Are you sure you want to SELECT this candidate from their ${confirmDialog?.preference} preference department? This will mark them as selected.`
+            : confirmDialog?.action === "advance"
             ? `Are you sure you want to ADVANCE this candidate in their ${confirmDialog?.preference} preference department?`
             : `Are you sure you want to REJECT this candidate from their ${confirmDialog?.preference} preference department?`
         }
-        confirmText={confirmDialog?.action === "advance" ? "Yes, Advance" : "Yes, Reject"}
+        confirmText={
+          confirmDialog?.action === "select"
+            ? "Yes, Select"
+            : confirmDialog?.action === "advance"
+            ? "Yes, Advance"
+            : "Yes, Reject"
+        }
         variant={confirmDialog?.action === "reject" ? "destructive" : "default"}
         loading={acting}
       />

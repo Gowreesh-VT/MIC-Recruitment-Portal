@@ -155,6 +155,24 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     (preference === "first"
       ? application.firstPrefProgress
       : application.secondPrefProgress).currentStage = progress.currentStage + 1;
+  } else if (action === "select") {
+    // Mark current stage result as passed
+    (preference === "first"
+      ? application.firstPrefProgress
+      : application.secondPrefProgress).stages[currentStageIdx].result = "passed";
+    (preference === "first"
+      ? application.firstPrefProgress
+      : application.secondPrefProgress).stages[currentStageIdx].reviewedBy =
+      session?.user?.email ?? "admin";
+    (preference === "first"
+      ? application.firstPrefProgress
+      : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
+
+    // Mark preference as passed → select candidate
+    (preference === "first"
+      ? application.firstPrefProgress
+      : application.secondPrefProgress).status = "passed";
+    application.overallStatus = "selected";
   } else {
     // reject
     const targetProgress = preference === "first"

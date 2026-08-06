@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { action, ids, note } = body;
 
-  if (!["advance", "reject"].includes(action) || !Array.isArray(ids) || ids.length === 0) {
+  if (!["advance", "reject", "select"].includes(action) || !Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json(
       { success: false, error: "Invalid action or candidate list." },
       { status: 400 }
@@ -78,6 +78,25 @@ export async function POST(req: NextRequest) {
         // Selection is finalised separately via the "select" action after Stage 3.
         const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
         targetProgress.currentStage = progress.currentStage + 1;
+      } else if (action === "select") {
+        if (currentStageIdx !== -1) {
+          if (preference === "first") {
+            app.firstPrefProgress.stages[currentStageIdx].result = "passed";
+            app.firstPrefProgress.stages[currentStageIdx].reviewedBy = session.user.email ?? "admin";
+            app.firstPrefProgress.stages[currentStageIdx].reviewedAt = new Date();
+            if (note) app.firstPrefProgress.stages[currentStageIdx].adminNote = note;
+          } else {
+            app.secondPrefProgress.stages[currentStageIdx].result = "passed";
+            app.secondPrefProgress.stages[currentStageIdx].reviewedBy = session.user.email ?? "admin";
+            app.secondPrefProgress.stages[currentStageIdx].reviewedAt = new Date();
+            if (note) app.secondPrefProgress.stages[currentStageIdx].adminNote = note;
+          }
+        }
+
+        // Mark preference as passed → select candidate
+        const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
+        targetProgress.status = "passed";
+        app.overallStatus = "selected";
       } else {
         // reject
         if (currentStageIdx !== -1) {
@@ -119,7 +138,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully bulk ${action === "advance" ? "advanced" : "rejected"} ${applications.length} applications.`,
+      message: `Successfully bulk ${action === "select" ? "selected" : action === "advance" ? "advanced" : "rejected"} ${applications.length} applications.`,
       processedEmails,
     });
   } catch (err) {
