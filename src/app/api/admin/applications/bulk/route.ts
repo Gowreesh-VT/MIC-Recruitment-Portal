@@ -74,10 +74,10 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Mark preference as passed → select candidate
+        // Advance to the next stage — do NOT mark as selected yet.
+        // Selection is finalised separately via the "select" action after Stage 3.
         const targetProgress = preference === "first" ? app.firstPrefProgress : app.secondPrefProgress;
-        targetProgress.status = "passed";
-        app.overallStatus = "selected";
+        targetProgress.currentStage = progress.currentStage + 1;
       } else {
         // reject
         if (currentStageIdx !== -1) {

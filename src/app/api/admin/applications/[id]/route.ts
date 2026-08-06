@@ -138,7 +138,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   if (action === "advance") {
-    // Mark current stage as passed
+    // Mark current stage result as passed
     (preference === "first"
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].result = "passed";
@@ -150,11 +150,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       ? application.firstPrefProgress
       : application.secondPrefProgress).stages[currentStageIdx].reviewedAt = new Date();
 
-    // Mark preference as passed → select candidate
+    // Advance to the next stage — do NOT mark as selected yet.
+    // The admin uses the separate "select" action to finalise selection after Stage 3.
     (preference === "first"
       ? application.firstPrefProgress
-      : application.secondPrefProgress).status = "passed";
-    application.overallStatus = "selected";
+      : application.secondPrefProgress).currentStage = progress.currentStage + 1;
   } else {
     // reject
     const targetProgress = preference === "first"
