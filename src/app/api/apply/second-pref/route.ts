@@ -20,6 +20,8 @@ const secondPrefSchema = z.object({
     "management",
     "entrepreneurship",
     "content-media",
+    "iot",
+    "outreach",
   ], { message: "Invalid department selection." }),
   _trap: z.string().optional().nullable(),
 });

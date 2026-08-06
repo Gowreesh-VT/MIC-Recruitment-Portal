@@ -22,6 +22,8 @@ const switchPrefSchema = z.object({
     "management",
     "entrepreneurship",
     "content-media",
+    "iot",
+    "outreach",
   ], { message: "Invalid department selection." }),
   // Which preference slot to replace: "first" or "second"
   prefSlot: z.enum(["first", "second"], { message: "Invalid preference slot." }),

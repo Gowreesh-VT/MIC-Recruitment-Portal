@@ -207,7 +207,9 @@ export const applyInitSchema = z.object({
     "design",
     "management",
     "entrepreneurship",
-    "content-media"
+    "content-media",
+    "iot",
+    "outreach"
   ], {
     message: "Invalid department selection."
   }),
