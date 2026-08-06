@@ -17,6 +17,7 @@ import ChangeDepartmentModal from "@/components/ChangeDepartmentModal";
 import ActiveDepartmentCard from "@/components/ActiveDepartmentCard";
 import StageRoadmap from "@/components/StageRoadmap";
 import { getCanonicalDeptSlug } from "@/lib/constants";
+import { getOrCreateAnonymousName, regenerateAnonymousName } from "@/lib/anonymousNames";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -668,6 +669,27 @@ export default function RecruitmentsPage() {
   const [showInstructions, setShowInstructions] = useState(false);
   const showInstructionsRef = useRef(false);
 
+  // Leaderboard & High Score State
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [playerAnonName, setPlayerAnonName] = useState("");
+  const [playerRealName, setPlayerRealName] = useState("");
+  const [highScore, setHighScore] = useState(0);
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+  const [submitSuccessRank, setSubmitSuccessRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setPlayerAnonName(getOrCreateAnonymousName());
+      const savedRealName = localStorage.getItem("flappy_bird_real_name") || "";
+      setPlayerRealName(savedRealName);
+      const savedHighScore = localStorage.getItem("flappy_bird_high_score");
+      if (savedHighScore) {
+        setHighScore(parseInt(savedHighScore, 10) || 0);
+      }
+    }
+  }, []);
+
   const updateShowInstructions = (val: boolean) => {
     setShowInstructions(val);
     showInstructionsRef.current = val;
@@ -706,6 +728,8 @@ export default function RecruitmentsPage() {
     passedPipes.current = new Set([169, 196]); // Ignore initial pipes passed at start
     setBirdScore(0);
     setIsDead(false);
+    setScoreSubmitted(false);
+    setSubmitSuccessRank(null);
     setDynamicPipes(STATIC_PIPES);
     currentPipesRef.current = STATIC_PIPES;
     canvasWidthRef.current = 2865;
@@ -717,6 +741,35 @@ export default function RecruitmentsPage() {
       playRetroSound("jump");
     } else {
       updateGameStatus("idle");
+    }
+  };
+
+  const handleScoreSubmit = async () => {
+    if (birdScore <= 20 || isSubmittingScore || scoreSubmitted) return;
+    setIsSubmittingScore(true);
+    if (typeof window !== "undefined" && playerRealName) {
+      localStorage.setItem("flappy_bird_real_name", playerRealName);
+    }
+    try {
+      const res = await fetch("/api/leaderboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anonymousName: playerAnonName,
+          realName: playerRealName,
+          score: birdScore,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScoreSubmitted(true);
+        setSubmitSuccessRank(data.rank);
+        playRetroSound("point");
+      }
+    } catch (err) {
+      console.error("Score submission error:", err);
+    } finally {
+      setIsSubmittingScore(false);
     }
   };
 
@@ -1051,6 +1104,15 @@ export default function RecruitmentsPage() {
                 setBirdScore((prev) => {
                   const newScore = prev + 1;
                   playRetroSound("point");
+                  setHighScore((currentBest) => {
+                    if (newScore > currentBest) {
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("flappy_bird_high_score", newScore.toString());
+                      }
+                      return newScore;
+                    }
+                    return currentBest;
+                  });
                   return newScore;
                 });
               }
@@ -1636,12 +1698,25 @@ export default function RecruitmentsPage() {
 
 
 
-          {/* Score Counter (Flappy Bird Interaction) */}
-          {gameStatus !== "idle" && (
-            <div className="absolute right-[160px] top-8 z-30 bg-black/80 border-4 border-black p-3 text-[11px] text-yellow-400 retro-shadow">
-              SCORE: {birdScore}
-            </div>
-          )}
+          {/* Leaderboard Button & Score Counter (Flappy Bird Interaction) */}
+          <div className="absolute right-6 sm:right-[160px] top-6 sm:top-8 z-30 flex items-center gap-2">
+            <button
+              onClick={() => {
+                playRetroSound("select");
+                router.push("/leaderboard?from=/recruitments");
+              }}
+              className="bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black px-3 py-2 text-[10px] sm:text-[11px] font-extrabold text-black uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] flex items-center gap-1.5 cursor-pointer"
+            >
+              🏆 LEADERBOARD
+            </button>
+
+            {gameStatus !== "idle" && (
+              <div className="bg-black/80 border-4 border-black p-2.5 sm:p-3 text-[10px] sm:text-[11px] text-yellow-400 retro-shadow flex items-center gap-3">
+                <span>SCORE: {birdScore}</span>
+                <span className="text-gray-400 border-l border-gray-600 pl-2">BEST: {highScore}</span>
+              </div>
+            )}
+          </div>
 
           {/* Interactive Flappy Bird Character (Ultra-Smooth 60/120fps GPU Physics Engine) */}
           <div
@@ -2015,10 +2090,9 @@ export default function RecruitmentsPage() {
       {gameStatus === "dead" && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div
-            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-sm w-full relative flex flex-col items-center gap-4 text-center"
-            style={{ boxShadow: "8px 8px 0px 0px rgba(0,0,0,0.5)" }}
+            className="bg-[#FFE4D6] border-4 border-black p-6 max-w-sm w-full relative flex flex-col items-center gap-4 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,0.5)]"
           >
-            <div className="bg-[#A93710] text-white px-4 py-2 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-10 mb-2 shadow-[2px_2px_0px_#000]">
+            <div className="bg-[#A93710] text-white px-4 py-1.5 border-2 border-black text-[12px] uppercase tracking-widest font-bold -mt-10 mb-1 shadow-[2px_2px_0px_#000]">
               GAME OVER
             </div>
 
@@ -2026,21 +2100,92 @@ export default function RecruitmentsPage() {
               YOU CRASHED!
             </div>
 
-            <div className="text-[16px] text-[#A93710] font-bold tracking-wider uppercase my-2">
-              SCORE: {birdScore}
+            <div className="flex items-center gap-4 my-1 bg-white/80 border-2 border-black p-3 w-full justify-around shadow-inner">
+              <div className="text-[14px] text-[#A93710] font-black tracking-wider uppercase">
+                SCORE: {birdScore}
+              </div>
+              <div className="text-[12px] text-black/70 font-bold tracking-wider uppercase border-l-2 border-black/20 pl-4">
+                BEST: {highScore}
+              </div>
             </div>
 
-            <button
-              tabIndex={-1}
-              onClick={(e) => {
-                e.currentTarget.blur();
-                resetGame(false);
-              }}
-              className="bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black py-2.5 px-6 text-[10px] font-bold text-black uppercase tracking-wider transition-transform hover:-translate-y-1 active:translate-y-0"
-              style={{ boxShadow: "4px 4px 0px 0px #000" }}
-            >
-              REPLAY
-            </button>
+            {/* Score eligibility (>20) & score submission section */}
+            {birdScore > 20 && (
+              <div className="w-full flex flex-col gap-2 my-1">
+                {/* Real Name Input (Private in DB for Admins) */}
+                {!scoreSubmitted && (
+                  <div className="w-full flex flex-col gap-1 text-left bg-white/70 border border-black/40 p-2">
+                    <label className="text-[9px] font-extrabold uppercase tracking-wider text-black/80 flex items-center justify-between">
+                      <span>Your Name (Private):</span>
+                      <span className="text-[8px] text-[#A93710] font-extrabold">🔒 Admin Only DB</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={playerRealName}
+                      onChange={(e) => {
+                        setPlayerRealName(e.target.value);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem("flappy_bird_real_name", e.target.value);
+                        }
+                      }}
+                      placeholder="Enter your real name (stored privately)"
+                      maxLength={60}
+                      className="bg-white border border-black p-1.5 text-[10.5px] font-bold text-black focus:outline-none focus:ring-1 focus:ring-[#A93710]"
+                    />
+                  </div>
+                )}
+
+                {scoreSubmitted ? (
+                  <div className="bg-emerald-100 border-2 border-emerald-600 text-emerald-900 p-2.5 text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5">
+                    <span>🎉</span>
+                    <span>
+                      {submitSuccessRank ? `RANKED #${submitSuccessRank} ON LEADERBOARD!` : "SCORE SUBMITTED!"}
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleScoreSubmit}
+                    disabled={isSubmittingScore}
+                    className="w-full bg-[#A93710] hover:bg-red-700 text-white border-4 border-black py-2.5 text-[10.5px] font-black uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {isSubmittingScore ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        SUBMITTING...
+                      </>
+                    ) : (
+                      <>
+                        🏆 SUBMIT SCORE TO LEADERBOARD!
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons: HALL OF FAME & REPLAY */}
+            <div className="flex items-center gap-3 w-full mt-2">
+              <button
+                onClick={() => {
+                  playRetroSound("select");
+                  router.push("/leaderboard?from=/recruitments");
+                }}
+                className="flex-1 h-11 bg-white hover:bg-gray-100 border-4 border-black text-[10px] sm:text-[11px] font-black text-black uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] cursor-pointer flex items-center justify-center gap-1 px-1 whitespace-nowrap"
+              >
+                <span>🏆</span> HALL OF FAME
+              </button>
+
+              <button
+                tabIndex={-1}
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  resetGame(false);
+                }}
+                className="flex-1 h-11 bg-[#E29A2B] hover:bg-[#F0AD3D] border-4 border-black text-[10px] sm:text-[11px] font-black text-black uppercase tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-0 shadow-[4px_4px_0px_0px_#000] cursor-pointer flex items-center justify-center px-1 whitespace-nowrap"
+              >
+                REPLAY
+              </button>
+            </div>
           </div>
         </div>
       )}
