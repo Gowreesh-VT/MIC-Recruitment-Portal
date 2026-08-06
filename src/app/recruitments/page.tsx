@@ -37,6 +37,9 @@ const ROLE_TO_SLUG: Record<string, string> = {
   "Content & Media": "content-media",
   "Social Media": "content-media",
   Media: "content-media",
+  IoT: "iot",
+  "Internet of Things": "iot",
+  Outreach: "outreach",
 };
 
 export function getDeptSlug(q: DepartmentData): string {
@@ -587,12 +590,15 @@ const STATIC_PIPES: PipeData[] = [
   { left: 1723, top: 0, height: 391, isTop: true },
   { left: 2214, top: -1, height: 461, isTop: true },
   { left: 2705, top: -45, height: 461, isTop: true },
+  { left: 3195, top: -5, height: 443, isTop: true },
   // Bottom pipes
   { left: 196, top: 607, height: 301, isTop: false },
   { left: 909, top: 602, height: 301, isTop: false },
   { left: 1396, top: 545, height: 358, isTop: false },
   { left: 1885, top: 570, height: 333, isTop: false },
   { left: 2375, top: 602, height: 301, isTop: false },
+  { left: 2865, top: 570, height: 333, isTop: false },
+  { left: 3355, top: 602, height: 301, isTop: false },
 ];
 
 function getEffectivePipeDimensions(
@@ -663,8 +669,8 @@ export default function RecruitmentsPage() {
   const passedPipes = useRef<Set<number>>(new Set([169, 196])); // Ignore initial pipes passed at start
   const [dynamicPipes, setDynamicPipes] = useState<PipeData[]>(STATIC_PIPES);
   const currentPipesRef = useRef<PipeData[]>(STATIC_PIPES);
-  const [canvasWidth, setCanvasWidth] = useState(2865);
-  const canvasWidthRef = useRef(2865);
+  const [canvasWidth, setCanvasWidth] = useState(3450);
+  const canvasWidthRef = useRef(3450);
   const targetScrollXRef = useRef(0);
   const isKeyScrollingRef = useRef(false);
   const appStatusRef = useRef<ApplicationStatus | null>(null);
@@ -736,8 +742,8 @@ export default function RecruitmentsPage() {
     setSubmitSuccessRank(null);
     setDynamicPipes(STATIC_PIPES);
     currentPipesRef.current = STATIC_PIPES;
-    canvasWidthRef.current = 2865;
-    setCanvasWidth(2865);
+    canvasWidthRef.current = 3450;
+    setCanvasWidth(3450);
 
     if (startPlaying === true) {
       updateGameStatus("playing");
@@ -1570,7 +1576,7 @@ export default function RecruitmentsPage() {
       {/* Sized container to calculate correct scroll boundaries post-scaling */}
       <div
         style={{
-          width: `${(Math.max(2865, canvasWidth) + 1500) * scale}px`,
+          width: `${(Math.max(3450, canvasWidth) + 1500) * scale}px`,
           height: `${1024 * scale}px`,
           position: "relative",
           overflow: "hidden",
@@ -1582,7 +1588,7 @@ export default function RecruitmentsPage() {
         <div
           className="h-[1024px] absolute top-0 left-0 bg-[linear-gradient(180deg,#1188EE_0%,#0E8AEA_25%,#1093EB_35%,#1197EC_46%,#16B6F4_52%,#10CBF1_56%,#0FC6F1_60%,#15DEF0_65%,#15DEF0_81%)] overflow-hidden origin-top-left"
           style={{
-            width: `${Math.max(2865, canvasWidth) + 1500}px`,
+            width: `${Math.max(3450, canvasWidth) + 1500}px`,
             transform: `scale(${scale})`,
           }}
         >
@@ -1625,8 +1631,8 @@ export default function RecruitmentsPage() {
           />
 
           {/* Generative Clouds for Infinite Scrolling */}
-          {canvasWidth > 2865 && Array.from({ length: Math.ceil((canvasWidth - 2865) / 800) }).map((_, idx) => {
-            const baseLeft = 2865 + idx * 800;
+          {canvasWidth > 3450 && Array.from({ length: Math.ceil((canvasWidth - 3450) / 800) }).map((_, idx) => {
+            const baseLeft = 3450 + idx * 800;
             const top1 = 50 + (idx % 3) * 60;
             const left1 = baseLeft + (idx % 2) * 200 + 100;
             const top2 = 220 + (idx % 2) * 80;
@@ -1820,7 +1826,7 @@ export default function RecruitmentsPage() {
               return (
                 <>
                   {/* Active Department Card */}
-                  <div className="absolute" style={{ left: "370px", top: "220px", zIndex: 20 }}>
+                  <div className="absolute" style={{ left: "370px", top: "194px", zIndex: 20 }}>
                     <ActiveDepartmentCard
                       deptTitle={selectedTechQuest.title}
                       deptSlug={selectedTechSlug!}
@@ -1833,7 +1839,7 @@ export default function RecruitmentsPage() {
                   </div>
 
                   {/* Recruitment Stages Roadmap */}
-                  <div className="absolute" style={{ left: "720px", top: "211px", zIndex: 20 }}>
+                  <div className="absolute" style={{ left: "720px", top: "185px", zIndex: 20 }}>
                     <StageRoadmap
                       stage1Submitted={techHasSubmission}
                       stage2Status={selectedTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
@@ -1846,7 +1852,7 @@ export default function RecruitmentsPage() {
             }
 
             return techQuests.map((q, idx) => {
-              const leftPositions = [350, 830, 1319, 1809, 2300];
+              const leftPositions = [350, 830, 1319, 1809, 2300, 2790, 3280];
               // Fallback: if more quests than positions, space dynamically from last defined position
               const left = idx < leftPositions.length
                 ? leftPositions[idx]
@@ -1856,7 +1862,7 @@ export default function RecruitmentsPage() {
                 <div
                   key={`tech-card-${idx}`}
                   className="absolute"
-                  style={{ left: `${left}px`, top: "211px", zIndex: 20 }}
+                  style={{ left: `${left}px`, top: "185px", zIndex: 20 }}
                 >
                   <QuestCard
                     title={q.title}
@@ -1975,7 +1981,7 @@ export default function RecruitmentsPage() {
             }
 
             return nonTechQuests.map((q, idx) => {
-              const leftPositions = [450, 993, 1481, 1970];
+              const leftPositions = [450, 993, 1481, 1970, 2460, 2950, 3440];
               // Fallback: if more quests than positions, space dynamically from last defined position
               const left = idx < leftPositions.length
                 ? leftPositions[idx]

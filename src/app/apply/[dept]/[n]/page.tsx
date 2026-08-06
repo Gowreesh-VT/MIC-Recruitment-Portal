@@ -40,6 +40,8 @@ const DEPT_INFO: Record<string, { title: string; type: "tech" | "non-tech" }> = 
   management: { title: "MANAGEMENT", type: "non-tech" },
   entrepreneurship: { title: "ENTREPRENEURSHIP", type: "non-tech" },
   "content-media": { title: "CONTENT & MEDIA", type: "non-tech" },
+  iot: { title: "IOT", type: "tech" },
+  outreach: { title: "OUTREACH", type: "non-tech" },
 };
 
 interface StageSubmission {
