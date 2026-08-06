@@ -22,6 +22,10 @@ export default function StageRoadmap({
   const isRejectedAtStage2 = isOverallFailed && currentStage >= 2;
   const isStage2Passed = stage2Status === "accepted" || stage2Status === "passed";
   const isStage2Failed = isRejectedAtStage2;
+  // Candidate is actively sitting in Stage 2 (advanced from S1, not yet resolved)
+  const isStage2Active = !isStage2Passed && !isOverallFailed && currentStage >= 2;
+  // Candidate is actively sitting in Stage 3 (advanced from S2, not yet selected)
+  const isStage3Active = !isStage2Passed && !isOverallFailed && currentStage >= 3;
 
   const renderHorizontal = () => (
     <div className="relative w-[880px] h-[270px] select-none font-press-start">
@@ -111,11 +115,13 @@ export default function StageRoadmap({
               ? "bg-[#52AE26] text-white"
               : isStage2Failed
               ? "bg-[#DC2626] text-white"
+              : isStage2Active
+              ? "bg-[#E29A2B] text-black"
               : "bg-gray-400 text-black opacity-90"
           }`}
         >
           <span className="text-[7.5px] uppercase tracking-wider">
-            {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : "LOCKED"}
+            {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : isStage2Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-3 bg-black" />
         </div>
@@ -128,6 +134,8 @@ export default function StageRoadmap({
                 ? "border-[#52AE26] text-[#52AE26]"
                 : isStage2Failed
                 ? "border-[#DC2626] text-[#DC2626]"
+                : isStage2Active
+                ? "border-[#E29A2B] text-[#E29A2B]"
                 : "border-gray-400 text-gray-500 opacity-90"
             }`}
           >
@@ -135,14 +143,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`w-16 h-3 border-2 border-black rounded-t-full -mt-2.5 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[2px_2px_0px_#000] ${
-              isStage2Passed
-                ? "bg-[#52AE26]"
-                : isStage2Failed
-                ? "bg-[#DC2626]"
-                : "bg-gray-400"
+              isStage2Passed ? "bg-[#52AE26]" : isStage2Failed ? "bg-[#DC2626]" : isStage2Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className="w-full h-1 bg-black/20" />
+            <div className={`w-full h-1 ${isStage2Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -153,14 +157,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[9px] tracking-tight uppercase leading-tight ${
-              isStage2Passed
-                ? "text-[#52AE26]"
-                : isStage2Failed
-                ? "text-[#DC2626]"
-                : "text-gray-600"
+              isStage2Passed ? "text-[#52AE26]" : isStage2Failed ? "text-[#DC2626]" : isStage2Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
-            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : "SHORTLISTING"}
+            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : isStage2Active ? "SHORTLISTING" : "SHORTLISTING"}
           </div>
         </div>
       </div>
@@ -173,11 +173,15 @@ export default function StageRoadmap({
         {/* Flag Banner */}
         <div
           className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center justify-center font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
-            stage3Unlocked ? "bg-[#1093EB] text-white" : "bg-gray-400 text-black opacity-80"
+            stage3Unlocked
+              ? "bg-[#1093EB] text-white"
+              : isStage3Active
+              ? "bg-[#E29A2B] text-black"
+              : "bg-gray-400 text-black opacity-80"
           }`}
         >
           <span className="text-[7.5px] uppercase tracking-wider">
-            {stage3Unlocked ? "UNLOCKED" : "LOCKED"}
+            {stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-3 bg-black" />
         </div>
@@ -186,17 +190,21 @@ export default function StageRoadmap({
         <div className="flex flex-col items-center mt-1">
           <div
             className={`w-12 h-12 bg-white border-4 rounded-full flex items-center justify-center font-bold text-[18px] shadow-[3px_3px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
-              stage3Unlocked ? "border-[#1093EB] text-[#1093EB]" : "border-gray-400 text-gray-500 opacity-80"
+              stage3Unlocked
+                ? "border-[#1093EB] text-[#1093EB]"
+                : isStage3Active
+                ? "border-[#E29A2B] text-[#E29A2B]"
+                : "border-gray-400 text-gray-500 opacity-80"
             }`}
           >
             3
           </div>
           <div
             className={`w-16 h-3 border-2 border-black rounded-t-full -mt-2.5 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[2px_2px_0px_#000] ${
-              stage3Unlocked ? "bg-[#1093EB]" : "bg-gray-400"
+              stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className="w-full h-1 bg-black/20" />
+            <div className={`w-full h-1 ${isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -207,7 +215,7 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[9px] tracking-tight uppercase leading-tight ${
-              stage3Unlocked ? "text-[#1093EB]" : "text-gray-600"
+              stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
             INTERVIEW
@@ -305,11 +313,13 @@ export default function StageRoadmap({
               ? "bg-[#52AE26] text-white"
               : isStage2Failed
               ? "bg-[#DC2626] text-white"
+              : isStage2Active
+              ? "bg-[#E29A2B] text-black"
               : "bg-gray-400 text-black opacity-90"
           }`}
         >
           <span className="text-[7px] uppercase tracking-wider">
-            {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : "LOCKED"}
+            {isStage2Passed ? "PASSED" : isStage2Failed ? "REJECTED" : isStage2Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-2 bg-black" />
         </div>
@@ -322,6 +332,8 @@ export default function StageRoadmap({
                 ? "border-[#52AE26] text-[#52AE26]"
                 : isStage2Failed
                 ? "border-[#DC2626] text-[#DC2626]"
+                : isStage2Active
+                ? "border-[#E29A2B] text-[#E29A2B]"
                 : "border-gray-400 text-gray-500 opacity-90"
             }`}
           >
@@ -329,14 +341,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`w-13 h-2 border-2 border-black rounded-t-full -mt-2 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[1.5px_1.5px_0px_#000] ${
-              isStage2Passed
-                ? "bg-[#52AE26]"
-                : isStage2Failed
-                ? "bg-[#DC2626]"
-                : "bg-gray-400"
+              isStage2Passed ? "bg-[#52AE26]" : isStage2Failed ? "bg-[#DC2626]" : isStage2Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className="w-full h-1 bg-black/20" />
+            <div className={`w-full h-1 ${isStage2Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -347,14 +355,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[8px] tracking-tight uppercase leading-tight ${
-              isStage2Passed
-                ? "text-[#52AE26]"
-                : isStage2Failed
-                ? "text-[#DC2626]"
-                : "text-gray-600"
+              isStage2Passed ? "text-[#52AE26]" : isStage2Failed ? "text-[#DC2626]" : isStage2Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
-            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : "SHORTLISTING"}
+            {isStage2Passed ? "ACCEPTED" : isStage2Failed ? "REJECTED" : isStage2Active ? "SHORTLISTING" : "SHORTLISTING"}
           </div>
         </div>
       </div>
@@ -367,11 +371,15 @@ export default function StageRoadmap({
         {/* Flag Banner */}
         <div
           className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center justify-center font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
-            stage3Unlocked ? "bg-[#1093EB] text-white" : "bg-gray-400 text-black opacity-80"
+            stage3Unlocked
+              ? "bg-[#1093EB] text-white"
+              : isStage3Active
+              ? "bg-[#E29A2B] text-black"
+              : "bg-gray-400 text-black opacity-80"
           }`}
         >
           <span className="text-[7px] uppercase tracking-wider">
-            {stage3Unlocked ? "UNLOCKED" : "LOCKED"}
+            {stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-2 bg-black" />
         </div>
@@ -380,17 +388,21 @@ export default function StageRoadmap({
         <div className="flex flex-col items-center mt-0.5">
           <div
             className={`w-10 h-10 bg-white border-3 rounded-full flex items-center justify-center font-bold text-[15px] shadow-[2px_2px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
-              stage3Unlocked ? "border-[#1093EB] text-[#1093EB]" : "border-gray-400 text-gray-500 opacity-80"
+              stage3Unlocked
+                ? "border-[#1093EB] text-[#1093EB]"
+                : isStage3Active
+                ? "border-[#E29A2B] text-[#E29A2B]"
+                : "border-gray-400 text-gray-500 opacity-80"
             }`}
           >
             3
           </div>
           <div
             className={`w-13 h-2 border-2 border-black rounded-t-full -mt-2 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[1.5px_1.5px_0px_#000] ${
-              stage3Unlocked ? "bg-[#1093EB]" : "bg-gray-400"
+              stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className="w-full h-1 bg-black/20" />
+            <div className={`w-full h-1 ${isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -401,7 +413,7 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[8px] tracking-tight uppercase leading-tight ${
-              stage3Unlocked ? "text-[#1093EB]" : "text-gray-600"
+              stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
             INTERVIEW
