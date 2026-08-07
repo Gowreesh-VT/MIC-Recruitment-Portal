@@ -17,7 +17,7 @@ const DEPT_NAMES: Record<string, string> = {
   design: "Design",
   management: "Management",
   entrepreneurship: "Entrepreneurship",
-  "content-media": "Content & Media",
+  "content-media": "Social Media",
   iot: "IoT",
   outreach: "Outreach",
 };
