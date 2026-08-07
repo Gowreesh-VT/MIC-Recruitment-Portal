@@ -7,6 +7,7 @@ import RetroLoader from "@/components/RetroLoader";
 import MobileBackground from "@/components/MobileBackground";
 import MicLogo from "@/components/MicLogo";
 import CountdownTimer from "@/components/CountdownTimer";
+import SocialLinks from "@/components/SocialLinks";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -245,6 +246,11 @@ function MobileHomePage({
            <MobileHorizontalPipe side="right" />
         </div>
       </div>
+
+      {/* Social Links for Mobile */}
+      <div className="relative z-20 px-4 pb-4 mt-auto flex flex-col items-center gap-1.5 shrink-0">
+        <SocialLinks variant="badge" />
+      </div>
     </MobileBackground>
   );
 }
@@ -388,8 +394,9 @@ function DesktopHomePage({
                   )}
                 </div>
 
-                <div className="mt-8 pt-8 border-t-4 border-black/10 w-full text-center">
-                  <span className="text-[12px] text-[#A93710] font-bold animate-retro-blink uppercase tracking-widest">
+                <div className="mt-6 pt-6 border-t-4 border-black/10 w-full text-center flex flex-col items-center gap-3">
+                  <SocialLinks variant="badge" />
+                  <span className="text-[12px] text-[#A93710] font-bold animate-retro-blink uppercase tracking-widest mt-1">
                     {pageConfig?.footerBlinkText || "[ PRESS BUTTON TO BEGIN ]"}
                   </span>
                 </div>

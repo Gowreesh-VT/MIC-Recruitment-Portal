@@ -10,6 +10,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import MicLogo from "@/components/MicLogo";
+import SocialLinks from "@/components/SocialLinks";
 import { playRetroSound } from "@/lib/audio";
 
 const pressStart = Press_Start_2P({
@@ -240,6 +241,14 @@ export default function FaqsPage() {
               </AccordionItem>
             ))}
           </Accordion>
+
+          {/* Social Media & Community Links */}
+          <div className="mt-6 pt-5 border-t-2 border-[#E5A039]/50 flex flex-col items-center gap-2.5 z-10 w-full">
+            <span className="text-[10px] md:text-[11px] text-amber-950 font-bold uppercase tracking-widest text-center">
+              Connect & Join Our Community
+            </span>
+            <SocialLinks variant="badge" />
+          </div>
         </div>
       </div>
     </main>

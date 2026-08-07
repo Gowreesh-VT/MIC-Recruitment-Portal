@@ -121,4 +121,11 @@ export function getDeptSlugVariants(slug?: string | null): string[] {
   }
 }
 
-
+/**
+ * Social media and community links for MIC VIT Chennai.
+ */
+export const SOCIAL_LINKS = {
+  instagram: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "https://www.instagram.com/mic_vitc",
+  linkedin: process.env.NEXT_PUBLIC_LINKEDIN_URL || "https://www.linkedin.com/company/microsoft-innovations-club-vit-chennai/",
+  whatsapp: process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_URL || "https://chat.whatsapp.com/",
+};
