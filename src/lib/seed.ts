@@ -1160,21 +1160,21 @@ async function run() {
 
     {
       slug: "content-media",
-      name: "Content & Media",
+      name: "Social Media",
       type: "non-tech" as const,
       totalStages: 1,
       desc: "CONTENT CREATION, VIDEO PRODUCTION, SOCIAL MEDIA PRESENCE, AND PUBLIC RELATIONS.",
       tagline:
         "CAPTURING STORIES, DIRECTING MEDIA, AND CRAFTING COMPELLING NARRATIVES FOR THE WORLD",
       description:
-        "PASSIONATE ABOUT FILMING, EDITING, COPYWRITING, AND SOCIAL MEDIA? JOIN CONTENT & MEDIA TO BROADCAST MIC'S IMPACT, DIRECT CREATIVE REELS, AND ENGAGE OUR COMMUNITY.",
+        "PASSIONATE ABOUT FILMING, EDITING, COPYWRITING, AND SOCIAL MEDIA? JOIN SOCIAL MEDIA TO BROADCAST MIC'S IMPACT, DIRECT CREATIVE REELS, AND ENGAGE OUR COMMUNITY.",
       skills: "VIDEO EDITING · COPYWRITING · SOCIAL MEDIA · PR",
       iconType: "media",
       stageToggles: { "1": true, "2": false, "3": false },
       stages: [
         {
           stage: 1,
-          title: "Content & Media Domain Questions",
+          title: "Social Media Domain Questions",
           description:
             "We create stories, content, and media that define MIC's voice. Show us yours.",
           formFields: [
@@ -1501,7 +1501,7 @@ async function run() {
       pdf: `${TASKS_BASE}/ep-task.pdf`,
     },
     "content-media": {
-      title: "Content & Media Task",
+      title: "Social Media Task",
       description: "Create a 60-second video trailer promoting MIC recruitments. Write a copy deck with 3 sample Instagram posts and captions.",
       pdf: `${TASKS_BASE}/media-task.pdf`,
     },
