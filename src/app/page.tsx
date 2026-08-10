@@ -214,12 +214,12 @@ function MobileHomePage({
       {/* ── Interactive Stage Content ── */}
       <div className="relative z-10 flex w-full flex-grow items-center justify-between mt-4 mb-4 px-1">
         
-        {/* Left Side (Non Tech Arrow + Pipe) */}
+        {/* Left Side (Tech Arrow + Pipe) */}
         <div className="flex flex-col items-end w-[155px] sm:w-[170px] gap-2">
            <MobileArrowSign 
-             label="Non Tech" 
+             label="Tech" 
              direction="left" 
-             onClick={() => handleQuestNav("non-tech")} 
+             onClick={() => handleQuestNav("tech")} 
            />
            <MobileHorizontalPipe side="left" />
         </div>
@@ -236,12 +236,12 @@ function MobileHomePage({
           </span>
         </div>
  
-        {/* Right Side (Tech Arrow + Pipe) */}
+        {/* Right Side (Non Tech Arrow + Pipe) */}
         <div className="flex flex-col items-start w-[155px] sm:w-[170px] gap-2">
            <MobileArrowSign 
-             label="Tech" 
+             label="Non Tech" 
              direction="right" 
-             onClick={() => handleQuestNav("tech")} 
+             onClick={() => handleQuestNav("non-tech")} 
            />
            <MobileHorizontalPipe side="right" />
         </div>
