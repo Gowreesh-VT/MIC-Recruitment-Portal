@@ -193,7 +193,7 @@ function MobileHomePage({
       <div className="relative z-10 px-4 pt-3 pb-1 flex-shrink-0 text-center">
         <div className="inline-block bg-[#FFE4D6] border-4 border-black px-4 py-2 rounded-[8px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">
           <h1 className="text-[#A93710] font-bold leading-tight uppercase tracking-wider text-[18px] sm:text-[22px] drop-shadow-[1px_1px_0px_#fff]">
-            Recruitments 2026-27
+            MIC Recruitments 2026-27
           </h1>
           <p className="text-black font-bold uppercase tracking-wider text-[8.5px] sm:text-[9.5px] mt-1">
             {pageConfig?.welcomeTitle || "CHOOSE THE QUEST SUITS YOU THE MOST"}

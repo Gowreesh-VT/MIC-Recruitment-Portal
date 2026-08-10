@@ -1,9 +1,20 @@
 # MIC Recruitment Portal — robots.txt
-# This is a private academic portal. Public crawling is not appropriate.
-# Disallow all search engine access to prevent indexing of applicant-facing pages.
-
 User-agent: *
-Disallow: /
+Allow: /
+Allow: /recruitments
+Allow: /faqs
+Allow: /leaderboard
+Allow: /privacy
+Allow: /terms
+Allow: /login
 
-# Specific sitemap and health endpoints can be indexed if needed in future
-# Allow: /api/health
+# Disallow private user sessions and admin endpoints
+Disallow: /admin/
+Disallow: /apply/
+Disallow: /profile/
+Disallow: /api/
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://recruitments.microsoftinnovations.club/sitemap.xml
+
