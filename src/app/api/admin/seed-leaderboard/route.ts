@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { dbConnect } from "@/lib/mongodb";
 import Leaderboard from "@/models/Leaderboard";
 import { generateRandomAnonymousName } from "@/lib/anonymousNames";
+import { auth } from "@/auth";
 
 const FIRST_NAMES = [
   "Aarav", "Aditi", "Ananya", "Arjun", "Dev", "Diya", "Ishan", "Kavya", "Manav",
@@ -22,6 +23,14 @@ function getRandomRealName(): string {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized." },
+        { status: 401 }
+      );
+    }
+
     await dbConnect();
 
     const { searchParams } = new URL(request.url);

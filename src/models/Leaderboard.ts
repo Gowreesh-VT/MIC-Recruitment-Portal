@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface ILeaderboard extends Document {
   anonymousName: string;
   realName?: string;
+  playerTokenHash?: string;
   score: number;
   createdAt: Date;
   updatedAt: Date;
@@ -20,6 +21,11 @@ const LeaderboardSchema = new Schema<ILeaderboard>(
       type: String,
       trim: true,
       maxlength: 100, // Stored privately in DB (never sent to public API)
+    },
+    playerTokenHash: {
+      type: String,
+      trim: true,
+      select: true, // Internal verification of anonymous owner
     },
     score: {
       type: Number,

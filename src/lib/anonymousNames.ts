@@ -74,3 +74,28 @@ export function regenerateAnonymousName(): string {
   }
   return newName;
 }
+
+const PLAYER_TOKEN_KEY = "flappy_bird_player_token";
+
+/**
+ * Retrieves or generates a persistent device UUID for anonymous player authentication.
+ */
+export function getOrCreatePlayerToken(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    let token = localStorage.getItem(PLAYER_TOKEN_KEY);
+    if (!token || typeof token !== "string" || token.length < 10) {
+      token = typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `player-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem(PLAYER_TOKEN_KEY, token);
+    }
+    return token;
+  } catch (e) {
+    console.error("Failed to access localStorage for player token:", e);
+    return "";
+  }
+}
