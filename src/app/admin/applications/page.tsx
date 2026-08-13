@@ -943,7 +943,7 @@ export default function AdminApplicationsPage() {
 
           <div className="flex items-center justify-between pt-4 border-t border-zinc-900 mt-4">
             <span className="text-xs text-zinc-500 font-medium">
-              File format: <span className="font-mono text-zinc-300">.csv (UTF-8)</span>
+              File format: <span className="font-mono text-zinc-300">{exportDept ? ".csv (UTF-8)" : ".zip / separate .csv"}</span>
             </span>
             <div className="flex items-center gap-2">
               <Button
@@ -954,6 +954,44 @@ export default function AdminApplicationsPage() {
               >
                 Cancel
               </Button>
+              {!exportDept && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const cols = Object.entries(exportCols)
+                      .filter(([_, active]) => active)
+                      .map(([key]) => key)
+                      .join(",");
+                    for (const slug of DEPTS) {
+                      const params = new URLSearchParams({
+                        columns: cols,
+                        scope: exportScope,
+                        dept: slug,
+                        format: "csv",
+                      });
+                      if (exportScope === "selected" && selectedIds.length > 0) {
+                        params.set("ids", selectedIds.join(","));
+                      } else if (exportScope === "filtered") {
+                        if (statusFilter) params.set("status", statusFilter);
+                        if (search) params.set("q", search);
+                      }
+                      const a = document.createElement("a");
+                      a.href = `/api/admin/applications/export?${params.toString()}`;
+                      a.download = `${slug}.csv`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      await new Promise((res) => setTimeout(res, 300));
+                    }
+                    setShowExportModal(false);
+                  }}
+                  className="border-teal-500/40 text-teal-300 hover:bg-teal-500/10 font-bold px-4 rounded-xl h-9 text-xs cursor-pointer select-none flex items-center gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Download Separate CSVs
+                </Button>
+              )}
               <Button
                 type="button"
                 onClick={() => {
@@ -968,6 +1006,9 @@ export default function AdminApplicationsPage() {
                   if (exportDept) {
                     params.set("dept", exportDept);
                     params.set("pref", exportDeptPref);
+                    params.set("format", "csv");
+                  } else {
+                    params.set("format", "zip");
                   }
                   if (exportScope === "selected" && selectedIds.length > 0) {
                     params.set("ids", selectedIds.join(","));
@@ -982,7 +1023,7 @@ export default function AdminApplicationsPage() {
                 className="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-5 rounded-xl h-9 text-xs cursor-pointer select-none flex items-center gap-2 shadow-[0_0_15px_rgba(20,184,166,0.2)] transition-all"
               >
                 <Download className="h-4 w-4" />
-                Download CSV
+                {exportDept ? "Download Department CSV" : "Download All Departments (ZIP)"}
               </Button>
             </div>
           </div>
