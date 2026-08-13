@@ -4,6 +4,12 @@ import Leaderboard from "@/models/Leaderboard";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { auth } from "@/auth";
 
+import {
+  verifyGameSessionToken,
+  consumeGameSessionToken,
+  validateGameScore,
+} from "@/lib/gameSession";
+
 export async function GET(request: Request) {
   try {
     await dbConnect();
@@ -61,7 +67,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { anonymousName, score } = body;
+    const { anonymousName, score, sessionToken, playerToken } = body;
 
     // Validate score requirement (> 20)
     const numericScore = Math.floor(Number(score));
@@ -75,16 +81,35 @@ export async function POST(request: Request) {
       );
     }
 
-    // Anti-cheat sanity cap
-    if (numericScore > 10000) {
+    // 1. Verify cryptographic game session token
+    const verification = verifyGameSessionToken(sessionToken, playerToken);
+    if (!verification.valid) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid score range.",
+          error: verification.reason || "Invalid game session token.",
         },
         { status: 400 }
       );
     }
+
+    // 2. Validate physical time and speed limits
+    const scoreValidation = validateGameScore(
+      numericScore,
+      verification.startTime!
+    );
+    if (!scoreValidation.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: scoreValidation.reason || "Gameplay speed check failed.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Mark session token as consumed (prevents replay attacks)
+    consumeGameSessionToken(verification.sessionId!);
 
     // Automatically retrieve real name from user session if authenticated
     let userRealName: string | undefined;
@@ -108,23 +133,41 @@ export async function POST(request: Request) {
 
     await dbConnect();
 
-    // Upsert logic: Update existing user's entry if higher score, otherwise create new row
+    // 3. Upsert logic: Check owner matching via playerTokenHash
     let entryDoc = await Leaderboard.findOne({ anonymousName: cleanName });
 
     if (entryDoc) {
+      // If entry belongs to a player token, ensure requesting playerTokenHash matches
+      if (
+        entryDoc.playerTokenHash &&
+        entryDoc.playerTokenHash !== verification.playerTokenHash
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "This anonymous name is registered to another device.",
+          },
+          { status: 403 }
+        );
+      }
+
       // Update if new score is higher than saved personal best
       if (numericScore > entryDoc.score) {
         entryDoc.score = numericScore;
         if (cleanRealName && !entryDoc.realName) {
           entryDoc.realName = cleanRealName;
         }
+        if (!entryDoc.playerTokenHash) {
+          entryDoc.playerTokenHash = verification.playerTokenHash;
+        }
         await entryDoc.save();
       }
     } else {
-      // Create new leaderboard row
+      // Create new leaderboard row with playerTokenHash
       entryDoc = await Leaderboard.create({
         anonymousName: cleanName,
         realName: cleanRealName,
+        playerTokenHash: verification.playerTokenHash,
         score: numericScore,
       });
     }

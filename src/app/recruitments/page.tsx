@@ -17,7 +17,7 @@ import ChangeDepartmentModal from "@/components/ChangeDepartmentModal";
 import ActiveDepartmentCard from "@/components/ActiveDepartmentCard";
 import StageRoadmap from "@/components/StageRoadmap";
 import { getCanonicalDeptSlug } from "@/lib/constants";
-import { getOrCreateAnonymousName, regenerateAnonymousName } from "@/lib/anonymousNames";
+import { getOrCreateAnonymousName, regenerateAnonymousName, getOrCreatePlayerToken } from "@/lib/anonymousNames";
 
 const pressStart = Press_Start_2P({
   weight: "400",
@@ -682,6 +682,7 @@ export default function RecruitmentsPage() {
   // Leaderboard & High Score State
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [playerAnonName, setPlayerAnonName] = useState("");
+  const gameSessionTokenRef = useRef<string | null>(null);
   const [playerRealName, setPlayerRealName] = useState("");
   const [highScore, setHighScore] = useState(0);
   const [isSubmittingScore, setIsSubmittingScore] = useState(false);
@@ -715,6 +716,19 @@ export default function RecruitmentsPage() {
     gameStatusRef.current = status;
     if (status === "playing") {
       setIsScrollingLeft(false);
+      const playerToken = getOrCreatePlayerToken();
+      fetch("/api/leaderboard/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerToken }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.sessionToken) {
+            gameSessionTokenRef.current = data.sessionToken;
+          }
+        })
+        .catch((err) => console.error("Session start error:", err));
     }
   };
 
@@ -755,7 +769,9 @@ export default function RecruitmentsPage() {
   };
 
   const handleScoreSubmit = useCallback(async (scoreToSubmit: number) => {
-    if (scoreToSubmit <= 20 || isSubmittingScore || scoreSubmitted) return;
+    const playerToken = getOrCreatePlayerToken();
+    const sessionToken = gameSessionTokenRef.current;
+    if (scoreToSubmit <= 20 || isSubmittingScore || scoreSubmitted || !sessionToken) return;
     setIsSubmittingScore(true);
     try {
       const res = await fetch("/api/leaderboard", {
@@ -764,6 +780,8 @@ export default function RecruitmentsPage() {
         body: JSON.stringify({
           anonymousName: playerAnonName,
           score: scoreToSubmit,
+          sessionToken,
+          playerToken,
         }),
       });
       const data = await res.json();
@@ -771,6 +789,9 @@ export default function RecruitmentsPage() {
         setScoreSubmitted(true);
         setSubmitSuccessRank(data.rank);
         playRetroSound("point");
+        gameSessionTokenRef.current = null;
+      } else {
+        console.warn("Score submission failed:", data.error);
       }
     } catch (err) {
       console.error("Auto score submission error:", err);
