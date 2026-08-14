@@ -837,7 +837,13 @@ export default function RecruitmentsPage() {
   // Application State
   const [appStatus, setAppStatus] = useState<ApplicationStatus | null>(null);
   // Mobile view: "tech" | "non-tech" — read from ?view= query param
-  const mobileView = (searchParams.get("view") as "tech" | "non-tech" | null) ?? "tech";
+  const mobileView = searchParams.get("view") as "tech" | "non-tech" | null;
+
+  useEffect(() => {
+    if (isMobile && !searchParams.get("view")) {
+      router.replace("/");
+    }
+  }, [isMobile, searchParams, router]);
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [isLoadingApp, setIsLoadingApp] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1365,6 +1371,10 @@ export default function RecruitmentsPage() {
 
   // ── Mobile rendering ─────────────────────────────────────────────────────────
   if (isMobile) {
+    if (!mobileView) {
+      return <RetroLoader isLoading={true} title="LOADING MAP" />;
+    }
+
     return (
       <div className={`${pressStart.variable} font-press-start`}>
         <RetroLoader isLoading={isLoadingApp} title="LOADING MAP" />
