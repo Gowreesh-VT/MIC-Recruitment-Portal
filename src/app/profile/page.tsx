@@ -176,11 +176,12 @@ function ProfilePage() {
       });
 
       const data = await res.json();
+      const updatedData = data.profile || data.application;
 
-      if (res.ok && data.success && data.application) {
+      if (res.ok && data.success && updatedData) {
         playRetroSound("coin");
         setAppStatus((prev) =>
-          prev ? { ...prev, ...data.application } : data.application
+          prev ? { ...prev, ...updatedData } : updatedData
         );
         setIsEditing(false);
         setSaveSuccess("Personal details updated successfully!");
