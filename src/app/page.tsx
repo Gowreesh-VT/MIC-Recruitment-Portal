@@ -371,14 +371,25 @@ function DesktopHomePage({
                 )}
 
                 {/* CTA Buttons */}
-                <div className="flex w-full max-w-[700px] gap-5 mt-1">
+                <div className="flex w-full max-w-[700px] gap-4 justify-center mt-1">
+                  <button 
+                    onClick={() => {
+                      playRetroSound("select");
+                      router.push("/recruitments");
+                    }}
+                    className="flex-1 bg-[#1093EB] hover:bg-[#209FFC] text-white border-4 border-black py-4 px-6 text-[13px] sm:text-[14px] font-bold tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group cursor-pointer whitespace-nowrap"
+                    style={{ boxShadow: "5px 5px 0px 0px #000" }}
+                  >
+                    VIEW STATUS
+                  </button>
+
                   {cycleOpen ? (
                     <button
                       onClick={() => {
                         playRetroSound("select");
                         router.push(isLoggedIn ? "/recruitments" : "/login");
                       }}
-                      className="w-full bg-[#52AE26] hover:bg-[#62BE36] text-white border-4 border-black py-4 px-6 text-[14px] font-bold tracking-widest transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group cursor-pointer"
+                      className="flex-1 bg-[#52AE26] hover:bg-[#62BE36] text-white border-4 border-black py-4 px-6 text-[13px] sm:text-[14px] font-bold tracking-wider transition-transform hover:-translate-y-0.5 active:translate-y-1 flex items-center justify-center gap-2 group cursor-pointer whitespace-nowrap"
                       style={{ boxShadow: "5px 5px 0px 0px #000" }}
                     >
                       START QUEST <span className="group-hover:translate-x-1 transition-transform">►</span>
@@ -386,7 +397,7 @@ function DesktopHomePage({
                   ) : (
                     <button
                       disabled
-                      className="w-full bg-slate-300 text-slate-500 border-4 border-black py-4 px-6 text-[14px] font-bold tracking-widest flex items-center justify-center cursor-not-allowed opacity-80"
+                      className="flex-1 bg-slate-300 text-slate-500 border-4 border-black py-4 px-6 text-[13px] sm:text-[14px] font-bold tracking-wider flex items-center justify-center gap-2 cursor-not-allowed opacity-80 whitespace-nowrap"
                       style={{ boxShadow: "5px 5px 0px 0px #555" }}
                     >
                       QUEST CLOSED ✖
