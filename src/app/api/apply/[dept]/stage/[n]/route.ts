@@ -55,7 +55,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       {
         success: false,
         stageClosed: true,
-        error: `Stage 1 evaluation is currently in progress. Stage ${stageNum} will open once evaluations conclude.`,
+        error:
+          stageNum === 1
+            ? "Stage 1 evaluation is currently in progress. Results and next stages will be announced once evaluations conclude."
+            : `Stage ${stageNum - 1} evaluation is currently in progress. Stage ${stageNum} will open once evaluations conclude.`,
       },
       { status: 403 }
     );
