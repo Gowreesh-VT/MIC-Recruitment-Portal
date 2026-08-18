@@ -16,6 +16,7 @@ import {
   Sparkles,
   AlertCircle,
   Eye,
+  Layers,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { AdvancedBulkModal } from "@/components/admin/AdvancedBulkModal";
 import {
   Table,
   TableBody,
@@ -109,6 +111,7 @@ export default function AdminApplicationsPage() {
   const [bulkConfirm, setBulkConfirm] = useState<"advance" | "reject" | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [showAdvancedBulkModal, setShowAdvancedBulkModal] = useState(false);
 
   // Mail Presets state
   const [showPresetModal, setShowPresetModal] = useState(false);
@@ -249,6 +252,14 @@ export default function AdminApplicationsPage() {
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setShowAdvancedBulkModal(true)}
+              variant="outline"
+              className="font-bold text-sm gap-2 cursor-pointer flex items-center border-indigo-500/40 text-indigo-300 hover:bg-indigo-950/40 hover:text-indigo-200"
+            >
+              <Layers className="h-4 w-4 text-indigo-400" />
+              Advanced Bulk Actions
+            </Button>
             <Button
               onClick={() => setShowExportModal(true)}
               variant="emerald"
@@ -521,6 +532,15 @@ export default function AdminApplicationsPage() {
             >
               <Mail className="h-3.5 w-3.5" />
               Mail Preset ({selectedIds.length})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedBulkModal(true)}
+              className="h-9 text-xs font-bold border-indigo-500/40 text-indigo-300 hover:bg-indigo-950/40 flex items-center gap-1.5"
+            >
+              <Layers className="h-3.5 w-3.5 text-indigo-400" />
+              Advanced Bulk ({selectedIds.length})
             </Button>
             <Button
               variant="destructive"
@@ -1268,6 +1288,19 @@ export default function AdminApplicationsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Advanced Bulk Operations Modal */}
+      <AdvancedBulkModal
+        isOpen={showAdvancedBulkModal}
+        onClose={() => setShowAdvancedBulkModal(false)}
+        selectedCandidateEmails={applications
+          .filter((a) => selectedIds.includes(a._id))
+          .map((a) => a.userEmail)}
+        onSuccess={() => {
+          setSelectedIds([]);
+          load();
+        }}
+      />
     </AdminLayout>
   );
 }

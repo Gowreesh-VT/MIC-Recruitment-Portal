@@ -37,11 +37,11 @@ export default function ChangeDepartmentModal({
 }: ChangeDepartmentModalProps) {
   const [selectedSlug, setSelectedSlug] = useState<string>("");
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setSelectedSlug("");
-    }
-  }, [isOpen, currentDeptSlug]);
+  // Reset state whenever modal closes or opens via callback
+  const handleClose = () => {
+    setSelectedSlug("");
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -138,7 +138,7 @@ export default function ChangeDepartmentModal({
         <div className="w-full flex items-center justify-center gap-4">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={loading}
             className="bg-white hover:bg-[#FFDED6] text-black border-4 border-black px-5 py-2.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer active:translate-y-0.5 disabled:opacity-50 transition-colors"
             style={{ boxShadow: "4px 4px 0px 0px #000" }}

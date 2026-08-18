@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export interface LeaderboardEntry {
   id: string;
@@ -27,7 +27,7 @@ export default function FlappyLeaderboardModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -44,13 +44,13 @@ export default function FlappyLeaderboardModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      fetchLeaderboard();
+      void fetchLeaderboard();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchLeaderboard]);
 
   if (!isOpen) return null;
 
