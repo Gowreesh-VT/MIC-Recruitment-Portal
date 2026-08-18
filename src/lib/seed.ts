@@ -1108,50 +1108,73 @@ async function run() {
             "We want builders who think in problems and solutions. Tell us how you see the world.",
           formFields: [
             {
-              id: "startupIdea",
-              label:
-                "Do you have a startup idea you're working on or have thought about? Describe it briefly.",
+              id: "ep_q1",
+              label: "Why are you interested in joining Entrepreneurship?",
               type: "textarea" as const,
-              placeholder: "Problem, solution, target market...",
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "ep_q2",
+              label:
+                "Do you have any prior experience with entrepreneurship, startups, venture capitals (VC), private equity (PE), business competitions, or related fields? (If yes, tell us about it. If no, that's completely okay! We're equally excited to hear from enthusiastic beginners!)",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "ep_q3",
+              label: "How will you benefit from being a part of Entrepreneurship department?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "ep_q4",
+              label:
+                "What's a startup idea you believe had great potential but failed in execution? What changes would you have taken?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 1000,
+            },
+            {
+              id: "ep_q5",
+              label: "How will our community benefit from having you?",
+              type: "textarea" as const,
+              required: true,
+              maxLength: 800,
+            },
+            {
+              id: "ep_q6",
+              label:
+                "Commitment: I understand that being a part of this department requires regular participation in meetings, event and department activities.",
+              type: "radio" as const,
+              options: ["I Agree", "I Do Not Agree"],
+              required: true,
+            },
+            {
+              id: "ep_q7",
+              label:
+                "Commitment: I will actively represent the department contribute ideas and act as a voice for the team whenever needed.",
+              type: "radio" as const,
+              options: ["I Agree", "I Do Not Agree"],
+              required: true,
+            },
+            {
+              id: "ep_q8",
+              label:
+                "Commitment: I'm genuinely interested in startups and entrepreneurship and am willing to continue exploring and learning about the ecosystem throughout my tenures.",
+              type: "radio" as const,
+              options: ["I Agree", "I Do Not Agree"],
+              required: true,
+            },
+            {
+              id: "ep_q9",
+              label:
+                "If you were a shark in the Shark Tank (Indian or American), which shark would you be?",
+              type: "textarea" as const,
               required: true,
               maxLength: 600,
-            },
-            {
-              id: "problemSolving",
-              label:
-                "Describe a real-world problem you've identified in your campus or community. How would you solve it?",
-              type: "textarea" as const,
-              placeholder: "Problem → solution → impact",
-              required: true,
-              maxLength: 600,
-            },
-            {
-              id: "epExperience",
-              label:
-                "Have you been part of any startup, incubator, or entrepreneurship cell?",
-              type: "radio" as const,
-              options: ["Yes", "No"],
-              required: true,
-            },
-            {
-              id: "epDetails",
-              label: "If yes, describe your role and what you learned.",
-              type: "textarea" as const,
-              placeholder: "Optional but great to share",
-              required: false,
-              maxLength: 500,
-            },
-            {
-              id: "businessModel",
-              label:
-                "How comfortable are you with business concepts like unit economics, PMF, or go-to-market?",
-              type: "radio" as const,
-              options: [
-                "Very — I actively study and apply them",
-                "Moderate — I understand the basics",
-                "Beginner — I'm learning",
-              ],
-              required: true,
             },
           ],
         },
