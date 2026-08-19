@@ -21,7 +21,6 @@
 # production
 /build
 
-.env*
 !.env.example
 
 # misc
@@ -35,11 +34,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
-.env
-.env.local
 .env*.local
-.env.production
-.env.development
 !.env.example
 .sentry-build-plugin
 
@@ -53,3 +48,5 @@ next-env.d.ts
 scripts/load/
 config.bat
 *.bak
+
+*.csv
