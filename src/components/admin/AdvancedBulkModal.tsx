@@ -27,6 +27,7 @@ import {
   Users,
   ShieldCheck,
   Filter,
+  RotateCcw,
 } from "lucide-react";
 
 const DEPT_NAMES: Record<string, string> = {
@@ -100,7 +101,7 @@ export function AdvancedBulkModal({
   const [targetStage, setTargetStage] = useState<string>("current");
   const [nextStage, setNextStage] = useState<string>("");
   const [actionType, setActionType] = useState<
-    "advance" | "reject_department" | "reject_all" | "select" | "waitlist"
+    "advance" | "reject_department" | "reject_all" | "select" | "waitlist" | "reset"
   >("advance");
   const [adminNote, setAdminNote] = useState("");
 
@@ -450,11 +451,12 @@ export function AdvancedBulkModal({
                     onChange={(e) => setNextStage(e.target.value)}
                   >
                     <option value="">Auto (+1 Next Stage)</option>
+                    <option value="1">Directly to Stage 1</option>
                     <option value="2">Directly to Stage 2</option>
                     <option value="3">Directly to Stage 3</option>
                   </Select>
                   <p className="text-[10px] text-emerald-400/80">
-                    By default, advances each candidate by 1 stage. You can also explicitly promote them to Stage 2 or Stage 3.
+                    By default, advances each candidate by 1 stage. You can also explicitly set them to Stage 1, Stage 2, or Stage 3.
                   </p>
                 </div>
               )}
@@ -484,7 +486,7 @@ export function AdvancedBulkModal({
                         Advance to Next Stage
                       </div>
                       <p className="text-[10px] text-zinc-400 mt-0.5">
-                        Passes current stage and moves candidate to next stage (Stage 1 $\rightarrow$ 2 $\rightarrow$ 3).
+                        Passes current stage and moves candidate to next stage (Stage 1 → Stage 2 → Stage 3).
                       </p>
                     </div>
                   </label>
@@ -563,6 +565,32 @@ export function AdvancedBulkModal({
                       </div>
                       <p className="text-[10px] text-zinc-400 mt-0.5">
                         Rejects candidate completely across both 1st and 2nd preference.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-all ${
+                      actionType === "reset"
+                        ? "bg-amber-950/30 border-amber-500/50 text-amber-200"
+                        : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:border-zinc-700"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="bulkAction"
+                      value="reset"
+                      checked={actionType === "reset"}
+                      onChange={() => setActionType("reset")}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                        <RotateCcw className="h-3.5 w-3.5 text-amber-400" />
+                        Reset to Stage 1 (In-Progress)
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                        Resets candidate back to <strong>Stage 1 (In-Progress)</strong> with pending status.
                       </p>
                     </div>
                   </label>

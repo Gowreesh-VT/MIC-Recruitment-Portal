@@ -7,6 +7,8 @@ export interface ApplicationProgressCardProps {
   stage1Submitted: boolean;
   stage2Status: "pending" | "accepted" | "rejected" | "passed" | "failed";
   stage3Unlocked: boolean;
+  overallStatus?: string;
+  isSelected?: boolean;
   onEditForm: () => void;
   onChangeDepartment: () => void;
 }
@@ -16,12 +18,15 @@ export default function ApplicationProgressCard({
   stage1Submitted,
   stage2Status,
   stage3Unlocked,
+  overallStatus,
+  isSelected = false,
   onEditForm,
   onChangeDepartment,
 }: ApplicationProgressCardProps) {
-  const isStage2Passed = stage2Status === "accepted" || stage2Status === "passed";
-  const isStage2Failed = stage2Status === "rejected" || stage2Status === "failed";
-  const isStage2Pending = !isStage2Passed && !isStage2Failed;
+  const isSelectedForClub = Boolean(isSelected || overallStatus === "selected");
+  const isStage2Passed = isSelectedForClub || stage2Status === "accepted" || stage2Status === "passed";
+  const isStage2Failed = (stage2Status === "rejected" || stage2Status === "failed" || overallStatus === "rejected") && !isSelectedForClub;
+  const isStage2Pending = !isStage2Passed && !isStage2Failed && !isSelectedForClub;
 
   return (
     <div
@@ -48,11 +53,16 @@ export default function ApplicationProgressCard({
             stage1Submitted={stage1Submitted}
             stage2Status={stage2Status}
             stage3Unlocked={stage3Unlocked}
+            isSelected={isSelectedForClub}
           />
 
           {/* Stage Status Summary Text */}
           <div className="text-[9px] font-bold uppercase tracking-wider text-black w-full flex justify-center items-center py-0.5">
-            {isStage2Failed ? (
+            {isSelectedForClub ? (
+              <span className="text-[#52AE26] font-black flex items-center justify-center">
+                SELECTED FOR MIC
+              </span>
+            ) : isStage2Failed ? (
               <span className="text-[#DC2626] font-black flex items-center justify-center">
                 APPLICATION REJECTED
               </span>

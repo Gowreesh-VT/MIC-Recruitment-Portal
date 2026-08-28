@@ -6,6 +6,8 @@ export interface StageRoadmapProps {
   stage3Unlocked?: boolean;
   isVertical?: boolean;
   currentStage?: number;
+  overallStatus?: "in-progress" | "selected" | "rejected" | "waitlisted" | string;
+  isSelected?: boolean;
 }
 
 export default function StageRoadmap({
@@ -14,20 +16,28 @@ export default function StageRoadmap({
   stage3Unlocked = false,
   isVertical,
   currentStage = 1,
+  overallStatus,
+  isSelected = false,
 }: StageRoadmapProps) {
-  const isOverallFailed = stage2Status === "rejected" || stage2Status === "failed";
+  const isSelectedForClub = Boolean(isSelected || overallStatus === "selected");
+  const isOverallFailed = (stage2Status === "rejected" || stage2Status === "failed" || overallStatus === "rejected") && !isSelectedForClub;
   // Rejection happened at stage 1 when the candidate never advanced beyond it
   const isRejectedAtStage1 = isOverallFailed && currentStage <= 1;
   // Rejection happened at stage 2 only if the candidate had actually reached stage 2
-  const isRejectedAtStage2 = isOverallFailed && currentStage >= 2;
-  const isStage2Passed = stage2Status === "accepted" || stage2Status === "passed";
+  const isRejectedAtStage2 = isOverallFailed && currentStage === 2;
+  // Rejection happened at stage 3
+  const isRejectedAtStage3 = isOverallFailed && currentStage >= 3;
+
+  const isStage2Passed = isSelectedForClub || stage2Status === "accepted" || stage2Status === "passed" || currentStage > 2;
   const isStage2Failed = isRejectedAtStage2;
   // Candidate is actively sitting in Stage 2 (exactly at stage 2, not yet resolved)
   const isStage2Active = !isStage2Passed && !isOverallFailed && currentStage === 2;
   // Candidate has cleared Stage 2 and moved to Stage 3 (show green on Stage 2 node)
-  const isStage2Cleared = !isOverallFailed && currentStage > 2;
+  const isStage2Cleared = !isOverallFailed && (currentStage > 2 || isSelectedForClub);
+  // Candidate has cleared Stage 3 (selected)
+  const isStage3Passed = isSelectedForClub;
   // Candidate is actively sitting in Stage 3 (exactly at stage 3, not yet selected)
-  const isStage3Active = !isStage2Passed && !isOverallFailed && currentStage === 3;
+  const isStage3Active = !isSelectedForClub && !isOverallFailed && (currentStage === 3 || stage3Unlocked);
 
   const renderHorizontal = () => (
     <div className="relative w-[880px] h-[270px] select-none font-press-start">
@@ -175,7 +185,11 @@ export default function StageRoadmap({
         {/* Flag Banner */}
         <div
           className={`border-2 border-black rounded-[4px] px-2 py-1 flex items-center justify-center font-bold text-[11px] shadow-[2.5px_2.5px_0px_#000] relative ${
-            stage3Unlocked
+            isStage3Passed
+              ? "bg-[#52AE26] text-white"
+              : isRejectedAtStage3
+              ? "bg-[#DC2626] text-white"
+              : stage3Unlocked
               ? "bg-[#1093EB] text-white"
               : isStage3Active
               ? "bg-[#E29A2B] text-black"
@@ -183,7 +197,7 @@ export default function StageRoadmap({
           }`}
         >
           <span className="text-[7.5px] uppercase tracking-wider">
-            {stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
+            {isStage3Passed ? "SELECTED" : isRejectedAtStage3 ? "REJECTED" : stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-3 bg-black" />
         </div>
@@ -192,7 +206,11 @@ export default function StageRoadmap({
         <div className="flex flex-col items-center mt-1">
           <div
             className={`w-12 h-12 bg-white border-4 rounded-full flex items-center justify-center font-bold text-[18px] shadow-[3px_3px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
-              stage3Unlocked
+              isStage3Passed
+                ? "border-[#52AE26] text-[#52AE26]"
+                : isRejectedAtStage3
+                ? "border-[#DC2626] text-[#DC2626]"
+                : stage3Unlocked
                 ? "border-[#1093EB] text-[#1093EB]"
                 : isStage3Active
                 ? "border-[#E29A2B] text-[#E29A2B]"
@@ -203,10 +221,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`w-16 h-3 border-2 border-black rounded-t-full -mt-2.5 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[2px_2px_0px_#000] ${
-              stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
+              isStage3Passed ? "bg-[#52AE26]" : isRejectedAtStage3 ? "bg-[#DC2626]" : stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className={`w-full h-1 ${isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
+            <div className={`w-full h-1 ${isStage3Passed ? "bg-[#72F418]" : isRejectedAtStage3 ? "bg-red-400" : isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -217,10 +235,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[9px] tracking-tight uppercase leading-tight ${
-              stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
+              isStage3Passed ? "text-[#52AE26]" : isRejectedAtStage3 ? "text-[#DC2626]" : stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
-            INTERVIEW
+            {isStage3Passed ? "SELECTED" : isRejectedAtStage3 ? "REJECTED" : "INTERVIEW"}
           </div>
         </div>
       </div>
@@ -373,7 +391,11 @@ export default function StageRoadmap({
         {/* Flag Banner */}
         <div
           className={`border-2 border-black rounded-[4px] px-1.5 py-0.5 flex items-center justify-center font-bold text-[9px] shadow-[2px_2px_0px_#000] relative ${
-            stage3Unlocked
+            isStage3Passed
+              ? "bg-[#52AE26] text-white"
+              : isRejectedAtStage3
+              ? "bg-[#DC2626] text-white"
+              : stage3Unlocked
               ? "bg-[#1093EB] text-white"
               : isStage3Active
               ? "bg-[#E29A2B] text-black"
@@ -381,7 +403,7 @@ export default function StageRoadmap({
           }`}
         >
           <span className="text-[7px] uppercase tracking-wider">
-            {stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
+            {isStage3Passed ? "SELECTED" : isRejectedAtStage3 ? "REJECTED" : stage3Unlocked ? "UNLOCKED" : isStage3Active ? "PENDING" : "LOCKED"}
           </span>
           <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-2 bg-black" />
         </div>
@@ -390,7 +412,11 @@ export default function StageRoadmap({
         <div className="flex flex-col items-center mt-0.5">
           <div
             className={`w-10 h-10 bg-white border-3 rounded-full flex items-center justify-center font-bold text-[15px] shadow-[2px_2px_0px_#000] relative z-10 transition-transform group-hover:scale-105 ${
-              stage3Unlocked
+              isStage3Passed
+                ? "border-[#52AE26] text-[#52AE26]"
+                : isRejectedAtStage3
+                ? "border-[#DC2626] text-[#DC2626]"
+                : stage3Unlocked
                 ? "border-[#1093EB] text-[#1093EB]"
                 : isStage3Active
                 ? "border-[#E29A2B] text-[#E29A2B]"
@@ -401,10 +427,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`w-13 h-2 border-2 border-black rounded-t-full -mt-2 z-0 flex flex-col items-center justify-end overflow-hidden shadow-[1.5px_1.5px_0px_#000] ${
-              stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
+              isStage3Passed ? "bg-[#52AE26]" : isRejectedAtStage3 ? "bg-[#DC2626]" : stage3Unlocked ? "bg-[#1093EB]" : isStage3Active ? "bg-[#E29A2B]" : "bg-gray-400"
             }`}
           >
-            <div className={`w-full h-1 ${isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
+            <div className={`w-full h-1 ${isStage3Passed ? "bg-[#72F418]" : isRejectedAtStage3 ? "bg-red-400" : isStage3Active ? "bg-[#F0AD3D]" : "bg-black/20"}`} />
           </div>
         </div>
 
@@ -415,10 +441,10 @@ export default function StageRoadmap({
           </div>
           <div
             className={`font-black text-[8px] tracking-tight uppercase leading-tight ${
-              stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
+              isStage3Passed ? "text-[#52AE26]" : isRejectedAtStage3 ? "text-[#DC2626]" : stage3Unlocked ? "text-[#1093EB]" : isStage3Active ? "text-[#E29A2B]" : "text-gray-600"
             }`}
           >
-            INTERVIEW
+            {isStage3Passed ? "SELECTED" : isRejectedAtStage3 ? "REJECTED" : "INTERVIEW"}
           </div>
         </div>
       </div>

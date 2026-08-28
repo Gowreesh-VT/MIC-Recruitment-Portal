@@ -79,15 +79,45 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   const body = await req.json();
   const { action, preference, note } = body;
 
-  if (!["advance", "reject", "waitlist", "select"].includes(action) || !["first", "second"].includes(preference)) {
+  if (!["advance", "reject", "waitlist", "select", "reset"].includes(action) || !["first", "second"].includes(preference)) {
     return NextResponse.json({ success: false, error: "Invalid action or preference." }, { status: 400 });
   }
-  // action: "advance" | "reject" | "waitlist" | "select"
+  // action: "advance" | "reject" | "waitlist" | "select" | "reset"
   // preference: "first" | "second"
 
   const application = await Application.findById(id);
   if (!application) {
     return NextResponse.json({ success: false, error: "Not found." }, { status: 404 });
+  }
+
+  if (action === "reset") {
+    application.overallStatus = "in-progress";
+    if (preference === "first") {
+      application.firstPrefProgress.status = "active";
+      application.firstPrefProgress.currentStage = 1;
+      if (application.firstPrefProgress.stages) {
+        application.firstPrefProgress.stages.forEach((s) => {
+          s.result = "pending";
+          s.adminNote = undefined;
+          s.reviewedBy = undefined;
+          s.reviewedAt = undefined;
+        });
+      }
+    } else {
+      application.secondPrefProgress.status = "active";
+      application.secondPrefProgress.currentStage = 1;
+      if (application.secondPrefProgress.stages) {
+        application.secondPrefProgress.stages.forEach((s) => {
+          s.result = "pending";
+          s.adminNote = undefined;
+          s.reviewedBy = undefined;
+          s.reviewedAt = undefined;
+        });
+      }
+    }
+    await application.save();
+
+    return NextResponse.json({ success: true, message: "Applicant reset to Stage 1 successfully." });
   }
 
   if (action === "waitlist") {

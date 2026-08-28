@@ -4,15 +4,17 @@ export interface RecruitmentTimelineProps {
   stage1Submitted: boolean;
   stage2Status: "pending" | "accepted" | "rejected" | "passed" | "failed";
   stage3Unlocked: boolean;
+  isSelected?: boolean;
 }
 
 export default function RecruitmentTimeline({
   stage1Submitted,
   stage2Status,
   stage3Unlocked,
+  isSelected = false,
 }: RecruitmentTimelineProps) {
-  const isStage2Passed = stage2Status === "accepted" || stage2Status === "passed";
-  const isStage2Failed = stage2Status === "rejected" || stage2Status === "failed";
+  const isStage2Passed = isSelected || stage2Status === "accepted" || stage2Status === "passed";
+  const isStage2Failed = !isSelected && (stage2Status === "rejected" || stage2Status === "failed");
   const isStage2Pending = !isStage2Passed && !isStage2Failed;
 
   return (
@@ -55,9 +57,13 @@ export default function RecruitmentTimeline({
         {/* Stage 3 Node */}
         <div
           className={`relative z-10 w-8 h-8 rounded-full border-2 border-black flex items-center justify-center text-[12px] font-bold shadow-[2px_2px_0px_#000] ${
-            stage3Unlocked ? "bg-[#1093EB] text-white" : "bg-gray-300 text-black opacity-80"
+            isSelected
+              ? "bg-[#52AE26] text-white"
+              : stage3Unlocked
+              ? "bg-[#1093EB] text-white"
+              : "bg-gray-300 text-black opacity-80"
           }`}
-          title={`Stage 3 — Interview (${stage3Unlocked ? "Unlocked" : "Locked"})`}
+          title={isSelected ? "Stage 3 — Selected" : `Stage 3 — Interview (${stage3Unlocked ? "Unlocked" : "Locked"})`}
         >
           3
         </div>
@@ -77,8 +83,8 @@ export default function RecruitmentTimeline({
         >
           Stage 2
         </span>
-        <span className={stage3Unlocked ? "text-[#1093EB] font-black" : "text-gray-500 font-bold"}>
-          Stage 3
+        <span className={isSelected ? "text-[#52AE26] font-black" : stage3Unlocked ? "text-[#1093EB] font-black" : "text-gray-500 font-bold"}>
+          {isSelected ? "Selected" : "Stage 3"}
         </span>
       </div>
     </div>

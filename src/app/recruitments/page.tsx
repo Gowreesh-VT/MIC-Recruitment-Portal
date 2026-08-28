@@ -397,8 +397,8 @@ function MobileQuestsView({
           <ActiveDepartmentCard
             deptTitle={appliedQuest.title}
             deptSlug={appliedSlug}
-            statusText={appliedStatus}
-            isStage2Pending={isPending}
+            statusText={appStatus?.overallStatus === "selected" ? "SELECTED" : appliedStatus}
+            isStage2Pending={isPending && appStatus?.overallStatus !== "selected"}
             hasSubmission={mobileHasSubmission}
             onEditForm={() => router.push(`/apply/${appliedSlug}/quest-1`)}
             onChangeDepartment={() => {
@@ -413,8 +413,10 @@ function MobileQuestsView({
           <StageRoadmap
             stage1Submitted={mobileHasSubmission}
             stage2Status={appliedStatus as "pending" | "accepted" | "rejected" | "passed" | "failed"}
-            stage3Unlocked={appliedStatus === "passed" || appliedStatus === "accepted"}
+            stage3Unlocked={appliedStatus === "passed" || appliedStatus === "accepted" || appStatus?.overallStatus === "selected"}
             currentStage={appliedCurrentStage}
+            overallStatus={appStatus?.overallStatus}
+            isSelected={appStatus?.overallStatus === "selected" || appliedStatus === "passed"}
             isVertical={true}
           />
         </div>
@@ -1861,8 +1863,8 @@ export default function RecruitmentsPage() {
                     <ActiveDepartmentCard
                       deptTitle={selectedTechQuest.title}
                       deptSlug={selectedTechSlug!}
-                      statusText={selectedTechProgress.status}
-                      isStage2Pending={isPending}
+                      statusText={appStatus?.overallStatus === "selected" ? "SELECTED" : selectedTechProgress.status}
+                      isStage2Pending={isPending && appStatus?.overallStatus !== "selected"}
                       hasSubmission={techHasSubmission}
                       onEditForm={() => router.push(`/apply/${selectedTechSlug}/quest-1`)}
                       onChangeDepartment={() => handleOpenChangeCategoryModal("tech")}
@@ -1874,8 +1876,10 @@ export default function RecruitmentsPage() {
                     <StageRoadmap
                       stage1Submitted={techHasSubmission}
                       stage2Status={selectedTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
-                      stage3Unlocked={selectedTechProgress.status === "passed" || selectedTechProgress.status === "accepted"}
+                      stage3Unlocked={selectedTechProgress.status === "passed" || selectedTechProgress.status === "accepted" || appStatus?.overallStatus === "selected"}
                       currentStage={selectedTechProgress.currentStage ?? 1}
+                      overallStatus={appStatus?.overallStatus}
+                      isSelected={appStatus?.overallStatus === "selected" || selectedTechProgress.status === "passed"}
                     />
                   </div>
                 </>
@@ -1990,8 +1994,8 @@ export default function RecruitmentsPage() {
                     <ActiveDepartmentCard
                       deptTitle={selectedNonTechQuest.title}
                       deptSlug={selectedNonTechSlug!}
-                      statusText={selectedNonTechProgress.status}
-                      isStage2Pending={isPending}
+                      statusText={appStatus?.overallStatus === "selected" ? "SELECTED" : selectedNonTechProgress.status}
+                      isStage2Pending={isPending && appStatus?.overallStatus !== "selected"}
                       hasSubmission={nonTechHasSubmission}
                       onEditForm={() => router.push(`/apply/${selectedNonTechSlug}/quest-1`)}
                       onChangeDepartment={() => handleOpenChangeCategoryModal("non-tech")}
@@ -2003,8 +2007,10 @@ export default function RecruitmentsPage() {
                     <StageRoadmap
                       stage1Submitted={nonTechHasSubmission}
                       stage2Status={selectedNonTechProgress.status as "pending" | "accepted" | "rejected" | "passed" | "failed"}
-                      stage3Unlocked={selectedNonTechProgress.status === "passed" || selectedNonTechProgress.status === "accepted"}
+                      stage3Unlocked={selectedNonTechProgress.status === "passed" || selectedNonTechProgress.status === "accepted" || appStatus?.overallStatus === "selected"}
                       currentStage={selectedNonTechProgress.currentStage ?? 1}
+                      overallStatus={appStatus?.overallStatus}
+                      isSelected={appStatus?.overallStatus === "selected" || selectedNonTechProgress.status === "passed"}
                     />
                   </div>
                 </>

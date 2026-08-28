@@ -8,9 +8,9 @@ import { ACTIVE_CYCLE_ID, getCanonicalDeptSlug, getDeptSlugVariants } from "@/li
 export interface BulkAdvancedPayload {
   identifiers: string[]; // emails, regNos, or ObjectIds
   targetDepartment?: string; // department slug or "all" | "active"
-  action: "advance" | "reject_department" | "reject_all" | "select" | "waitlist";
+  action: "advance" | "reject_department" | "reject_all" | "select" | "waitlist" | "reset" | "reset_stage1";
   targetStage?: number | "current"; // 1, 2, 3, or "current"
-  nextStage?: number; // target stage when advancing (e.g. 2 or 3)
+  nextStage?: number; // target stage when advancing (e.g. 1, 2, or 3)
   note?: string;
   dryRun?: boolean; // if true, returns preview statistics without mutating DB
 }
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       dryRun = false,
     } = body;
 
-    if (!["advance", "reject_department", "reject_all", "select", "waitlist"].includes(action)) {
+    if (!["advance", "reject_department", "reject_all", "select", "waitlist", "reset", "reset_stage1"].includes(action)) {
       return NextResponse.json(
         { success: false, error: "Invalid action specified." },
         { status: 400 }
@@ -357,6 +357,24 @@ export async function POST(req: NextRequest) {
 
         if (!dryRun) {
           app.overallStatus = "waitlisted";
+          app.markModified("overallStatus");
+        }
+      } else if (action === "reset" || action === "reset_stage1") {
+        willChangeToDescription = "Reset to Stage 1 (In-Progress)";
+
+        if (!dryRun) {
+          progress.currentStage = 1;
+          progress.status = "active";
+          app.overallStatus = "in-progress";
+          if (progress.stages && progress.stages.length > 0) {
+            progress.stages.forEach((s) => {
+              s.result = "pending";
+              s.adminNote = undefined;
+              s.reviewedBy = undefined;
+              s.reviewedAt = undefined;
+            });
+          }
+          app.markModified(progressKey);
           app.markModified("overallStatus");
         }
       }

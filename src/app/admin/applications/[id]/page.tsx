@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  RotateCcw,
 } from "lucide-react";
 import { AdminLayout } from "@/components/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -425,6 +426,20 @@ function PrefPanel({
               >
                 Reject Candidate
               </Button>
+
+              {(progress.currentStage > 1 || overallStatus !== "in-progress" || progress.status !== "active") && (
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => onActionTrigger(prefKey, "reset", note)}
+                  disabled={acting}
+                  className="font-semibold h-11 border-zinc-800 text-zinc-300 hover:bg-zinc-900 cursor-pointer px-4 flex items-center gap-1.5"
+                  title="Reset candidate back to Stage 1 (In-Progress)"
+                >
+                  <RotateCcw className="h-4 w-4 text-amber-400" />
+                  Reset to Stage 1
+                </Button>
+              )}
 
               {progress.currentStage >= 3 ? (
                 <Button
