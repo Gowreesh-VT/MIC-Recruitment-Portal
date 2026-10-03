@@ -296,7 +296,7 @@ function PrefPanel({
   progress: PrefProgress;
   deptSlug: string;
   label: string;
-  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject" | "select", note: string) => void;
+  onActionTrigger: (preference: "first" | "second", action: "advance" | "reject" | "select" | "reset", note: string) => void;
   acting: boolean;
   overallStatus: string;
   deptStages?: StageConfig[];
@@ -497,7 +497,7 @@ export default function ApplicantDetailPage({
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     preference: "first" | "second";
-    action: "advance" | "reject" | "select";
+    action: "advance" | "reject" | "select" | "reset";
     note: string;
   } | null>(null);
 
@@ -532,7 +532,7 @@ export default function ApplicantDetailPage({
 
   const handleActionConfirmTrigger = (
     preference: "first" | "second",
-    action: "advance" | "reject" | "select",
+    action: "advance" | "reject" | "select" | "reset",
     note: string
   ) => {
     setConfirmDialog({
@@ -749,6 +749,8 @@ export default function ApplicantDetailPage({
             ? "Select Candidate?"
             : confirmDialog?.action === "advance"
             ? "Advance Candidate?"
+            : confirmDialog?.action === "reset"
+            ? "Reset Candidate?"
             : "Reject Candidate?"
         }
         description={
@@ -756,6 +758,8 @@ export default function ApplicantDetailPage({
             ? `Are you sure you want to SELECT this candidate from their ${confirmDialog?.preference} preference department? This will mark them as selected.`
             : confirmDialog?.action === "advance"
             ? `Are you sure you want to ADVANCE this candidate in their ${confirmDialog?.preference} preference department?`
+            : confirmDialog?.action === "reset"
+            ? `Are you sure you want to RESET this candidate back to Stage 1 in their ${confirmDialog?.preference} preference department?`
             : `Are you sure you want to REJECT this candidate from their ${confirmDialog?.preference} preference department?`
         }
         confirmText={
@@ -763,6 +767,8 @@ export default function ApplicantDetailPage({
             ? "Yes, Select"
             : confirmDialog?.action === "advance"
             ? "Yes, Advance"
+            : confirmDialog?.action === "reset"
+            ? "Yes, Reset"
             : "Yes, Reject"
         }
         variant={confirmDialog?.action === "reject" ? "destructive" : "default"}
