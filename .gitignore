@@ -44,4 +44,5 @@ next-env.d.ts
 
 scripts/load/
 *.bak
-config.bat
+.env.local
+.env
